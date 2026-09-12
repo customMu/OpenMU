@@ -39,7 +39,9 @@ public class LegacyQuestStateDialogPlugIn : ILegacyQuestStateDialogPlugIn
         }
 
         var questState = this._player.SelectedCharacter.QuestStates.FirstOrDefault(s => s.Group == QuestConstants.LegacyQuestGroup);
-        var quest = questState?.ActiveQuest ?? this._player.GetNextLegacyQuest();
+        var activeQuestBelongsToOpenedNpc = questState?.ActiveQuest?.QuestGiver is null
+            || Equals(this._player.OpenedNpc?.Definition, questState.ActiveQuest.QuestGiver);
+        var quest = (activeQuestBelongsToOpenedNpc ? questState?.ActiveQuest : null) ?? this._player.GetNextLegacyQuest();
         await connection.SendLegacyQuestStateDialogAsync((byte)(quest?.Number ?? 0), this._player.GetLegacyQuestStateByte()).ConfigureAwait(false);
 
         if (quest?.RequiredMonsterKills.Any() ?? false)

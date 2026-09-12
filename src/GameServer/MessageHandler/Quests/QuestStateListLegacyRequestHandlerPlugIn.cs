@@ -30,6 +30,15 @@ public class QuestStateListLegacyRequestHandlerPlugIn : IPacketHandlerPlugIn
     public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
     {
         var questState = player.SelectedCharacter?.QuestStates?.FirstOrDefault(state => state.Group == QuestConstants.LegacyQuestGroup);
+
+        // Only show the quest state if it actually belongs to the NPC the player is currently talking to.
+        if (questState?.ActiveQuest is { } activeQuest
+            && activeQuest.QuestGiver is { } requiredQuestGiver
+            && !Equals(player.OpenedNpc?.Definition, requiredQuestGiver))
+        {
+            questState = null;
+        }
+
         await player.InvokeViewPlugInAsync<IQuestStateResponsePlugIn>(p => p.ShowQuestStateAsync(questState)).ConfigureAwait(false);
     }
 }

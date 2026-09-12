@@ -44,6 +44,12 @@ public class QuestStartAction
 
         if (questState.ActiveQuest != null)
         {
+            if (questState.ActiveQuest.QuestGiver is { } activeGiver && !Equals(player.OpenedNpc?.Definition, activeGiver))
+            {
+                player.Logger.LogDebug("There is an active quest of this group, but it belongs to a different NPC.");
+                return;
+            }
+
             player.Logger.LogDebug("There is already an active quest of this group.");
             await player.InvokeViewPlugInAsync<IQuestProgressPlugIn>(p => p.ShowQuestProgressAsync(questState.ActiveQuest, false)).ConfigureAwait(false);
             return;

@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameServer.MessageHandler.Quests;
 
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.PlayerActions.Quests;
 using MUnique.OpenMU.GameLogic.Views.Quest;
@@ -40,8 +41,15 @@ public class QuestProceedRequestHandlerPlugIn : ISubPacketHandlerPlugIn
         {
             if (questState?.ActiveQuest != null)
             {
-                // keep it running and confirm that it started
-                await player.InvokeViewPlugInAsync<IQuestStartedPlugIn>(p => p.QuestStartedAsync(questState.ActiveQuest)).ConfigureAwait(false);
+                if (questState.ActiveQuest.QuestGiver is { } activeGiver && !Equals(player.OpenedNpc?.Definition, activeGiver))
+                {
+                    player.Logger.LogDebug("There is an active quest of this group, but it belongs to a different NPC.");
+                }
+                else
+                {
+                    // keep it running and confirm that it started
+                    await player.InvokeViewPlugInAsync<IQuestStartedPlugIn>(p => p.QuestStartedAsync(questState.ActiveQuest)).ConfigureAwait(false);
+                }
             }
             else
             {

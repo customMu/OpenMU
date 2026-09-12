@@ -34,6 +34,12 @@ public class QuestCompletionAction
             return;
         }
 
+        if (activeQuest.QuestGiver is { } requiredQuestGiver && !Equals(player.OpenedNpc?.Definition, requiredQuestGiver))
+        {
+            player.Logger.LogWarning($"Failed, quest '{activeQuest.Name}' must be completed at '{requiredQuestGiver.Designation}', but player is talking to '{player.OpenedNpc?.Definition?.Designation ?? "nobody"}'.");
+            return;
+        }
+
         foreach (var requiredItem in activeQuest.RequiredItems)
         {
             var requiredLevel = requiredItem.DropItemGroup?.ItemLevel;
