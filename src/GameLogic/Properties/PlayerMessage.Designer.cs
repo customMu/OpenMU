@@ -2021,5 +2021,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("CharacterNotStrongEnoughMessage", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Can't split this stack..
+        /// </summary>
+        public static string SplitStackInvalid {
+            get {
+                return ResourceManager.GetString("SplitStackInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You can't split a stack right now..
+        /// </summary>
+        public static string SplitStackBusy {
+            get {
+                return ResourceManager.GetString("SplitStackBusy", resourceCulture);
+            }
+        }
     }
 }

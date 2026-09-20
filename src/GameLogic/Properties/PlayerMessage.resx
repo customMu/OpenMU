@@ -771,4 +771,10 @@
   <data name="CharacterNotStrongEnoughMessage" xml:space="preserve">
     <value>You are not strong enough for this yet.</value>
   </data>
+  <data name="SplitStackInvalid" xml:space="preserve">
+    <value>Can't split this stack.</value>
+  </data>
+  <data name="SplitStackBusy" xml:space="preserve">
+    <value>You can't split a stack right now.</value>
+  </data>
 </root>

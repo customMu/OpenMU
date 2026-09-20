@@ -46,7 +46,8 @@ internal class CrywolfFortress : BaseMapInitializer
         yield return this.CreateMonsterSpawn(2, this.NpcDictionary[407], 062, 239, Direction.SouthWest); // Werewolf Quarel
         yield return this.CreateMonsterSpawn(3, this.NpcDictionary[226], 135, 047, Direction.SouthWest); // Treiner
         yield return this.CreateMonsterSpawn(4, this.NpcDictionary[248], 099, 040, Direction.SouthEast, SpawnTrigger.Wandering); // Wandering Merchant
-        yield return this.CreateMonsterSpawn(5, this.NpcDictionary[256], 096, 025, Direction.SouthEast); // Lahap
+        // Lahap is not used anymore, jewels stack in the inventory instead.
+        // yield return this.CreateMonsterSpawn(5, this.NpcDictionary[256], 096, 025, Direction.SouthEast); // Lahap
         yield return this.CreateMonsterSpawn(6, this.NpcDictionary[251], 145, 014, Direction.SouthEast); // Hanzo the Blacksmith
         yield return this.CreateMonsterSpawn(7, this.NpcDictionary[240], 113, 056, Direction.SouthWest); // Baz The Vault Keeper
         yield return this.CreateMonsterSpawn(8, this.NpcDictionary[224], 118, 011, Direction.SouthEast); // Guardsman

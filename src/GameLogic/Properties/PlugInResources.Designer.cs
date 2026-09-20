@@ -3508,5 +3508,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("CastleSiegeLifeStoneConsumeHandlerPlugIn_Name", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Split Stack chat command.
+        /// </summary>
+        public static string SplitStackChatCommandPlugIn_Name {
+            get {
+                return ResourceManager.GetString("SplitStackChatCommandPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Handles the chat command '/split (slot) (amount) (group) (number)'. Splits the specified amount of pieces from a stackable item (e.g. jewels) into a new stack. Used by the split popup of the game client..
+        /// </summary>
+        public static string SplitStackChatCommandPlugIn_Description {
+            get {
+                return ResourceManager.GetString("SplitStackChatCommandPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

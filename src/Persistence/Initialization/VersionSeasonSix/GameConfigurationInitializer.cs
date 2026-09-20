@@ -75,7 +75,6 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new Jewelery(this.Context, this.GameConfiguration).Initialize();
         new AncientSets(this.Context, this.GameConfiguration).Initialize();
         new BoxOfLuck(this.Context, this.GameConfiguration).Initialize();
-        this.CreateJewelMixes();
         new NpcInitialization(this.Context, this.GameConfiguration).Initialize();
         new InvasionMobsInitialization(this.Context, this.GameConfiguration).Initialize();
         new GameMapsInitializer(this.Context, this.GameConfiguration).Initialize();
@@ -91,6 +90,9 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new ChaosCastleInitializer(this.Context, this.GameConfiguration).Initialize();
         new CastleSiegeInitializer(this.Context, this.GameConfiguration).Initialize();
         new KanturuInitializer(this.Context, this.GameConfiguration).Initialize();
+
+        // At the very end, so that no other initializer copies the increased stack size (255) into rewards or similar.
+        this.MakeJewelsStackable();
     }
 
     /// <summary>
@@ -117,29 +119,35 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         }
     }
 
-    private void CreateJewelMixes()
+    /// <summary>
+    /// Makes the jewels and refine stones stackable in the inventory, by increasing the maximum stack size (which is the durability of the definition).
+    /// The item counter is sent to the client as a single byte, so 255 is the maximum.
+    /// New drops and crafting results are still created as single pieces.
+    /// </summary>
+    private void MakeJewelsStackable()
     {
-        this.CreateJewelMix(0, 13, 0xE, 30); // Bless
-        this.CreateJewelMix(1, 14, 0xE, 31); // Soul
-        this.CreateJewelMix(2, 16, 0xE, 136); // Jewel of Life
-        this.CreateJewelMix(3, 22, 0xE, 137); // Jewel of Creation
-        this.CreateJewelMix(4, 31, 0xE, 138); // Jewel of Guardian
-        this.CreateJewelMix(5, 41, 0xE, 139); // Gemstone
-        this.CreateJewelMix(6, 42, 0xE, 140); // Jewel of Harmony
-        this.CreateJewelMix(7, 15, 0xC, 141); // Chaos
-        this.CreateJewelMix(8, 43, 0xE, 142); // Lower Refine Stone
-        this.CreateJewelMix(9, 44, 0xE, 143); // Higher Refine Stone
-    }
+        const byte maximumStackSize = 255;
+        var stackableItems = new (byte Group, short Number)[]
+        {
+            (14, 13), // Jewel of Bless
+            (14, 14), // Jewel of Soul
+            (14, 16), // Jewel of Life
+            (14, 22), // Jewel of Creation
+            (12, 15), // Jewel of Chaos
+            (14, 31), // Jewel of Guardian
+            (14, 41), // Gemstone
+            (14, 42), // Jewel of Harmony
+            (14, 43), // Lower Refine Stone
+            (14, 44), // Higher Refine Stone
+        };
 
-    private void CreateJewelMix(byte mixNumber, int itemNumber, int itemGroup, int packedJewelId)
-    {
-        var singleJewel = this.GameConfiguration.Items.First(i => i.Group == itemGroup && i.Number == itemNumber);
-        var packedJewel = this.GameConfiguration.Items.First(i => i.Group == 0x0C && i.Number == packedJewelId);
-        var jewelMix = this.Context.CreateNew<JewelMix>();
-        jewelMix.SetGuid(mixNumber);
-        jewelMix.Number = mixNumber;
-        jewelMix.SingleJewel = singleJewel;
-        jewelMix.MixedJewel = packedJewel;
-        this.GameConfiguration.JewelMixes.Add(jewelMix);
+        foreach (var (group, number) in stackableItems)
+        {
+            var definition = this.GameConfiguration.Items.FirstOrDefault(i => i.Group == group && i.Number == number);
+            if (definition is not null)
+            {
+                definition.Durability = maximumStackSize;
+            }
+        }
     }
 }

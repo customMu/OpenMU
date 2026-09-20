@@ -4,6 +4,7 @@
 
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Items;
 
+using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 
 /// <summary>
@@ -36,6 +37,14 @@ public class ItemStackAction
 
         if (player.Inventory is null)
         {
+            return;
+        }
+
+        if (mix.SingleJewel?.Durability > 1)
+        {
+            // Jewels which stack in the inventory must not be combined here: This action counts items, not pieces,
+            // so it would delete complete stacks and hand out a bundle for just a few pieces.
+            player.Logger.LogWarning("Jewel bundling is disabled for stackable jewel '{jewel}'.", mix.SingleJewel.Name);
             return;
         }
 
