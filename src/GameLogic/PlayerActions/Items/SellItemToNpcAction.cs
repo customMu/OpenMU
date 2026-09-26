@@ -13,15 +13,13 @@ using MUnique.OpenMU.GameLogic.Views.Inventory;
 /// </summary>
 public class SellItemToNpcAction
 {
-    private readonly ItemPriceCalculator _itemPriceCalculator;
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="SellItemToNpcAction"/> class.
+    /// The flat price which the player gets for any item (or stack of items) sold to an npc merchant.
+    /// Zen is intended to be obtained through drops only, selling is just a way to get rid of items.
+    /// The <see cref="ItemPriceCalculator"/> is intentionally not used here, because its selling price
+    /// is also used by other features (e.g. success rates of the fenrir crafting).
     /// </summary>
-    public SellItemToNpcAction()
-    {
-        this._itemPriceCalculator = new ItemPriceCalculator(); // TODO: DI? Calculator into gameContext?
-    }
+    private const int FlatSellingPrice = 1;
 
     /// <summary>
     /// Sells the item of the specified slot to the npc merchant.
@@ -58,8 +56,8 @@ public class SellItemToNpcAction
 
     private async ValueTask<bool> SellItemAsync(Player player, Item item)
     {
-        var sellingPrice = (int)this._itemPriceCalculator.CalculateSellingPrice(item, item.Durability());
-        player.Logger.LogDebug("Calculated selling price {0} for item {1}", sellingPrice, item);
+        var sellingPrice = FlatSellingPrice;
+        player.Logger.LogDebug("Flat selling price {0} for item {1}", sellingPrice, item);
         if (!player.TryAddMoney(sellingPrice))
         {
             // The money doesn't fit into the inventory anymore. Without the answer the request would
