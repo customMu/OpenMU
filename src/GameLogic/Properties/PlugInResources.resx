@@ -1284,4 +1284,10 @@
   <data name="ResetExperienceRatePlugIn_Description" xml:space="preserve">
     <value>Multiplies the experience of kills (solo and party) by a rate which depends on the reset count of the character, so that every further reset takes longer. Set the server experience rate to 1 when using it.</value>
   </data>
+  <data name="PartyExperienceFeaturePlugIn_Name" xml:space="preserve">
+    <value>Party experience</value>
+  </data>
+  <data name="PartyExperienceFeaturePlugIn_Description" xml:space="preserve">
+    <value>Every party member which receives experience gets his own solo experience for the kill (own level, own penalty for too weak monsters, own rates and resets), multiplied by a share which depends on the number of receiving members. Deactivate it to use the default level based distribution.</value>
+  </data>
 </root>

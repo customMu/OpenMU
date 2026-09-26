@@ -3562,5 +3562,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("ResetExperienceRatePlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Party experience.
+        /// </summary>
+        public static string PartyExperienceFeaturePlugIn_Name {
+            get {
+                return ResourceManager.GetString("PartyExperienceFeaturePlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Every party member which receives experience gets his own solo experience for the kill (own level, own penalty for too weak monsters, own rates and resets), multiplied by a share which depends on the number of receiving members. Deactivate it to use the default level based distribution..
+        /// </summary>
+        public static string PartyExperienceFeaturePlugIn_Description {
+            get {
+                return ResourceManager.GetString("PartyExperienceFeaturePlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

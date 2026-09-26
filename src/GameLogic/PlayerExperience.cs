@@ -32,8 +32,9 @@ internal sealed class PlayerExperience
     /// Adds experience points after killing the target object.
     /// </summary>
     /// <param name="killedObject">The killed object.</param>
+    /// <param name="multiplier">The multiplier for the calculated experience, e.g. the share of a party member.</param>
     /// <returns>The gained experience.</returns>
-    public async ValueTask<int> AddAfterKillAsync(IAttackable killedObject)
+    public async ValueTask<int> AddAfterKillAsync(IAttackable killedObject, double multiplier = 1.0)
     {
         if (!this.TryGetExperienceKind(out var isMasterExperience))
         {
@@ -41,6 +42,11 @@ internal sealed class PlayerExperience
         }
 
         var experience = await this.CalculateAfterKillAsync(killedObject).ConfigureAwait(false);
+        if (multiplier != 1.0)
+        {
+            experience = (int)Math.Clamp(experience * multiplier, 0, int.MaxValue);
+        }
+
         if (experience == 0)
         {
             return 0;
