@@ -85,8 +85,25 @@ internal static class QuestStateExtensions
     public static QuestDefinition? GetNextLegacyQuest(this Player player)
     {
         var legacyQuestState = player.GetQuestState(QuestConstants.LegacyQuestGroup);
+        var lastFinishedQuestNumber = legacyQuestState?.LastFinishedQuest?.Number ?? -1;
         return player.GetAvailableQuestsOfOpenedNpc()
+                   .OrderBy(quest => quest.Number)
+                   .FirstOrDefault(quest => quest.Number > lastFinishedQuestNumber)
+               ?? GetNextLegacyQuestIgnoringLevel(player, lastFinishedQuestNumber);
+    }
+
+    /// <summary>
+    /// Gets the next legacy quest of the currently opened NPC for the character class, regardless of the level range.
+    /// Used for the dialog only, when the character doesn't have the level for the next quest yet:
+    /// without it, the quest number 0 of another NPC would be shown. Starting the quest still checks the level.
+    /// </summary>
+    private static QuestDefinition? GetNextLegacyQuestIgnoringLevel(Player player, int lastFinishedQuestNumber)
+    {
+        return player.OpenedNpc?.Definition.Quests
+            .Where(quest => quest.Group == QuestConstants.LegacyQuestGroup)
+            .Where(quest => quest.QualifiedCharacter is null
+                            || Equals(quest.QualifiedCharacter, player.SelectedCharacter?.CharacterClass))
             .OrderBy(quest => quest.Number)
-            .FirstOrDefault(quest => quest.Number > (legacyQuestState?.LastFinishedQuest?.Number ?? -1));
+            .FirstOrDefault(quest => quest.Number > lastFinishedQuestNumber);
     }
 }

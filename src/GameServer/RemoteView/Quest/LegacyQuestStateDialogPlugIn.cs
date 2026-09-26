@@ -41,7 +41,15 @@ public class LegacyQuestStateDialogPlugIn : ILegacyQuestStateDialogPlugIn
         var questState = this._player.SelectedCharacter.QuestStates.FirstOrDefault(s => s.Group == QuestConstants.LegacyQuestGroup);
         var activeQuestBelongsToOpenedNpc = questState?.ActiveQuest?.QuestGiver is null
             || Equals(this._player.OpenedNpc?.Definition, questState.ActiveQuest.QuestGiver);
-        var quest = (activeQuestBelongsToOpenedNpc ? questState?.ActiveQuest : null) ?? this._player.GetNextLegacyQuest();
+        var lastFinishedQuestOfOpenedNpc = questState?.LastFinishedQuest is { } lastFinishedQuest
+                                           && Equals(this._player.OpenedNpc?.Definition, lastFinishedQuest.QuestGiver)
+            ? lastFinishedQuest
+            : null;
+
+        // If this NPC has no further quest, show its last finished one instead of the quest number 0 of another NPC.
+        var quest = (activeQuestBelongsToOpenedNpc ? questState?.ActiveQuest : null)
+                    ?? this._player.GetNextLegacyQuest()
+                    ?? lastFinishedQuestOfOpenedNpc;
         await connection.SendLegacyQuestStateDialogAsync((byte)(quest?.Number ?? 0), this._player.GetLegacyQuestStateByte()).ConfigureAwait(false);
 
         if (quest?.RequiredMonsterKills.Any() ?? false)
