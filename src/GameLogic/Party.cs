@@ -8,6 +8,7 @@ using System.Diagnostics.Metrics;
 using System.Threading;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.NPC;
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Party;
 using MUnique.OpenMU.Persistence;
@@ -384,6 +385,7 @@ public sealed class Party : AsyncDisposable
                             * player.GameContext.MasterExperienceRate
                             * (attributes[Stats.MasterExperienceRate] + attributes[Stats.BonusExperienceRate]));
 
+            exp = await ApplyExperienceCalculationPlugInAsync(player, killed, true, exp).ConfigureAwait(false);
             await player.AddMasterExperienceAsync(exp, killed).ConfigureAwait(false);
             return exp;
         }
@@ -392,6 +394,7 @@ public sealed class Party : AsyncDisposable
                                      * attributes[Stats.Level]
                                      * player.GameContext.ExperienceRate
                                      * (attributes[Stats.ExperienceRate] + attributes[Stats.BonusExperienceRate]));
+        normalExperience = await ApplyExperienceCalculationPlugInAsync(player, killed, false, normalExperience).ConfigureAwait(false);
 
         if (!isAtMaxLevel)
         {
@@ -402,6 +405,22 @@ public sealed class Party : AsyncDisposable
         // still returned: the money drop is derived from it, and a solo kill returns it as well
         // (see Player.AddExpAfterKillAsync), so such a member must not end up without any money.
         return normalExperience;
+    }
+
+    /// <summary>
+    /// Lets the <see cref="IExperienceCalculationPlugIn"/>s modify the experience of a party member,
+    /// in the same way as for a solo kill (see <see cref="PlayerExperience"/>).
+    /// </summary>
+    private static async ValueTask<int> ApplyExperienceCalculationPlugInAsync(Player player, IAttackable killed, bool isMasterExperience, int experience)
+    {
+        if (player.GameContext.PlugInManager.GetPlugInPoint<IExperienceCalculationPlugIn>() is not { } plugInPoint)
+        {
+            return experience;
+        }
+
+        var args = new ExperienceCalculationArgs(killed, isMasterExperience, experience);
+        await plugInPoint.CalculateExperienceAsync(player, args).ConfigureAwait(false);
+        return (int)Math.Clamp(args.Experience, 0, int.MaxValue);
     }
 
     private async ValueTask ExitPartyAsync(IPartyMember member, byte index)

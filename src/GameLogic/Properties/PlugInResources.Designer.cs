@@ -3544,5 +3544,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("MoneyDropCalculationPlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reset experience rate.
+        /// </summary>
+        public static string ResetExperienceRatePlugIn_Name {
+            get {
+                return ResourceManager.GetString("ResetExperienceRatePlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Multiplies the experience of kills (solo and party) by a rate which depends on the reset count of the character, so that every further reset takes longer. Set the server experience rate to 1 when using it..
+        /// </summary>
+        public static string ResetExperienceRatePlugIn_Description {
+            get {
+                return ResourceManager.GetString("ResetExperienceRatePlugIn_Description", resourceCulture);
+            }
+        }
     }
 }
