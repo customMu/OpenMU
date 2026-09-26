@@ -26,6 +26,12 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
     private readonly PlugInManager _plugInManager;
     private readonly List<IDisposable> _registrations = new();
 
+    /// <summary>
+    /// The damage which each player (including his summons) has dealt to this instance since it spawned.
+    /// Used to distribute the rewards by damage, see <see cref="DamageBasedKillRewardsPlugIn"/>.
+    /// </summary>
+    private readonly Dictionary<Player, long> _damageByPlayer = new();
+
     private int _health;
 
     /// <summary>
@@ -165,6 +171,11 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
     public override void Initialize()
     {
         base.Initialize();
+        lock (this._damageByPlayer)
+        {
+            this._damageByPlayer.Clear();
+        }
+
         this.Health = this.SpawnArea.MaximumHealthOverride ?? (int)this.Attributes[Stats.MaximumHealth];
         this.IsAlive = true;
     }
@@ -316,6 +327,15 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
                     currentHealth + restoredHealth,
                     currentHealth) == currentHealth)
             {
+                if (currentHealth + restoredHealth >= maximumHealth)
+                {
+                    // Fully healed again: the previous fight is over, earlier damage doesn't count anymore.
+                    lock (this._damageByPlayer)
+                    {
+                        this._damageByPlayer.Clear();
+                    }
+                }
+
                 return restoredHealth;
             }
         }
@@ -348,9 +368,25 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         var player = this.GetHitNotificationTarget(attacker);
         if (player is { })
         {
-            var experienceShares = player.Party is { } party
-                ? await party.DistributeExperienceAfterKillAsync(this, player).ConfigureAwait(false)
-                : [new ExperienceShare(player, await player.AddExpAfterKillAsync(this).ConfigureAwait(false))];
+            IReadOnlyList<ExperienceShare> experienceShares;
+            var dropOwner = player;
+            if (player.GameContext.FeaturePlugIns.GetPlugIn<DamageBasedKillRewardsPlugIn>() is not null
+                && await this.TryDistributeExperienceByDamageAsync().ConfigureAwait(false) is { } damageResult)
+            {
+                (experienceShares, dropOwner) = damageResult;
+            }
+            else
+            {
+                experienceShares = player.Party is { } party
+                    ? await party.DistributeExperienceAfterKillAsync(this, player).ConfigureAwait(false)
+                    : [new ExperienceShare(player, await player.AddExpAfterKillAsync(this).ConfigureAwait(false))];
+            }
+
+            lock (this._damageByPlayer)
+            {
+                this._damageByPlayer.Clear();
+            }
+
             if (attacker == player)
             {
                 await player.AfterKilledMonsterAsync().ConfigureAwait(false);
@@ -367,8 +403,11 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
                 {
                     selectedCharacter.StateRemainingSeconds -= (int)this.Attributes[Stats.Level];
                 }
+            }
 
-                _ = this.DropItemDelayedAsync(player, experienceShares); // don't wait for completion.
+            if (!this.IsSummonedMonster && dropOwner.SelectedCharacter is not null)
+            {
+                _ = this.DropItemDelayedAsync(dropOwner, experienceShares); // don't wait for completion.
             }
         }
     }
@@ -408,6 +447,7 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         if (damage > 0)
         {
             this.RegisterHit(attacker);
+            this.RecordDamage(attacker, damage);
         }
 
         if (damage >= this.Health)
@@ -426,6 +466,67 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         {
             return false;
         }
+    }
+
+    private void RecordDamage(IAttacker attacker, uint damage)
+    {
+        if (this.GetHitNotificationTarget(attacker) is not { } player)
+        {
+            return;
+        }
+
+        // Overkill damage of the last hit doesn't count.
+        var effectiveDamage = Math.Min(damage, (uint)this.Health);
+        if (effectiveDamage == 0)
+        {
+            return;
+        }
+
+        lock (this._damageByPlayer)
+        {
+            this._damageByPlayer[player] = this._damageByPlayer.GetValueOrDefault(player) + effectiveDamage;
+        }
+    }
+
+    /// <summary>
+    /// Distributes the experience between the groups (single players or parties) in proportion to their damage.
+    /// </summary>
+    /// <returns>
+    /// The experience shares of the group with the highest damage and the player which owns the drop,
+    /// or <c>null</c> if there is no group with a representative (then the default distribution is used).
+    /// </returns>
+    private async ValueTask<(IReadOnlyList<ExperienceShare> DropShares, Player DropOwner)?> TryDistributeExperienceByDamageAsync()
+    {
+        List<KillRewardGroup> groups;
+        lock (this._damageByPlayer)
+        {
+            groups = KillRewardGroup.Create(this._damageByPlayer.ToList(), this.CurrentMap);
+        }
+
+        var totalDamage = groups.Sum(g => g.Damage);
+        if (totalDamage <= 0)
+        {
+            return null;
+        }
+
+        KillRewardGroup? topGroup = null;
+        IReadOnlyList<ExperienceShare> topShares = [];
+        foreach (var group in groups)
+        {
+            var damageShare = (double)group.Damage / totalDamage;
+            var representative = group.Representative!;
+            IReadOnlyList<ExperienceShare> shares = group.Party is { } party
+                ? await party.DistributeExperienceAfterKillAsync(this, representative, damageShare).ConfigureAwait(false)
+                : [new ExperienceShare(representative, await representative.AddExpAfterKillAsync(this, damageShare).ConfigureAwait(false))];
+
+            if (topGroup is null || group.Damage > topGroup.Damage)
+            {
+                topGroup = group;
+                topShares = shares;
+            }
+        }
+
+        return (topShares, topGroup!.Representative!);
     }
 
     private async ValueTask HandleMoneyDropAsync(uint amount, Player killer, IReadOnlyList<ExperienceShare> experienceShares, bool splitEqually)

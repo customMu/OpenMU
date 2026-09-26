@@ -3580,5 +3580,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("PartyExperienceFeaturePlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Damage based kill rewards.
+        /// </summary>
+        public static string DamageBasedKillRewardsPlugIn_Name {
+            get {
+                return ResourceManager.GetString("DamageBasedKillRewardsPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Distributes the rewards of a killed monster by the dealt damage instead of giving everything to the last hitter: a party counts as one group, the experience is split between the groups in proportion to their damage (inside a party, the party experience rules apply), and the group with the highest damage gets the item and money drop..
+        /// </summary>
+        public static string DamageBasedKillRewardsPlugIn_Description {
+            get {
+                return ResourceManager.GetString("DamageBasedKillRewardsPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

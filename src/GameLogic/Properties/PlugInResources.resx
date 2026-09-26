@@ -1290,4 +1290,10 @@
   <data name="PartyExperienceFeaturePlugIn_Description" xml:space="preserve">
     <value>Every party member which receives experience gets his own solo experience for the kill (own level, own penalty for too weak monsters, own rates and resets), multiplied by a share which depends on the number of receiving members. Deactivate it to use the default level based distribution.</value>
   </data>
+  <data name="DamageBasedKillRewardsPlugIn_Name" xml:space="preserve">
+    <value>Damage based kill rewards</value>
+  </data>
+  <data name="DamageBasedKillRewardsPlugIn_Description" xml:space="preserve">
+    <value>Distributes the rewards of a killed monster by the dealt damage instead of giving everything to the last hitter: a party counts as one group, the experience is split between the groups in proportion to their damage (inside a party, the party experience rules apply), and the group with the highest damage gets the item and money drop.</value>
+  </data>
 </root>
