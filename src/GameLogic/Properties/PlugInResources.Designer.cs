@@ -3526,5 +3526,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("SplitStackChatCommandPlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Money drop calculation.
+        /// </summary>
+        public static string MoneyDropCalculationPlugIn_Name {
+            get {
+                return ResourceManager.GetString("MoneyDropCalculationPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Calculates the money drop of killed monsters independently of the experience rates: by monster level and health, with multipliers per map and per monster, and an equal split between party members..
+        /// </summary>
+        public static string MoneyDropCalculationPlugIn_Description {
+            get {
+                return ResourceManager.GetString("MoneyDropCalculationPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

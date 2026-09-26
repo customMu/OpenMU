@@ -428,11 +428,14 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         }
     }
 
-    private async ValueTask HandleMoneyDropAsync(uint amount, Player killer, IReadOnlyList<ExperienceShare> experienceShares)
+    private async ValueTask HandleMoneyDropAsync(uint amount, Player killer, IReadOnlyList<ExperienceShare> experienceShares, bool splitEqually)
     {
-        // Each player gets the part of the money which matches the experience they gained from the kill,
+        // By default, each player gets the part of the money which matches the experience they gained from the kill,
         // so that money follows the same distribution as the experience it is derived from.
-        var shares = MoneyDistribution.CreateShares(amount, experienceShares);
+        // A plugin can request an equal split instead.
+        var shares = splitEqually
+            ? MoneyDistribution.CreateEqualShares(amount, experienceShares.Select(share => share.Player).ToList())
+            : MoneyDistribution.CreateShares(amount, experienceShares);
 
         // We don't drop money in Devil Square, etc.
         var shouldDropMoney = killer.GameContext.Configuration.ShouldDropMoney && killer.CurrentMiniGame is null;
@@ -465,7 +468,22 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         var (generatedItems, droppedMoney) = await this._dropGenerator.GenerateItemDropsAsync(this.Definition, exp, killer).ConfigureAwait(false);
         if (droppedMoney > 0)
         {
-            await this.HandleMoneyDropAsync(droppedMoney.Value, killer, experienceShares).ConfigureAwait(false);
+            var moneyArgs = new MoneyDropCalculationArgs(
+                this,
+                this.Definition,
+                this.CurrentMap,
+                killer,
+                experienceShares.Select(share => share.Player).ToList(),
+                droppedMoney.Value);
+            if (this._plugInManager?.GetPlugInPoint<IMoneyDropCalculationPlugIn>() is { } moneyPlugIn)
+            {
+                await moneyPlugIn.CalculateMoneyDropAsync(moneyArgs).ConfigureAwait(false);
+            }
+
+            if (moneyArgs.Amount > 0)
+            {
+                await this.HandleMoneyDropAsync(moneyArgs.Amount, killer, experienceShares, moneyArgs.SplitEqually).ConfigureAwait(false);
+            }
         }
 
         var firstItem = !droppedMoney.HasValue;

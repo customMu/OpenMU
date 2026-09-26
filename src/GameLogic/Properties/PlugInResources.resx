@@ -1272,4 +1272,10 @@
   <data name="SplitStackChatCommandPlugIn_Description" xml:space="preserve">
     <value>Handles the chat command &apos;/split (slot) (amount) (group) (number)&apos;. Splits the specified amount of pieces from a stackable item (e.g. jewels) into a new stack. Used by the split popup of the game client.</value>
   </data>
+  <data name="MoneyDropCalculationPlugIn_Name" xml:space="preserve">
+    <value>Money drop calculation</value>
+  </data>
+  <data name="MoneyDropCalculationPlugIn_Description" xml:space="preserve">
+    <value>Calculates the money drop of killed monsters independently of the experience rates: by monster level and health, with multipliers per map and per monster, and an equal split between party members.</value>
+  </data>
 </root>
