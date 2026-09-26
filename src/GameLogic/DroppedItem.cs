@@ -14,7 +14,10 @@ using Nito.AsyncEx;
 /// </summary>
 public sealed class DroppedItem : AsyncDisposable, ILocateable
 {
-    private static readonly TimeSpan TimeUntilDropIsFree = TimeSpan.FromSeconds(10);
+    /// <summary>
+    /// The time after a drop during which only its owners may pick it up. Used for dropped money, too.
+    /// </summary>
+    internal static readonly TimeSpan TimeUntilDropIsFree = TimeSpan.FromSeconds(10);
 
     /// <summary>
     /// Gets the pickup lock. Used to synchronize pickup requests from the players.

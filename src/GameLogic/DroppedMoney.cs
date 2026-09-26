@@ -21,6 +21,10 @@ public sealed class DroppedMoney : AsyncDisposable, ILocateable
 
     private readonly IReadOnlyList<MoneyShare> _shares;
 
+    private readonly DateTime _dropTimestamp = DateTime.UtcNow;
+
+    private readonly IEnumerable<object>? _owners;
+
     private Timer? _removeTimer;
 
     private bool _availableToPick = true;
@@ -35,10 +39,15 @@ public sealed class DroppedMoney : AsyncDisposable, ILocateable
     /// The part of the money which is reserved for each player, matching the experience they gained from the kill.
     /// When it's empty - for example for money from an item box - the money is split equally instead.
     /// </param>
-    public DroppedMoney(uint amount, Point position, GameMap map, IReadOnlyList<MoneyShare>? shares = null)
+    /// <param name="owners">
+    /// The owners which may pick the money up during the first seconds (see <see cref="DroppedItem.TimeUntilDropIsFree"/>),
+    /// like for dropped items. <c>null</c> means that everybody may pick it up at any time.
+    /// </param>
+    public DroppedMoney(uint amount, Point position, GameMap map, IReadOnlyList<MoneyShare>? shares = null, IEnumerable<object>? owners = null)
     {
         this.Amount = amount;
         this._shares = shares ?? [];
+        this._owners = owners;
         this._pickupLock = new();
         this.Position = position;
         this.CurrentMap = map;
@@ -62,6 +71,21 @@ public sealed class DroppedMoney : AsyncDisposable, ILocateable
     public GameMap CurrentMap { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the owner-pickup priority period is still active.
+    /// </summary>
+    public bool IsOwnerPickupPriorityActive => DateTime.UtcNow < this._dropTimestamp.Add(DroppedItem.TimeUntilDropIsFree);
+
+    /// <summary>
+    /// Determines whether the specified player is an owner of this dropped money.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns><c>true</c> if the player is an owner or there are no owners; otherwise, <c>false</c>.</returns>
+    public bool IsPlayerAnOwner(Player player)
+    {
+        return this._owners?.Contains(player) ?? true;
+    }
+
+    /// <summary>
     /// Tries to pick the money by the specified player.
     /// </summary>
     /// <param name="player">The player.</param>
@@ -74,6 +98,11 @@ public sealed class DroppedMoney : AsyncDisposable, ILocateable
     public async ValueTask<bool> TryPickUpByAsync(Player player)
     {
         player.Logger.LogDebug("Player {0} tries to pick up {1}", player, this);
+
+        if (!this.IsPlayerAnOwner(player) && this.IsOwnerPickupPriorityActive)
+        {
+            return false;
+        }
 
         using (await this._pickupLock.LockAsync())
         {

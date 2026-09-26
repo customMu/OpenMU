@@ -554,7 +554,8 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             return;
         }
 
-        var droppedMoney = new DroppedMoney(amount, this.Position, this.CurrentMap, shares);
+        var owners = killer.Party?.PartyList.AsEnumerable() ?? killer.GetAsEnumerable();
+        var droppedMoney = new DroppedMoney(amount, this.Position, this.CurrentMap, shares, owners);
         await this.CurrentMap.AddAsync(droppedMoney).ConfigureAwait(false);
     }
 

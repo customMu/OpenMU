@@ -169,6 +169,17 @@ public class PickupItemAction
 
     private static async ValueTask<bool> TryPickupMoneyAsync(Player player, DroppedMoney droppedMoney)
     {
-        return CanPickup(player, droppedMoney) && await droppedMoney.TryPickUpByAsync(player).ConfigureAwait(false);
+        if (!CanPickup(player, droppedMoney))
+        {
+            return false;
+        }
+
+        if (!droppedMoney.IsPlayerAnOwner(player) && droppedMoney.IsOwnerPickupPriorityActive)
+        {
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ItemDoesNotBelongToYou)).ConfigureAwait(false);
+            return false;
+        }
+
+        return await droppedMoney.TryPickUpByAsync(player).ConfigureAwait(false);
     }
 }
