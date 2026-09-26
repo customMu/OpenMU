@@ -1097,7 +1097,10 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
             return false;
         }
 
-        if (skill.Requirements.Any(r => r.MinimumValue > this.Attributes![r.Attribute]))
+        // Already learned skills may ignore the level requirement (e.g. after a reset), see LearnedSkillsWithoutLevelRequirementPlugIn.
+        var ignoreLevelRequirement = this.GameContext.FeaturePlugIns.GetPlugIn<LearnedSkillsWithoutLevelRequirementPlugIn>() is not null;
+        if (skill.Requirements.Any(r => r.MinimumValue > this.Attributes![r.Attribute]
+                                        && !(ignoreLevelRequirement && r.Attribute?.Id == Stats.Level.Id)))
         {
             return false;
         }

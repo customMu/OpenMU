@@ -1296,4 +1296,16 @@
   <data name="DamageBasedKillRewardsPlugIn_Description" xml:space="preserve">
     <value>Distributes the rewards of a killed monster by the dealt damage instead of giving everything to the last hitter: a party counts as one group, the experience is split between the groups in proportion to their damage (inside a party, the party experience rules apply), and the group with the highest damage gets the item and money drop.</value>
   </data>
+  <data name="InfiniteAmmunitionPlugIn_Name" xml:space="preserve">
+    <value>Infinite ammunition</value>
+  </data>
+  <data name="InfiniteAmmunitionPlugIn_Description" xml:space="preserve">
+    <value>Arrows and bolts are not consumed by attacks and skills anymore (like with the Infinity Arrow skill). The ammunition still has to be equipped.</value>
+  </data>
+  <data name="LearnedSkillsWithoutLevelRequirementPlugIn_Name" xml:space="preserve">
+    <value>Learned skills without level requirement</value>
+  </data>
+  <data name="LearnedSkillsWithoutLevelRequirementPlugIn_Description" xml:space="preserve">
+    <value>Already learned skills can be used regardless of their level requirement, e.g. after a reset to level 1. Other requirements (e.g. energy) still apply; learning a skill still requires the level of the scroll or orb. The game client has to ignore the level requirement of learned skills, too.</value>
+  </data>
 </root>

@@ -11,6 +11,7 @@ using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.Pet;
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views.World;
 using MUnique.OpenMU.Pathfinding;
 
@@ -500,6 +501,12 @@ public static class AttackableExtensions
             // Every hit needs ammo, missed or not
             if (attacker.Attributes[Stats.AmmunitionAmount] < attacker.Attributes[Stats.AmmunitionConsumptionRate])
             {
+                return;
+            }
+
+            if (attacker is Player player && player.GameContext.FeaturePlugIns.GetPlugIn<InfiniteAmmunitionPlugIn>() is not null)
+            {
+                // The ammunition has to be equipped (checked above and before the skill), but is not consumed.
                 return;
             }
 

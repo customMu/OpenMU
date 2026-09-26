@@ -3598,5 +3598,41 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("DamageBasedKillRewardsPlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Infinite ammunition.
+        /// </summary>
+        public static string InfiniteAmmunitionPlugIn_Name {
+            get {
+                return ResourceManager.GetString("InfiniteAmmunitionPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Arrows and bolts are not consumed by attacks and skills anymore (like with the Infinity Arrow skill). The ammunition still has to be equipped..
+        /// </summary>
+        public static string InfiniteAmmunitionPlugIn_Description {
+            get {
+                return ResourceManager.GetString("InfiniteAmmunitionPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Learned skills without level requirement.
+        /// </summary>
+        public static string LearnedSkillsWithoutLevelRequirementPlugIn_Name {
+            get {
+                return ResourceManager.GetString("LearnedSkillsWithoutLevelRequirementPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Already learned skills can be used regardless of their level requirement, e.g. after a reset to level 1. Other requirements (e.g. energy) still apply; learning a skill still requires the level of the scroll or orb. The game client has to ignore the level requirement of learned skills, too..
+        /// </summary>
+        public static string LearnedSkillsWithoutLevelRequirementPlugIn_Description {
+            get {
+                return ResourceManager.GetString("LearnedSkillsWithoutLevelRequirementPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }
