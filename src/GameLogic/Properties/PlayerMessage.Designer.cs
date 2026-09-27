@@ -2039,5 +2039,32 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("SplitStackBusy", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Master level is unlocked at {0} resets..
+        /// </summary>
+        public static string MasterLevelUnlockedAtResetsFormat {
+            get {
+                return ResourceManager.GetString("MasterLevelUnlockedAtResetsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Master level is limited to {0} at {1} resets. The next reset raises the limit..
+        /// </summary>
+        public static string MasterLevelLimitedByResetsFormat {
+            get {
+                return ResourceManager.GetString("MasterLevelLimitedByResetsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your weapon doesn't meet its requirements (base stats), it can't be used for skills..
+        /// </summary>
+        public static string WeaponRequirementsNotMet {
+            get {
+                return ResourceManager.GetString("WeaponRequirementsNotMet", resourceCulture);
+            }
+        }
     }
 }

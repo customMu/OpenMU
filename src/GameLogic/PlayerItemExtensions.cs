@@ -4,6 +4,8 @@
 
 namespace MUnique.OpenMU.GameLogic;
 
+using MUnique.OpenMU.AttributeSystem;
+using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 using MUnique.OpenMU.Persistence;
@@ -14,6 +16,65 @@ using MUnique.OpenMU.Persistence;
 public static class PlayerItemExtensions
 {
     /// <summary>
+    /// The attributes which are compared with the stat requirements of items by the <see cref="ItemRequirementsByBaseStatsPlugIn"/>.
+    /// </summary>
+    private static readonly IDictionary<AttributeDefinition, AttributeDefinition> BaseStatOfTotalStat = new Dictionary<AttributeDefinition, AttributeDefinition>
+    {
+        { Stats.TotalStrength, Stats.BaseStrength },
+        { Stats.TotalAgility, Stats.BaseAgility },
+        { Stats.TotalVitality, Stats.BaseVitality },
+        { Stats.TotalEnergy, Stats.BaseEnergy },
+        { Stats.TotalLeadership, Stats.BaseLeadership },
+    };
+
+    /// <summary>
+    /// Gets the attributes which, when they change, may change whether equipped items comply with their requirements.
+    /// </summary>
+    internal static IEnumerable<AttributeDefinition> RequirementRelevantStats { get; } =
+    [
+        Stats.BaseStrength,
+        Stats.BaseAgility,
+        Stats.BaseVitality,
+        Stats.BaseEnergy,
+        Stats.BaseLeadership,
+        Stats.Level,
+        Stats.Resets,
+    ];
+
+    /// <summary>
+    /// Determines whether an equipped item gives its bonuses. That's always the case, unless the
+    /// <see cref="ItemRequirementsByBaseStatsPlugIn"/> is active and the player doesn't comply with the requirements of the item.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="item">The equipped item.</param>
+    /// <returns><c>True</c>, if the item gives its bonuses.</returns>
+    public static bool IsEquippedItemActive(this Player player, Item item)
+    {
+        return player.GameContext.FeaturePlugIns.GetPlugIn<ItemRequirementsByBaseStatsPlugIn>() is null
+               || player.CompliesRequirements(item);
+    }
+
+    /// <summary>
+    /// Determines whether the player holds a weapon which doesn't meet its requirements, see <see cref="ItemRequirementsByBaseStatsPlugIn"/>.
+    /// Such a weapon can't be used for physical attack skills. Shields and ammunition don't count as weapons.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns><c>True</c>, if the player holds a weapon which doesn't meet its requirements.</returns>
+    public static bool HasInactiveHandWeapon(this Player player)
+    {
+        if (player.GameContext.FeaturePlugIns.GetPlugIn<ItemRequirementsByBaseStatsPlugIn>() is null
+            || player.Inventory is not { } inventory)
+        {
+            return false;
+        }
+
+        return inventory.EquippedItems.Any(item =>
+            (item.ItemSlot == InventoryConstants.LeftHandSlot || item.ItemSlot == InventoryConstants.RightHandSlot)
+            && item.Definition is { IsAmmunition: false, Group: <= 5 }
+            && !player.CompliesRequirements(item));
+    }
+
+    /// <summary>
     /// Determines whether the player complies with the requirements of the specified item.
     /// </summary>
     /// <param name="player">The player.</param>
@@ -23,9 +84,22 @@ public static class PlayerItemExtensions
     {
         item.ThrowNotInitializedProperty(item.Definition is null, nameof(item.Definition));
 
+        var byBaseStats = player.GameContext.FeaturePlugIns.GetPlugIn<ItemRequirementsByBaseStatsPlugIn>() is not null;
+
+        // A character with at least one reset already reached every level requirement below the reset level.
+        var ignoreLevelRequirement = byBaseStats && item.IsWearable() && player.Attributes![Stats.Resets] >= 1;
+
         foreach (var requirement in item.Definition.Requirements.Select(item.GetRequirement))
         {
-            if (player.Attributes![requirement.Attr] < requirement.Value)
+            if (ignoreLevelRequirement && requirement.Attr == Stats.Level)
+            {
+                continue;
+            }
+
+            var attribute = byBaseStats && BaseStatOfTotalStat.TryGetValue(requirement.Attr, out var baseStat)
+                ? baseStat
+                : requirement.Attr;
+            if (player.Attributes![attribute] < requirement.Value)
             {
                 return false;
             }

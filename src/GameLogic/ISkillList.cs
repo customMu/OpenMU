@@ -40,6 +40,13 @@ public interface ISkillList
     ValueTask<bool> RemoveItemSkillAsync(ushort skillId);
 
     /// <summary>
+    /// Adds or removes the skill of the item, depending on whether the item is equipped and gives its bonuses
+    /// (see <see cref="PlayerItemExtensions.IsEquippedItemActive"/>).
+    /// </summary>
+    /// <param name="item">The item.</param>
+    ValueTask UpdateItemSkillAsync(Item item);
+
+    /// <summary>
     /// Determines whether the list contains the specified skill of the specified id.
     /// </summary>
     /// <param name="skillId">The skill identifier.</param>

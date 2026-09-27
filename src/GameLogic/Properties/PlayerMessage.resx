@@ -777,4 +777,13 @@
   <data name="SplitStackBusy" xml:space="preserve">
     <value>You can't split a stack right now.</value>
   </data>
+  <data name="MasterLevelUnlockedAtResetsFormat" xml:space="preserve">
+    <value>Master level is unlocked at {0} resets.</value>
+  </data>
+  <data name="MasterLevelLimitedByResetsFormat" xml:space="preserve">
+    <value>Master level is limited to {0} at {1} resets. The next reset raises the limit.</value>
+  </data>
+  <data name="WeaponRequirementsNotMet" xml:space="preserve">
+    <value>Your weapon doesn't meet its requirements (base stats), it can't be used for skills.</value>
+  </data>
 </root>

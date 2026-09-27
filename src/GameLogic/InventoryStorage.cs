@@ -51,6 +51,15 @@ public class InventoryStorage : Storage, IInventoryStorage
         }
 
         this.InitializePowerUps();
+
+        // Equipped items may start or stop giving their bonuses when the stats change, see ItemRequirementsByBaseStatsPlugIn.
+        if (player.Attributes is { } attributes)
+        {
+            foreach (var stat in PlayerItemExtensions.RequirementRelevantStats)
+            {
+                attributes.GetOrCreateAttribute(stat).ValueChanged += this.OnRequirementRelevantStatChanged;
+            }
+        }
     }
 
     /// <inheritdoc/>
@@ -161,7 +170,10 @@ public class InventoryStorage : Storage, IInventoryStorage
         if (itemAdded)
         {
             var factory = this._gameContext.ItemPowerUpFactory;
-            this._player.Attributes.ItemPowerUps.Add(item, factory.GetPowerUps(item, this._player.Attributes).ToList());
+            if (this._player.IsEquippedItemActive(item))
+            {
+                this._player.Attributes.ItemPowerUps.Add(item, factory.GetPowerUps(item, this._player.Attributes).ToList());
+            }
 
             // reset player equipped ammunition amount
             if (this.EquippedAmmunitionItem is { } ammoItem)
@@ -186,7 +198,7 @@ public class InventoryStorage : Storage, IInventoryStorage
         var factory = this._gameContext?.ItemPowerUpFactory;
         if (factory != null)
         {
-            foreach (var item in this.EquippedItems)
+            foreach (var item in this.EquippedItems.Where(this._player.IsEquippedItemActive))
             {
                 this._player.Attributes.ItemPowerUps.Add(item, factory.GetPowerUps(item, this._player.Attributes).ToList());
             }
@@ -215,6 +227,59 @@ public class InventoryStorage : Storage, IInventoryStorage
         }
 
         var factory = this._gameContext.ItemPowerUpFactory;
-        this._player.Attributes.ItemSetPowerUps = factory.GetSetPowerUps(this.EquippedItems, this._player.Attributes, this._player.GameContext.Configuration).ToList();
+        this._player.Attributes.ItemSetPowerUps = factory.GetSetPowerUps(this.EquippedItems.Where(this._player.IsEquippedItemActive), this._player.Attributes, this._player.GameContext.Configuration).ToList();
+    }
+
+    private void OnRequirementRelevantStatChanged(object? sender, EventArgs e)
+    {
+        this.UpdateActiveEquippedItems();
+    }
+
+    /// <summary>
+    /// Adds or removes the bonuses of the equipped items, whose requirements got met or unmet since the last update.
+    /// </summary>
+    private void UpdateActiveEquippedItems()
+    {
+        if (this._player.Attributes is not { } attributes)
+        {
+            return;
+        }
+
+        var factory = this._gameContext.ItemPowerUpFactory;
+        var changed = false;
+        foreach (var item in this.EquippedItems.ToList())
+        {
+            var isActive = this._player.IsEquippedItemActive(item);
+            if (isActive == attributes.ItemPowerUps.ContainsKey(item))
+            {
+                continue;
+            }
+
+            changed = true;
+            if (isActive)
+            {
+                attributes.ItemPowerUps.Add(item, factory.GetPowerUps(item, attributes).ToList());
+            }
+            else if (attributes.ItemPowerUps.Remove(item, out var powerUps))
+            {
+                foreach (var powerUp in powerUps)
+                {
+                    powerUp.Dispose();
+                }
+            }
+
+            // An item which gives no bonuses gives no skill either, e.g. the Triple Shot of a bow.
+            if (this._player.SkillList is { } skillList)
+            {
+                _ = skillList.UpdateItemSkillAsync(item).AsTask().ContinueWith(
+                    task => this._player.Logger.LogError(task.Exception, "Couldn't update the skill of item {item}.", item),
+                    TaskContinuationOptions.OnlyOnFaulted);
+            }
+        }
+
+        if (changed)
+        {
+            this.UpdateSetPowerUps();
+        }
     }
 }

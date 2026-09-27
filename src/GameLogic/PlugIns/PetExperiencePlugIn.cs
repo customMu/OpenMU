@@ -86,7 +86,15 @@ public class PetExperiencePlugIn : IPlayerGainedExperiencePlugIn
                && (!pet.IsDarkRaven() || pet.GetDarkRavenLeadershipRequirement(pet.Level + 1) <= player.Attributes![Stats.TotalLeadership]))
         {
             pet.Level++;
-            player.Attributes!.ItemPowerUps[pet] = player.Attributes.ItemPowerUps[pet]
+
+            // A pet which doesn't meet its requirements gives no bonuses, see ItemRequirementsByBaseStatsPlugIn.
+            if (!player.Attributes!.ItemPowerUps.TryGetValue(pet, out var petPowerUps))
+            {
+                await player.InvokeViewPlugInAsync<IPetInfoViewPlugIn>(p => p.ShowPetInfoAsync(pet, pet.ItemSlot, PetStorageLocation.InventoryPetSlot)).ConfigureAwait(false);
+                continue;
+            }
+
+            player.Attributes.ItemPowerUps[pet] = petPowerUps
                 .Append(new PowerUpWrapper(
                     new SimpleElement(1, AggregateType.AddRaw),
                     pet.IsDarkRaven() ? Stats.RavenLevel : Stats.HorseLevel,

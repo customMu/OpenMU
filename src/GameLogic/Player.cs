@@ -18,6 +18,7 @@ using MUnique.OpenMU.GameLogic.PlayerActions.Items;
 using MUnique.OpenMU.GameLogic.PlayerActions.Skills;
 using MUnique.OpenMU.GameLogic.PlayerActions.Trade;
 using MUnique.OpenMU.GameLogic.PlugIns;
+using MUnique.OpenMU.GameLogic.Resets;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Character;
 using MUnique.OpenMU.GameLogic.Views.Guild;
@@ -74,6 +75,8 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
     private ICustomPlugInContainer<IViewPlugIn>? _viewPlugIns;
 
     private DateTime _lastRegenerate = DateTime.UtcNow;
+
+    private DateTime _lastWeaponRequirementsMessage;
 
     private GameMap? _currentMap;
 
@@ -1097,6 +1100,21 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
             return false;
         }
 
+        // A weapon which doesn't meet its requirements can't be used for physical attack skills, see ItemRequirementsByBaseStatsPlugIn.
+        if (skill.DamageType == DamageType.Physical
+            && skill.SkillType is SkillType.DirectHit or SkillType.AreaSkillAutomaticHits or SkillType.AreaSkillExplicitHits or SkillType.AreaSkillExplicitTarget
+            && this.HasInactiveHandWeapon())
+        {
+            var now = DateTime.UtcNow;
+            if (now - this._lastWeaponRequirementsMessage > TimeSpan.FromSeconds(5))
+            {
+                this._lastWeaponRequirementsMessage = now;
+                await this.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.WeaponRequirementsNotMet)).ConfigureAwait(false);
+            }
+
+            return false;
+        }
+
         // Already learned skills may ignore the level requirement (e.g. after a reset), see LearnedSkillsWithoutLevelRequirementPlugIn.
         var ignoreLevelRequirement = this.GameContext.FeaturePlugIns.GetPlugIn<LearnedSkillsWithoutLevelRequirementPlugIn>() is not null;
         if (skill.Requirements.Any(r => r.MinimumValue > this.Attributes![r.Attribute]
@@ -1746,6 +1764,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
         this.Attributes = new ItemAwareAttributeSystem(this.Account!, selectedCharacter, this.GameContext.Configuration);
         this.Attributes[Stats.NearbyPartyMemberCount] = 0;
         this.Attributes[Stats.IsResting] = 0;
+        this.GameContext.FeaturePlugIns.GetPlugIn<ResetBoostPlugIn>()?.ApplyTo(this);
         this.LogInvalidInventoryItems();
 
         this._storages.CreateForCharacter(selectedCharacter);

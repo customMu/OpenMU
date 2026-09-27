@@ -24,6 +24,12 @@ public sealed class SkillList : ISkillList, IDisposable
     private const short SleepStrengthenerSkillId = 454;
     private const short DrainLifeStrengthenerSkillId = 458;
 
+    /// <summary>
+    /// The equipped items whose skill was added to <see cref="_itemSkills"/>.
+    /// Items which don't give their bonuses (see <see cref="PlayerItemExtensions.IsEquippedItemActive"/>) give no skill either.
+    /// </summary>
+    private readonly HashSet<Item> _itemsWithSkill = new();
+
     private readonly short[] _castedSkillsWithPassiveBoost = [
         TwistingSlashMasterySkillId,
         RagefulBlowMasterySkillId,
@@ -67,7 +73,8 @@ public sealed class SkillList : ISkillList, IDisposable
         this._player.Inventory.EquippedItems
             .Where(item => item.HasSkill)
             .Where(item => (item.Definition ?? throw Error.NotInitializedProperty(item, nameof(item.Definition))).Skill != null)
-            .ForEach(item => this.AddItemSkillAsync(item.Definition!.Skill!).AsTask().WaitAndUnwrapException());
+            .ToList()
+            .ForEach(item => this.UpdateItemSkillAsync(item).AsTask().WaitAndUnwrapException());
         this._player.Inventory.EquippedItemsChanged += this.Inventory_WearingItemsChangedAsync;
         foreach (var skill in this._learnedSkills
             .Where(s => s.Skill!.SkillType == SkillType.PassiveBoost || this._castedSkillsWithPassiveBoost.Contains(s.Skill.Number)))
@@ -137,6 +144,35 @@ public sealed class SkillList : ISkillList, IDisposable
         }
 
         return true;
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask UpdateItemSkillAsync(Item item)
+    {
+        var shouldHaveSkill = item.HasSkill
+                              && item.Definition?.Skill is not null
+                              && this._player.Inventory is { } inventory
+                              && inventory.EquippedItems.Contains(item)
+                              && this._player.IsEquippedItemActive(item);
+        var hasSkill = this._itemsWithSkill.Contains(item);
+        if (shouldHaveSkill == hasSkill)
+        {
+            return;
+        }
+
+        if (shouldHaveSkill)
+        {
+            this._itemsWithSkill.Add(item);
+            await this.AddItemSkillAsync(item.Definition!.Skill!).ConfigureAwait(false);
+        }
+        else
+        {
+            this._itemsWithSkill.Remove(item);
+            if (item.Definition?.Skill is { } skill)
+            {
+                await this.RemoveItemSkillAsync(skill.Number.ToUnsigned()).ConfigureAwait(false);
+            }
+        }
     }
 
     /// <inheritdoc/>
@@ -260,21 +296,7 @@ public sealed class SkillList : ISkillList, IDisposable
 
     private async ValueTask Inventory_WearingItemsChangedAsync(ItemEventArgs eventArgs)
     {
-        var item = eventArgs.Item;
-        if (!item.HasSkill || item.Definition?.Skill is null)
-        {
-            return;
-        }
-
-        var inventory = this._player.Inventory;
-        if (inventory!.EquippedItems.Contains(item))
-        {
-            await this.AddItemSkillAsync(item.Definition.Skill).ConfigureAwait(false);
-        }
-        else
-        {
-            await this.RemoveItemSkillAsync(item.Definition.Skill.Number.ToUnsigned()).ConfigureAwait(false);
-        }
+        await this.UpdateItemSkillAsync(eventArgs.Item).ConfigureAwait(false);
     }
 
     private sealed class PassiveSkillBoostPowerUp : IElement, IDisposable

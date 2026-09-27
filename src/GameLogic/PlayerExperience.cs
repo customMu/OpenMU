@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameLogic;
 
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.PlugIns;
+using MUnique.OpenMU.GameLogic.Resets;
 using MUnique.OpenMU.GameLogic.Views.Character;
 using MUnique.OpenMU.GameLogic.Views.World;
 using Nito.AsyncEx;
@@ -18,6 +19,8 @@ internal sealed class PlayerExperience
     private readonly Player _player;
 
     private readonly AsyncLock _lock = new();
+
+    private DateTime _lastMasterLevelLimitMessage;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PlayerExperience"/> class.
@@ -154,6 +157,29 @@ internal sealed class PlayerExperience
         return true;
     }
 
+    private async ValueTask ShowMasterLevelLimitMessageAsync(MasterLevelByResetsConfiguration configuration, int resetCount, int maximumMasterLevel)
+    {
+        // Every kill ends up here while the limit is reached, so the explanation is shown once a minute at most.
+        var now = DateTime.UtcNow;
+        if (now - this._lastMasterLevelLimitMessage < TimeSpan.FromMinutes(1))
+        {
+            return;
+        }
+
+        this._lastMasterLevelLimitMessage = now;
+        if (maximumMasterLevel <= 0)
+        {
+            if (configuration.GetUnlockResetCount() is { } unlockResetCount)
+            {
+                await this._player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.MasterLevelUnlockedAtResetsFormat), unlockResetCount).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
+        await this._player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.MasterLevelLimitedByResetsFormat), maximumMasterLevel, resetCount).ConfigureAwait(false);
+    }
+
     private async ValueTask AddMasterExperienceCoreAsync(int experience, IAttackable? killedObject)
     {
         var player = this._player;
@@ -161,6 +187,21 @@ internal sealed class PlayerExperience
         {
             await player.InvokeViewPlugInAsync<IAddExperiencePlugIn>(p => p.AddExperienceAsync(0, killedObject, ExperienceType.MaxMasterLevelReached)).ConfigureAwait(false);
             return;
+        }
+
+        if (player.GameContext.FeaturePlugIns.GetPlugIn<MasterLevelByResetsPlugIn>() is { } masterLevelByResets)
+        {
+            var configuration = masterLevelByResets.Configuration ??= (MasterLevelByResetsConfiguration)masterLevelByResets.CreateDefaultConfig();
+            var resetCount = (int)player.Attributes[Stats.Resets];
+            var maximumMasterLevel = configuration.GetMaximumMasterLevel(resetCount);
+            if (player.Attributes[Stats.MasterLevel] >= maximumMasterLevel)
+            {
+                // Without any master level yet, the client shows "maximum level reached", otherwise "maximum master level reached".
+                var experienceType = maximumMasterLevel <= 0 ? ExperienceType.MaxLevelReached : ExperienceType.MaxMasterLevelReached;
+                await player.InvokeViewPlugInAsync<IAddExperiencePlugIn>(p => p.AddExperienceAsync(0, killedObject, experienceType)).ConfigureAwait(false);
+                await this.ShowMasterLevelLimitMessageAsync(configuration, resetCount, maximumMasterLevel).ConfigureAwait(false);
+                return;
+            }
         }
 
         if (killedObject is not null && killedObject.Attributes[Stats.Level] < player.GameContext.Configuration.MinimumMonsterLevelForMasterExperience)

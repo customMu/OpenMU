@@ -3634,5 +3634,59 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("LearnedSkillsWithoutLevelRequirementPlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Master level by resets.
+        /// </summary>
+        public static string MasterLevelByResetsPlugIn_Name {
+            get {
+                return ResourceManager.GetString("MasterLevelByResetsPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Limits the master level by the reset count: each reset from a configurable reset count on raises the maximum master level by the levels of its tier. Until the first tier, master experience is not gained at all. The maximum master level of the game configuration still applies..
+        /// </summary>
+        public static string MasterLevelByResetsPlugIn_Description {
+            get {
+                return ResourceManager.GetString("MasterLevelByResetsPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reset boost.
+        /// </summary>
+        public static string ResetBoostPlugIn_Name {
+            get {
+                return ResourceManager.GetString("ResetBoostPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Passive bonus per reset: maximum health and mana, dealt damage and defense are multiplied by (1 + resets * percentage / 100). The percentages are configurable; the game client shows the bonus in the character window with its own copy of the default percentages..
+        /// </summary>
+        public static string ResetBoostPlugIn_Description {
+            get {
+                return ResourceManager.GetString("ResetBoostPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Item requirements by base stats.
+        /// </summary>
+        public static string ItemRequirementsByBaseStatsPlugIn_Name {
+            get {
+                return ResourceManager.GetString("ItemRequirementsByBaseStatsPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stat requirements of items are checked against the base stats (distributed points), not the total stats. The level requirement of wearable items is ignored after the first reset. Equipped items whose requirements are not met stay equipped but give no bonuses, until the requirements are met again. The game client has to use the same rules to show the stats correctly..
+        /// </summary>
+        public static string ItemRequirementsByBaseStatsPlugIn_Description {
+            get {
+                return ResourceManager.GetString("ItemRequirementsByBaseStatsPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }
