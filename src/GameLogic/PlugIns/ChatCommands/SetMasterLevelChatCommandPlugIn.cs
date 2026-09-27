@@ -54,6 +54,10 @@ public class SetMasterLevelChatCommandPlugIn : ChatCommandPlugInBase<SetMasterLe
         }
 
         targetPlayer.Attributes![Stats.MasterLevel] = checked(arguments.MasterLevel);
+
+        // The master experience has to match the master level, otherwise the character has to gain the missing
+        // experience first (or already has too much), and the experience bar of the client shows garbage.
+        targetPlayer.SelectedCharacter.MasterExperience = targetPlayer.GameContext.MasterExperienceTable[arguments.MasterLevel];
         await targetPlayer.InvokeViewPlugInAsync<IUpdateLevelPlugIn>(p => p.UpdateMasterLevelAsync()).ConfigureAwait(false);
         await targetPlayer.ForEachWorldObserverAsync<IShowEffectPlugIn>(p => p.ShowEffectAsync(targetPlayer, IShowEffectPlugIn.EffectType.LevelUp), true).ConfigureAwait(false);
         await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.SetMasterLevelResult), arguments.MasterLevel).ConfigureAwait(false);

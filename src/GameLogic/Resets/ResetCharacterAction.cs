@@ -83,7 +83,11 @@ public class ResetCharacterAction
 
         this._player.Attributes[Stats.Resets] = resetProgression.NextResetCount;
         this._player.Attributes[Stats.Level] = configuration.LevelAfterReset;
-        this._player.SelectedCharacter.Experience = 0;
+        // The experience has to match the level after the reset, e.g. level 10 starts with the experience of level 10.
+        var experienceTable = this._player.GameContext.ExperienceTable;
+        this._player.SelectedCharacter.Experience = configuration.LevelAfterReset >= 0 && configuration.LevelAfterReset < experienceTable.Length
+            ? experienceTable[configuration.LevelAfterReset]
+            : 0;
         this.UpdateStats(configuration, resetProgression);
         if (configuration.MoveHome)
         {

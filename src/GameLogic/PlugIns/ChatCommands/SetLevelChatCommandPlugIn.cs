@@ -54,6 +54,10 @@ public class SetLevelChatCommandPlugIn : ChatCommandPlugInBase<SetLevelChatComma
         }
 
         targetPlayer.Attributes![Stats.Level] = checked(arguments.Level);
+
+        // The experience has to match the level, otherwise the character has to gain the missing experience
+        // first (or already has too much), and the experience bar of the client shows garbage.
+        targetPlayer.SelectedCharacter.Experience = targetPlayer.GameContext.ExperienceTable[arguments.Level];
         await targetPlayer.InvokeViewPlugInAsync<IUpdateLevelPlugIn>(p => p.UpdateLevelAsync()).ConfigureAwait(false);
         await targetPlayer.ForEachWorldObserverAsync<IShowEffectPlugIn>(p => p.ShowEffectAsync(targetPlayer, IShowEffectPlugIn.EffectType.LevelUp), true).ConfigureAwait(false);
         await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.SetLevelResult), arguments.Level).ConfigureAwait(false);
