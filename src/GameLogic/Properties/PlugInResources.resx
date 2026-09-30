@@ -1284,6 +1284,12 @@
   <data name="ResetExperienceRatePlugIn_Description" xml:space="preserve">
     <value>Multiplies the experience of kills (solo and party) by a rate which depends on the reset count of the character, so that every further reset takes longer. Set the server experience rate to 1 when using it.</value>
   </data>
+  <data name="ResetPenaltyPlugIn_Name" xml:space="preserve">
+    <value>Experience and drop penalty by resets</value>
+  </data>
+  <data name="ResetPenaltyPlugIn_Description" xml:space="preserve">
+    <value>Replaces the experience penalty for too weak monsters: without it by default, and with the regular level penalty plus a strongly reduced drop only for monster tiers the character has outgrown (reset count reached the tier threshold). The tiers are configurable. Master experience keeps the regular formula. For parties, activate the Party experience plugin.</value>
+  </data>
   <data name="PartyExperienceFeaturePlugIn_Name" xml:space="preserve">
     <value>Party experience</value>
   </data>
@@ -1325,5 +1331,11 @@
   </data>
   <data name="ItemRequirementsByBaseStatsPlugIn_Description" xml:space="preserve">
     <value>Stat requirements of items are checked against the base stats (distributed points), not the total stats. The level requirement of wearable items is ignored after the first reset. Equipped items whose requirements are not met stay equipped but give no bonuses, until the requirements are met again. The game client has to use the same rules to show the stats correctly.</value>
+  </data>
+  <data name="JewelDropPlugIn_Name" xml:space="preserve">
+    <value>Jewel drop</value>
+  </data>
+  <data name="JewelDropPlugIn_Description" xml:space="preserve">
+    <value>Drops jewels from killed monsters with an own, independent roll per jewel: chance per kill in percent, scaled by tiers of the monster level and optional multipliers per map and per monster. The regular drop of money and items is not affected. When enabled, set the chance of the common jewels drop item group to 0. Mini games are excluded by default.</value>
   </data>
 </root>

@@ -3564,6 +3564,24 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Experience and drop penalty by resets.
+        /// </summary>
+        public static string ResetPenaltyPlugIn_Name {
+            get {
+                return ResourceManager.GetString("ResetPenaltyPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replaces the experience penalty for too weak monsters: without it by default, and with the regular level penalty plus a strongly reduced drop only for monster tiers the character has outgrown (reset count reached the tier threshold). The tiers are configurable. Master experience keeps the regular formula. For parties, activate the Party experience plugin..
+        /// </summary>
+        public static string ResetPenaltyPlugIn_Description {
+            get {
+                return ResourceManager.GetString("ResetPenaltyPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Party experience.
         /// </summary>
         public static string PartyExperienceFeaturePlugIn_Name {
@@ -3686,6 +3704,24 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         public static string ItemRequirementsByBaseStatsPlugIn_Description {
             get {
                 return ResourceManager.GetString("ItemRequirementsByBaseStatsPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Jewel drop.
+        /// </summary>
+        public static string JewelDropPlugIn_Name {
+            get {
+                return ResourceManager.GetString("JewelDropPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Drops jewels from killed monsters with an own, independent roll per jewel: chance per kill in percent, scaled by tiers of the monster level and optional multipliers per map and per monster. The regular drop of money and items is not affected. When enabled, set the chance of the common jewels drop item group to 0. Mini games are excluded by default..
+        /// </summary>
+        public static string JewelDropPlugIn_Description {
+            get {
+                return ResourceManager.GetString("JewelDropPlugIn_Description", resourceCulture);
             }
         }
     }

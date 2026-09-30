@@ -405,11 +405,32 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
                 }
             }
 
-            if (!this.IsSummonedMonster && dropOwner.SelectedCharacter is not null)
+            if (!this.IsSummonedMonster && dropOwner.SelectedCharacter is not null
+                && !this.IsDropSuppressedByResetPenalty(dropOwner, experienceShares))
             {
                 _ = this.DropItemDelayedAsync(dropOwner, experienceShares); // don't wait for completion.
             }
         }
+    }
+
+    /// <summary>
+    /// Determines whether the drop is suppressed by the <see cref="ResetPenaltyPlugIn"/>, because a receiver
+    /// of the drop group has outgrown the tier of this monster.
+    /// </summary>
+    /// <param name="dropOwner">The player who owns the drop.</param>
+    /// <param name="experienceShares">The experience shares of the drop group.</param>
+    /// <returns><c>true</c>, if nothing should be dropped.</returns>
+    private bool IsDropSuppressedByResetPenalty(Player dropOwner, IReadOnlyList<ExperienceShare> experienceShares)
+    {
+        if (dropOwner.GameContext.FeaturePlugIns.GetPlugIn<ResetPenaltyPlugIn>() is not { } resetPenalty)
+        {
+            return false;
+        }
+
+        var receivers = experienceShares.Count > 0
+            ? experienceShares.Select(share => share.Player)
+            : dropOwner.GetAsEnumerable();
+        return resetPenalty.ShouldSuppressDrop(this, receivers);
     }
 
     private async ValueTask RemoveFromMapAndDisposeAsync()
@@ -588,8 +609,15 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             }
         }
 
+        var items = new List<Item>(generatedItems);
+        if (this._plugInManager?.GetPlugInPoint<IAdditionalItemDropPlugIn>() is { } additionalDropPlugIn)
+        {
+            var dropArgs = new AdditionalItemDropArgs(this, this.Definition, this.CurrentMap, killer, items);
+            await additionalDropPlugIn.AddItemDropsAsync(dropArgs).ConfigureAwait(false);
+        }
+
         var firstItem = !droppedMoney.HasValue;
-        foreach (var item in generatedItems)
+        foreach (var item in items)
         {
             Point dropCoordinates;
             if (firstItem)
