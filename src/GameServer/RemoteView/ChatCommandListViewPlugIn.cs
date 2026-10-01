@@ -63,9 +63,9 @@ public class ChatCommandListViewPlugIn : IChatCommandListViewPlugIn
                 Count = count,
                 MinimumCharacterStatus = command.MinimumCharacterStatus.Convert(),
                 ParameterCount = (byte)parameters.Count,
-                Command = command.Command,
-                Name = command.Name,
-                Description = command.Description,
+                Command = FitToBytes(command.Command, 32),
+                Name = FitToBytes(command.Name, 48),
+                Description = FitToBytes(command.Description, 256),
             };
 
             for (int i = 0; i < parameters.Count; i++)
@@ -96,5 +96,28 @@ public class ChatCommandListViewPlugIn : IChatCommandListViewPlugIn
                 or nameof(Int64) or nameof(UInt64) => ChatCommandParameterType.Number,
             _ => ChatCommandParameterType.Text,
         };
+    }
+
+    /// <summary>
+    /// Cuts the text so that it fits into a fixed size string field of the packet (UTF-8);
+    /// a too long description of a plugin would otherwise throw and the client would get no command list.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="maximumBytes">The size of the field in bytes.</param>
+    /// <returns>The text which fits into the field.</returns>
+    private static string FitToBytes(string text, int maximumBytes)
+    {
+        if (System.Text.Encoding.UTF8.GetByteCount(text) <= maximumBytes)
+        {
+            return text;
+        }
+
+        var length = text.Length;
+        while (length > 0 && System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, length)) > maximumBytes)
+        {
+            length--;
+        }
+
+        return text[..length];
     }
 }

@@ -3528,6 +3528,24 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Combat info chat command.
+        /// </summary>
+        public static string CombatInfoChatCommandPlugIn_Name {
+            get {
+                return ResourceManager.GetString("CombatInfoChatCommandPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Handles the chat command '/chance (monster id) (skill)'. Shows hit/dodge chances and damage between the player and a monster (Shift + right click in the client), 15 s cooldown..
+        /// </summary>
+        public static string CombatInfoChatCommandPlugIn_Description {
+            get {
+                return ResourceManager.GetString("CombatInfoChatCommandPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Money drop calculation.
         /// </summary>
         public static string MoneyDropCalculationPlugIn_Name {

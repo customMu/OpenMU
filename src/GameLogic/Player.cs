@@ -187,6 +187,16 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
     public CultureInfo Culture { get; internal set; }
 
     /// <summary>
+    /// Gets the monster which this player fought last (hit it or got hit by it). Used by the combat info command.
+    /// </summary>
+    public IAttackable? LastCombatTarget { get; private set; }
+
+    /// <summary>
+    /// Gets the time (UTC) of the last fight with <see cref="LastCombatTarget"/>.
+    /// </summary>
+    public DateTime LastCombatTime { get; private set; }
+
+    /// <summary>
     /// Gets the skill hit validator.
     /// </summary>
     public SkillHitValidator SkillHitValidator => this._skillHitValidator ??= new SkillHitValidator(this.Logger);
@@ -680,12 +690,27 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
         await this.OnDeathAsync(null).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Remembers the monster which this player fights with.
+    /// </summary>
+    /// <param name="target">The monster.</param>
+    public void RememberCombatTarget(IAttackable target)
+    {
+        this.LastCombatTarget = target;
+        this.LastCombatTime = DateTime.UtcNow;
+    }
+
     /// <inheritdoc/>
     public async ValueTask<HitInfo?> AttackByAsync(IAttacker attacker, SkillEntry? skill, bool isCombo, double damageFactor = 1.0, bool? isFinalStreakHit = null)
     {
         if (this.Attributes is null)
         {
             throw new InvalidOperationException("AttributeSystem not set.");
+        }
+
+        if (attacker is AttackableNpcBase monster)
+        {
+            this.RememberCombatTarget(monster);
         }
 
         if (this.IsAttackBlockedBySafezone(attacker))

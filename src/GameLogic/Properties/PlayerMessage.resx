@@ -786,4 +786,22 @@
   <data name="WeaponRequirementsNotMet" xml:space="preserve">
     <value>Your weapon doesn't meet its requirements (base stats), it can't be used for skills.</value>
   </data>
+  <data name="CombatInfoNoTarget" xml:space="preserve">
+    <value>Shift + right click a monster (or fight one and use /chance).</value>
+  </data>
+  <data name="CombatInfoCooldownFormat" xml:space="preserve">
+    <value>Combat info is available again in {0} s.</value>
+  </data>
+  <data name="CombatInfoTargetFormat" xml:space="preserve">
+    <value>{0} (level {1}): HP {2:N0}, attack rate {3:N0}, defense rate {4:N0}, defense {5:N0}</value>
+  </data>
+  <data name="CombatInfoDefenseFormat" xml:space="preserve">
+    <value>It hits you {0}% (you dodge {1}%): avg ~{2:N0} per hit, max {5:N0} ({3}% of your {6:N0} HP), ~{4:N0} damage per second</value>
+  </data>
+  <data name="CombatInfoAttackFormat" xml:space="preserve">
+    <value>{0}: you hit {1}%, avg ~{2:N0} per hit{3}, max {5:N0}{6}, ~{4:N0} attacks to kill</value>
+  </data>
+  <data name="CombatInfoNormalAttack" xml:space="preserve">
+    <value>Normal attack</value>
+  </data>
 </root>

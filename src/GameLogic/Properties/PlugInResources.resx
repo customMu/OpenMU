@@ -1272,6 +1272,12 @@
   <data name="SplitStackChatCommandPlugIn_Description" xml:space="preserve">
     <value>Handles the chat command &apos;/split (slot) (amount) (group) (number)&apos;. Splits the specified amount of pieces from a stackable item (e.g. jewels) into a new stack. Used by the split popup of the game client.</value>
   </data>
+  <data name="CombatInfoChatCommandPlugIn_Name" xml:space="preserve">
+    <value>Combat info chat command</value>
+  </data>
+  <data name="CombatInfoChatCommandPlugIn_Description" xml:space="preserve">
+    <value>Handles the chat command '/chance (monster id) (skill)'. Shows hit/dodge chances and damage between the player and a monster (Shift + right click in the client), 15 s cooldown.</value>
+  </data>
   <data name="MoneyDropCalculationPlugIn_Name" xml:space="preserve">
     <value>Money drop calculation</value>
   </data>

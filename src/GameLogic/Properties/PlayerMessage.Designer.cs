@@ -2066,5 +2066,59 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("WeaponRequirementsNotMet", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shift + right click a monster (or fight one and use /chance)..
+        /// </summary>
+        public static string CombatInfoNoTarget {
+            get {
+                return ResourceManager.GetString("CombatInfoNoTarget", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Combat info is available again in {0} s..
+        /// </summary>
+        public static string CombatInfoCooldownFormat {
+            get {
+                return ResourceManager.GetString("CombatInfoCooldownFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} (level {1}): HP {2:N0}, attack rate {3:N0}, defense rate {4:N0}, defense {5:N0}.
+        /// </summary>
+        public static string CombatInfoTargetFormat {
+            get {
+                return ResourceManager.GetString("CombatInfoTargetFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to It hits you {0}% (you dodge {1}%): avg ~{2:N0} per hit, max {5:N0} ({3}% of your {6:N0} HP), ~{4:N0} damage per second.
+        /// </summary>
+        public static string CombatInfoDefenseFormat {
+            get {
+                return ResourceManager.GetString("CombatInfoDefenseFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: you hit {1}%, avg ~{2:N0} per hit{3}, max {5:N0}{6}, ~{4:N0} attacks to kill.
+        /// </summary>
+        public static string CombatInfoAttackFormat {
+            get {
+                return ResourceManager.GetString("CombatInfoAttackFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Normal attack.
+        /// </summary>
+        public static string CombatInfoNormalAttack {
+            get {
+                return ResourceManager.GetString("CombatInfoNormalAttack", resourceCulture);
+            }
+        }
     }
 }

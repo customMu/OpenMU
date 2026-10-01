@@ -117,6 +117,8 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             return null;
         }
 
+        (attacker as Player ?? (attacker as IPlayerSurrogate)?.Owner)?.RememberCombatTarget(this);
+
         var hitInfo = await attacker.CalculateDamageAsync(this, skill, isCombo, damageFactor).ConfigureAwait(false);
 
         if (skill?.Skill is not { } attackSkill || attackSkill.DamageType != DamageType.Fenrir)
