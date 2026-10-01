@@ -3724,5 +3724,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("JewelDropPlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Set Guard.
+        /// </summary>
+        public static string SetGuardPlugIn_Name {
+            get {
+                return ResourceManager.GetString("SetGuardPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A complete armor set decreases the received damage by a percentage of its rank..
+        /// </summary>
+        public static string SetGuardPlugIn_Description {
+            get {
+                return ResourceManager.GetString("SetGuardPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

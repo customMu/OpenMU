@@ -1338,4 +1338,10 @@
   <data name="JewelDropPlugIn_Description" xml:space="preserve">
     <value>Drops jewels from killed monsters with an own, independent roll per jewel: chance per kill in percent, scaled by tiers of the monster level and optional multipliers per map and per monster. The regular drop of money and items is not affected. When enabled, set the chance of the common jewels drop item group to 0. Mini games are excluded by default.</value>
   </data>
+  <data name="SetGuardPlugIn_Name" xml:space="preserve">
+    <value>Set Guard</value>
+  </data>
+  <data name="SetGuardPlugIn_Description" xml:space="preserve">
+    <value>A complete armor set (all pieces of one set which the class can wear) decreases the received damage by a percentage of its rank. The percentage grows with the lowest enhancement level of the set (steps). It's an own multiplier like wings and pets. The client shows the same values (GameLogic/Items/SetGuard.h).</value>
+  </data>
 </root>

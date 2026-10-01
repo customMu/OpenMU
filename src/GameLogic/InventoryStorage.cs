@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameLogic;
 
 using MUnique.OpenMU.DataModel;
 using MUnique.OpenMU.GameLogic.Attributes;
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views.World;
 using MUnique.OpenMU.PlugIns;
 using static MUnique.OpenMU.DataModel.InventoryConstants;
@@ -227,7 +228,14 @@ public class InventoryStorage : Storage, IInventoryStorage
         }
 
         var factory = this._gameContext.ItemPowerUpFactory;
-        this._player.Attributes.ItemSetPowerUps = factory.GetSetPowerUps(this.EquippedItems.Where(this._player.IsEquippedItemActive), this._player.Attributes, this._player.GameContext.Configuration).ToList();
+        var activeItems = this.EquippedItems.Where(this._player.IsEquippedItemActive).ToList();
+        var setPowerUps = factory.GetSetPowerUps(activeItems, this._player.Attributes, this._player.GameContext.Configuration).ToList();
+        if (this._gameContext.FeaturePlugIns.GetPlugIn<SetGuardPlugIn>()?.CreatePowerUp(this._player, activeItems, this._player.Attributes) is { } setGuard)
+        {
+            setPowerUps.Add(setGuard);
+        }
+
+        this._player.Attributes.ItemSetPowerUps = setPowerUps;
     }
 
     private void OnRequirementRelevantStatChanged(object? sender, EventArgs e)
