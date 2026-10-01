@@ -804,4 +804,7 @@
   <data name="CombatInfoNormalAttack" xml:space="preserve">
     <value>Normal attack</value>
   </data>
+  <data name="WarpRequiresResetsFormat" xml:space="preserve">
+    <value>You need {0} resets to warp there.</value>
+  </data>
 </root>

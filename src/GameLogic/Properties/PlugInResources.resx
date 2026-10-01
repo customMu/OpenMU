@@ -1278,6 +1278,12 @@
   <data name="CombatInfoChatCommandPlugIn_Description" xml:space="preserve">
     <value>Handles the chat command '/chance (monster id) (skill)'. Shows hit/dodge chances and damage between the player and a monster (Shift + right click in the client), 15 s cooldown.</value>
   </data>
+  <data name="WarpResetRequirementsPlugIn_Name" xml:space="preserve">
+    <value>Warp requirements by resets</value>
+  </data>
+  <data name="WarpResetRequirementsPlugIn_Description" xml:space="preserve">
+    <value>Requires resets for single entries of the warp list (later floors and zones of a map), in addition to the map requirement. Keep in sync with the game client (TravelRequirements.h).</value>
+  </data>
   <data name="MoneyDropCalculationPlugIn_Name" xml:space="preserve">
     <value>Money drop calculation</value>
   </data>

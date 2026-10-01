@@ -3546,6 +3546,24 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Warp requirements by resets.
+        /// </summary>
+        public static string WarpResetRequirementsPlugIn_Name {
+            get {
+                return ResourceManager.GetString("WarpResetRequirementsPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Requires resets for single entries of the warp list (later floors and zones of a map), in addition to the map requirement. Keep in sync with the game client (TravelRequirements.h)..
+        /// </summary>
+        public static string WarpResetRequirementsPlugIn_Description {
+            get {
+                return ResourceManager.GetString("WarpResetRequirementsPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Money drop calculation.
         /// </summary>
         public static string MoneyDropCalculationPlugIn_Name {

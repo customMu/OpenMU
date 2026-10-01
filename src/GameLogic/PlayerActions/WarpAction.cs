@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameLogic.PlayerActions;
 
 using System.Diagnostics.CodeAnalysis;
 using MUnique.OpenMU.GameLogic.Attributes;
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.Interfaces;
 
@@ -39,6 +40,13 @@ public class WarpAction
         if (requirement > player.Attributes?[Stats.Level])
         {
             errorMessage = $"You need to be level {requirement} in order to warp";
+            return false;
+        }
+
+        var requiredResets = player.GameContext.FeaturePlugIns.GetPlugIn<WarpResetRequirementsPlugIn>()?.GetRequiredResets(warpInfo.Index) ?? 0;
+        if (requiredResets > (player.Attributes?[Stats.Resets] ?? 0))
+        {
+            errorMessage = player.GetLocalizedMessage(nameof(PlayerMessage.WarpRequiresResetsFormat), requiredResets);
             return false;
         }
 

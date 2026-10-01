@@ -2120,5 +2120,14 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("CombatInfoNormalAttack", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You need {0} resets to warp there..
+        /// </summary>
+        public static string WarpRequiresResetsFormat {
+            get {
+                return ResourceManager.GetString("WarpRequiresResetsFormat", resourceCulture);
+            }
+        }
     }
 }
