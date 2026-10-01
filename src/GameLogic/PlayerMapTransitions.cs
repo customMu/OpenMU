@@ -339,14 +339,41 @@ internal sealed class PlayerMapTransitions
     internal async ValueTask PlaceAtGateAsync(ExitGate gate)
     {
         var player = this._player;
-        player.SelectedCharacter!.PositionX = (byte)Rand.NextInt(gate.X1, gate.X2);
-        player.SelectedCharacter.PositionY = (byte)Rand.NextInt(gate.Y1, gate.Y2);
+        var position = await this.GetWalkablePointAtGateAsync(gate).ConfigureAwait(false);
+        player.SelectedCharacter!.PositionX = position.X;
+        player.SelectedCharacter.PositionY = position.Y;
         player.SelectedCharacter.CurrentMap = gate.Map;
         player.Rotation = gate.Direction;
 
         await this._movement.ResetMovementStateAsync().ConfigureAwait(false);
 
         this._summon.PlaceAtGate(gate);
+    }
+
+    /// <summary>
+    /// Gets a random walkable point of the gate. A gate area can contain blocked tiles (walls, rocks);
+    /// a player placed on one of them is sent to the safezone of the map by <see cref="RecoverFromBlockedSpawnAsync"/>,
+    /// e.g. a warp to Kanturu Ruins 3 ended in Kanturu Ruins 1 from time to time.
+    /// </summary>
+    /// <param name="gate">The gate.</param>
+    /// <returns>A walkable point of the gate, if the terrain of the target map is known; otherwise a random point.</returns>
+    private async ValueTask<Point> GetWalkablePointAtGateAsync(ExitGate gate)
+    {
+        var point = gate.GetRandomPoint();
+        if (this._player.CurrentMiniGame is not null
+            || gate.Map is null
+            || await this._player.GameContext.GetMapAsync(gate.Map.Number.ToUnsigned()).ConfigureAwait(false) is not { } map)
+        {
+            return point;
+        }
+
+        var terrain = map.Terrain;
+        for (var attempt = 0; attempt < 20 && !terrain.WalkMap[point.X, point.Y]; attempt++)
+        {
+            point = gate.GetRandomPoint();
+        }
+
+        return terrain.WalkMap[point.X, point.Y] ? point : terrain.GetWalkableCoordinate(gate) ?? point;
     }
 
     /// <summary>
