@@ -23,6 +23,16 @@ public static class AttackableExtensions
     private const short ExplosionMagicEffectNumber = 75;   // 0x4B
     private const short StunnedMagicEffectNumber = 61;     // 0x3D
 
+    /// <summary>
+    /// The minimum chance of any attack to hit, also against a target with a much higher defense rate.
+    /// </summary>
+    private const float MinimumHitChance = 0.05f;
+
+    /// <summary>
+    /// The maximum chance of a monster to hit a player, so that every player dodges at least a few hits.
+    /// </summary>
+    private const float MaximumMonsterHitChance = 0.95f;
+
     private static readonly IDictionary<AttributeDefinition, AttributeDefinition> ReductionModifiers =
         new Dictionary<AttributeDefinition, AttributeDefinition>
         {
@@ -203,7 +213,9 @@ public static class AttackableExtensions
 
         /*Scroll of Battle (crit dmg)/Strengthener (exc dmg) go here (but for now they don't exist)*/
 
-        if (!isPvp && defender.Overrates(attacker))
+        // A player who dodges well already gets hit rarely (see GetHitChanceTo), so a hit which lands
+        // is not reduced again. The reduction stays for players attacking a monster which overrates them.
+        if (!isPvp && defender is not Player && defender.Overrates(attacker))
         {
             dmg = (int)(dmg * 0.3);
         }
@@ -713,10 +725,20 @@ public static class AttackableExtensions
             attackRate = attacker.Attributes[Stats.AttackRatePvm];
         }
 
-        float hitChance = 0.03f;
+        var attackerPlayer = attacker as Player ?? (attacker as IPlayerSurrogate)?.Owner;
+        if (defender is Player && attackerPlayer is null)
+        {
+            // Monster against player: every point of defense rate dodges a bit less, without a threshold
+            // after which the monster stops hitting (equal rates = 50%, three times the attack rate = 25%).
+            // Every player dodges at least 5% and at most 95% of the monster hits.
+            var sum = attackRate + defenseRate;
+            return sum > 0 ? Math.Clamp(attackRate / sum, MinimumHitChance, MaximumMonsterHitChance) : MaximumMonsterHitChance;
+        }
+
+        float hitChance = MinimumHitChance;
         if (defenseRate < attackRate)
         {
-            hitChance = 1.0f - (defenseRate / attackRate);
+            hitChance = Math.Max(MinimumHitChance, 1.0f - (defenseRate / attackRate));
         }
 
         return hitChance;
