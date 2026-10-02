@@ -1,0 +1,38 @@
+@page
+@model GuildsModel
+@{
+    ViewData["Title"] = "Guild ranking";
+}
+<h1>Guild ranking</h1>
+@if (Model.Entries.Count == 0)
+{
+    <p class="muted">No guilds yet.</p>
+}
+else
+{
+    <div class="table-wrap">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Master</th>
+            <th class="num">Members</th>
+            <th class="num">Score</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var entry in Model.Entries)
+        {
+            <tr>
+                <td>@entry.Rank</td>
+                <td>@entry.Name</td>
+                <td>@entry.MasterName</td>
+                <td class="num">@entry.MemberCount</td>
+                <td class="num">@entry.Score</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}

@@ -1,0 +1,36 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+<section class="hero">
+    <h1>Welcome to @Model.ServerName</h1>
+    <p>Create an account, download the client and start playing.</p>
+    <p>
+        <a asp-page="/Account/Register" class="button">Create account</a>
+        <a asp-page="/Download" class="button secondary">Download client</a>
+    </p>
+    <partial name="_ServerStatus" model="Model.Status" />
+</section>
+
+<div class="columns">
+    <section>
+        <h2>Top characters</h2>
+        <partial name="_CharacterTable" model="Model.TopCharacters" />
+        <a asp-page="/Rankings/Characters">Full ranking &rarr;</a>
+    </section>
+    <section>
+        <h2>Top guilds</h2>
+        @if (Model.TopGuilds.Count == 0)
+        {
+            <p class="muted">No guilds yet.</p>
+        }
+        <ol>
+            @foreach (var guild in Model.TopGuilds)
+            {
+                <li><strong>@guild.Name</strong> &middot; @guild.Score points</li>
+            }
+        </ol>
+        <a asp-page="/Rankings/Guilds">Full ranking &rarr;</a>
+    </section>
+</div>

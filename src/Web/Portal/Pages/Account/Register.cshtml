@@ -1,0 +1,42 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+<h1>Create account</h1>
+@if (!Model.RegistrationEnabled)
+{
+    <p class="muted">Registration is currently closed.</p>
+}
+else if (Model.Registered)
+{
+    <p class="success">Your account <strong>@Model.Input.LoginName</strong> has been created. You can now log in to the game.</p>
+}
+else
+{
+    <form method="post" class="form">
+        <div asp-validation-summary="ModelOnly" class="error"></div>
+        <label asp-for="Input.LoginName">Login name</label>
+        <input asp-for="Input.LoginName" autocomplete="username" />
+        <span asp-validation-for="Input.LoginName" class="error"></span>
+
+        <label asp-for="Input.Password">Password</label>
+        <input asp-for="Input.Password" autocomplete="new-password" maxlength="@Model.MaximumPasswordLength" />
+        <span asp-validation-for="Input.Password" class="error"></span>
+
+        <label asp-for="Input.ConfirmPassword">Confirm password</label>
+        <input asp-for="Input.ConfirmPassword" autocomplete="new-password" />
+        <span asp-validation-for="Input.ConfirmPassword" class="error"></span>
+
+        <label asp-for="Input.EMail">E-mail</label>
+        <input asp-for="Input.EMail" autocomplete="email" />
+        <span asp-validation-for="Input.EMail" class="error"></span>
+
+        <label asp-for="Input.SecurityCode">Security code</label>
+        <input asp-for="Input.SecurityCode" />
+        <small class="muted">Required to delete characters in the game.</small>
+        <span asp-validation-for="Input.SecurityCode" class="error"></span>
+
+        <button type="submit">Register</button>
+    </form>
+}

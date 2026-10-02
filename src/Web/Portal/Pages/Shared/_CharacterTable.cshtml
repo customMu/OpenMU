@@ -1,0 +1,46 @@
+@model IReadOnlyList<CharacterRankingEntry>
+@{
+    var showRank = Model.Any(e => e.Rank > 0);
+}
+@if (Model.Count == 0)
+{
+    <p class="muted">No characters yet.</p>
+}
+else
+{
+    <div class="table-wrap">
+    <table class="table">
+        <thead>
+        <tr>
+            @if (showRank)
+            {
+                <th>#</th>
+            }
+            <th>Name</th>
+            <th>Class</th>
+            <th class="num">Resets</th>
+            <th class="num">Level</th>
+            <th class="num">Master</th>
+            <th>Guild</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var entry in Model)
+        {
+            <tr>
+                @if (showRank)
+                {
+                    <td>@entry.Rank</td>
+                }
+                <td>@entry.Name</td>
+                <td>@entry.ClassName</td>
+                <td class="num">@entry.Resets</td>
+                <td class="num">@entry.Level</td>
+                <td class="num">@entry.MasterLevel</td>
+                <td>@entry.GuildName</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}

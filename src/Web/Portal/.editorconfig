@@ -1,0 +1,4 @@
+[*.cshtml.cs]
+
+# SA1649: File name should match first type name - Razor page models are named <Page>Model by convention.
+dotnet_diagnostic.SA1649.severity = none
