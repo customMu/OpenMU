@@ -58,7 +58,8 @@ public abstract class RecoverConsumeHandlerPlugIn : BaseConsumeHandlerPlugIn, IS
         var configuration = this.Configuration ??= (RecoverConsumeHandlerConfiguration)this.CreateDefaultConfig();
 
         var recoverPercentage = configuration.TotalRecoverPercentage + (item.Level * configuration.RecoverPercentageIncreaseByPotionLevel);
-        var additionalRecover = Math.Max(0, configuration.AdditionalRecoverMinusCharacterLevel - player.Attributes[Stats.Level]);
+        var additionalRecover = configuration.AdditionalRecover
+                                + Math.Max(0, configuration.AdditionalRecoverMinusCharacterLevel - player.Attributes[Stats.Level]);
         var totalRecoverAmount = (player.Attributes[this.MaximumAttribute] * recoverPercentage / 100.0) + additionalRecover;
         var delayReduction = configuration.RecoverDelayReductionByPotionLevel * item.Level;
         if (configuration.RecoverSteps.Count == 0 || delayReduction >= 1)
@@ -71,14 +72,24 @@ public abstract class RecoverConsumeHandlerPlugIn : BaseConsumeHandlerPlugIn, IS
             _ = this.RecoverByStepsAsync(player, delayReduction, configuration, totalRecoverAmount);
         }
 
-        player.PotionCooldownUntil = DateTime.UtcNow.Add(this.Configuration.CooldownTime);
+        var cooldownUntil = DateTime.UtcNow.Add(this.Configuration.CooldownTime);
+        if (this.MaximumAttribute == Stats.MaximumMana)
+        {
+            player.ManaPotionCooldownUntil = cooldownUntil;
+        }
+        else
+        {
+            player.PotionCooldownUntil = cooldownUntil;
+        }
     }
 
     /// <inheritdoc />
     protected override bool CheckPreconditions(Player player, Item item)
     {
+        // Mana potions have their own cooldown, so that health potions don't block them and vice versa.
+        var cooldownUntil = this.MaximumAttribute == Stats.MaximumMana ? player.ManaPotionCooldownUntil : player.PotionCooldownUntil;
         return base.CheckPreconditions(player, item)
-               && player.PotionCooldownUntil <= DateTime.UtcNow;
+               && cooldownUntil <= DateTime.UtcNow;
     }
 
     /// <summary>

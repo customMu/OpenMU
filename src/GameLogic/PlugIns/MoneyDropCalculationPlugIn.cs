@@ -76,6 +76,8 @@ public class MoneyDropCalculationPlugIn : IMoneyDropCalculationPlugIn, ISupportC
             }
         }
 
+        money *= GetOutleveledMultiplier(configuration, args, level);
+
         var variance = Math.Clamp(configuration.RandomVariance, 0f, 1f);
         if (variance > 0)
         {
@@ -84,5 +86,31 @@ public class MoneyDropCalculationPlugIn : IMoneyDropCalculationPlugIn, ISupportC
 
         args.Amount = (uint)Math.Clamp(Math.Round(money), 0, int.MaxValue);
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Monsters below the level of the reset tier of the strongest participant drop less money,
+    /// so that farming masses of weak monsters doesn't pay more than the own spot.
+    /// </summary>
+    private static double GetOutleveledMultiplier(MoneyDropCalculationConfiguration configuration, MoneyDropCalculationArgs args, double monsterLevel)
+    {
+        if (configuration.ResetTiers.Count == 0)
+        {
+            return 1.0;
+        }
+
+        var resets = args.Participants.Count > 0
+            ? args.Participants.Max(p => (int)(p.Attributes?[Stats.Resets] ?? 0))
+            : (int)(args.Killer.Attributes?[Stats.Resets] ?? 0);
+        MoneyDropCalculationConfiguration.ResetMonsterLevelTier? tier = null;
+        foreach (var candidate in configuration.ResetTiers)
+        {
+            if (candidate.MinimumResetCount <= resets && (tier is null || candidate.MinimumResetCount > tier.MinimumResetCount))
+            {
+                tier = candidate;
+            }
+        }
+
+        return tier is not null && monsterLevel < tier.MinimumMonsterLevel ? configuration.OutleveledMultiplier : 1.0;
     }
 }

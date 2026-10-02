@@ -4,6 +4,7 @@
 
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Items;
 
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 using MUnique.OpenMU.Interfaces;
@@ -13,6 +14,24 @@ using MUnique.OpenMU.Interfaces;
 /// </summary>
 public class ItemRepairAction
 {
+    /// <summary>
+    /// Calculates the repair price of the item, by the <see cref="RepairPricePlugIn"/> if it's active.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="item">The item.</param>
+    /// <param name="npcDiscount">If set to <c>true</c>, the item is repaired through an NPC.</param>
+    /// <returns>The repair price.</returns>
+    public static long CalculateRepairPrice(Player player, Item item, bool npcDiscount)
+    {
+        if (player.GameContext.FeaturePlugIns.GetPlugIn<RepairPricePlugIn>() is { } repairPrice
+            && repairPrice.CalculateRepairPrice(item, npcDiscount) is { } price)
+        {
+            return price;
+        }
+
+        return new ItemPriceCalculator().CalculateRepairPrice(item, npcDiscount);
+    }
+
     /// <summary>
     /// Repairs the item of the specified inventory slot.
     /// </summary>
@@ -32,6 +51,12 @@ public class ItemRepairAction
         {
             await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.NoItemToRepair)).ConfigureAwait(false);
             player.Logger.LogWarning("RepairItem: Player {0}, Itemslot {1} not filled", player.SelectedCharacter?.Name, slot);
+            return;
+        }
+
+        if (!item.IsWearable())
+        {
+            // Stackable items (e.g. jewels) use the durability as the number of pieces - "repairing" would set it to 1.
             return;
         }
 
@@ -102,8 +127,7 @@ public class ItemRepairAction
 
     private static bool IsMoneySufficient(Player player, Item item)
     {
-        var priceCalculator = new ItemPriceCalculator();
-        var price = priceCalculator.CalculateRepairPrice(item, player.OpenedNpc != null);
+        var price = CalculateRepairPrice(player, item, player.OpenedNpc != null);
         return player.TryRemoveMoney((int)price);
     }
 }

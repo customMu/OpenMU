@@ -80,6 +80,38 @@ public class MoneyDropCalculationConfiguration
     public ICollection<MonsterMoneyMultiplier> MonsterMultipliers { get; set; } = new List<MonsterMoneyMultiplier>();
 
     /// <summary>
+    /// Gets or sets the reset tiers for outleveled monsters.
+    /// </summary>
+    [MemberOfAggregate]
+    [ScaffoldColumn(true)]
+    [Display(Name = "Reset tiers (outleveled monsters)", Description = "The tier with the highest 'Minimum reset count' not above the highest reset count of the participants applies: monsters below its minimum level drop money x 'Outleveled multiplier'. Empty = off.")]
+    public ICollection<ResetMonsterLevelTier> ResetTiers { get; set; } = new List<ResetMonsterLevelTier>();
+
+    /// <summary>
+    /// Gets or sets the multiplier for outleveled monsters.
+    /// </summary>
+    [Display(Name = "Outleveled multiplier", Description = "Money multiplier for monsters below the minimum level of the reset tier (see 'Reset tiers').")]
+    public float OutleveledMultiplier { get; set; } = 0.1f;
+
+    /// <summary>
+    /// Defines the minimum monster level for full money from a reset count on.
+    /// </summary>
+    public class ResetMonsterLevelTier
+    {
+        /// <summary>
+        /// Gets or sets the minimum reset count.
+        /// </summary>
+        [Display(Name = "Minimum reset count")]
+        public int MinimumResetCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the minimum monster level.
+        /// </summary>
+        [Display(Name = "Minimum monster level")]
+        public int MinimumMonsterLevel { get; set; }
+    }
+
+    /// <summary>
     /// Defines a money multiplier for a map.
     /// </summary>
     public class MapMoneyMultiplier

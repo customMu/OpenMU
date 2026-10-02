@@ -1290,6 +1290,18 @@
   <data name="MoneyDropCalculationPlugIn_Description" xml:space="preserve">
     <value>Calculates the money drop of killed monsters independently of the experience rates: by monster level and health, with multipliers per map and per monster, and an equal split between party members.</value>
   </data>
+  <data name="ItemDropByRankPlugIn_Name" xml:space="preserve">
+    <value>Item drop by rank</value>
+  </data>
+  <data name="ItemDropByRankPlugIn_Description" xml:space="preserve">
+    <value>Armor, weapons and shields drop only from the monsters of their rank window, +0 without option, luck and skill by chance. Set the 'random items' drop group to 0 when active.</value>
+  </data>
+  <data name="RepairPricePlugIn_Name" xml:space="preserve">
+    <value>Repair price</value>
+  </data>
+  <data name="RepairPricePlugIn_Description" xml:space="preserve">
+    <value>Repair costs a flat price per missing durability point instead of depending on the item value. Wings have their own price. The client shows the same prices (keep in sync).</value>
+  </data>
   <data name="ResetExperienceRatePlugIn_Name" xml:space="preserve">
     <value>Reset experience rate</value>
   </data>
@@ -1355,5 +1367,29 @@
   </data>
   <data name="SetGuardPlugIn_Description" xml:space="preserve">
     <value>A complete armor set (all pieces of one set which the class can wear) decreases the received damage by a percentage of its rank. The percentage grows with the lowest enhancement level of the set (steps). It's an own multiplier like wings and pets. The client shows the same values (GameLogic/Items/SetGuard.h).</value>
+  </data>
+  <data name="TestKitChatCommandPlugIn_Name" xml:space="preserve">
+    <value>Test kit command</value>
+  </data>
+  <data name="TestKitChatCommandPlugIn_Description" xml:space="preserve">
+    <value>GM test: puts an armor set, weapon and wings of a rank into the inventory. Usage: /testkit (rank 1-8) (enchant 0-15) (optional:character)</value>
+  </data>
+  <data name="TestBuildChatCommandPlugIn_Name" xml:space="preserve">
+    <value>Test build command</value>
+  </data>
+  <data name="TestBuildChatCommandPlugIn_Description" xml:space="preserve">
+    <value>GM test: redistributes the stat points like a build of the balance model. Usage: /testbuild (build) (optional:character)</value>
+  </data>
+  <data name="DropStatsChatCommandPlugIn_Name" xml:space="preserve">
+    <value>Drop statistics command</value>
+  </data>
+  <data name="DropStatsChatCommandPlugIn_Description" xml:space="preserve">
+    <value>GM test: shows kills, items by rank and jewels since start or reset. Usage: /dropstats (optional:reset)</value>
+  </data>
+  <data name="DropStatisticsKillCounterPlugIn_Name" xml:space="preserve">
+    <value>Drop statistics kill counter</value>
+  </data>
+  <data name="DropStatisticsKillCounterPlugIn_Description" xml:space="preserve">
+    <value>Counts the monster kills of the drop owner in memory for the /dropstats command.</value>
   </data>
 </root>

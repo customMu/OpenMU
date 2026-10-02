@@ -68,6 +68,16 @@ public class JewelDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConfigur
             }
 
             args.Items.Add(new TemporaryItem { Definition = definition, Durability = 1 });
+            var characterName = args.Killer.SelectedCharacter?.Name ?? string.Empty;
+            var jewelName = definition.Name.ValueInNeutralLanguage;
+            args.Killer.Logger.LogInformation(
+                "[JewelDrop] {character}: {item} from monster {monsterNumber} {monsterName}, level {monsterLevel}",
+                characterName,
+                jewelName,
+                args.Monster.Number,
+                args.Monster.Designation.ValueInNeutralLanguage,
+                monsterLevel);
+            DropStatistics.AddJewel(characterName, jewelName);
         }
 
         return ValueTask.CompletedTask;

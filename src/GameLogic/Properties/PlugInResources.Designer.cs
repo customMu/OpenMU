@@ -3580,7 +3580,43 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("MoneyDropCalculationPlugIn_Description", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Item drop by rank.
+        /// </summary>
+        public static string ItemDropByRankPlugIn_Name {
+            get {
+                return ResourceManager.GetString("ItemDropByRankPlugIn_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Armor, weapons and shields drop only from the monsters of their rank window, +0 without option, luck and skill by chance. Set the 'random items' drop group to 0 when active..
+        /// </summary>
+        public static string ItemDropByRankPlugIn_Description {
+            get {
+                return ResourceManager.GetString("ItemDropByRankPlugIn_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Repair price.
+        /// </summary>
+        public static string RepairPricePlugIn_Name {
+            get {
+                return ResourceManager.GetString("RepairPricePlugIn_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Repair costs a flat price per missing durability point instead of depending on the item value. Wings have their own price. The client shows the same prices (keep in sync)..
+        /// </summary>
+        public static string RepairPricePlugIn_Description {
+            get {
+                return ResourceManager.GetString("RepairPricePlugIn_Description", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Reset experience rate.
         /// </summary>
@@ -3776,6 +3812,78 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         public static string SetGuardPlugIn_Description {
             get {
                 return ResourceManager.GetString("SetGuardPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Test kit command.
+        /// </summary>
+        public static string TestKitChatCommandPlugIn_Name {
+            get {
+                return ResourceManager.GetString("TestKitChatCommandPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to GM test: puts an armor set, weapon and wings of a rank into the inventory. Usage: /testkit (rank 1-8) (enchant 0-15) (optional:character).
+        /// </summary>
+        public static string TestKitChatCommandPlugIn_Description {
+            get {
+                return ResourceManager.GetString("TestKitChatCommandPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Test build command.
+        /// </summary>
+        public static string TestBuildChatCommandPlugIn_Name {
+            get {
+                return ResourceManager.GetString("TestBuildChatCommandPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to GM test: redistributes the stat points like a build of the balance model. Usage: /testbuild (build) (optional:character).
+        /// </summary>
+        public static string TestBuildChatCommandPlugIn_Description {
+            get {
+                return ResourceManager.GetString("TestBuildChatCommandPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Drop statistics command.
+        /// </summary>
+        public static string DropStatsChatCommandPlugIn_Name {
+            get {
+                return ResourceManager.GetString("DropStatsChatCommandPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to GM test: shows kills, items by rank and jewels since start or reset. Usage: /dropstats (optional:reset).
+        /// </summary>
+        public static string DropStatsChatCommandPlugIn_Description {
+            get {
+                return ResourceManager.GetString("DropStatsChatCommandPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Drop statistics kill counter.
+        /// </summary>
+        public static string DropStatisticsKillCounterPlugIn_Name {
+            get {
+                return ResourceManager.GetString("DropStatisticsKillCounterPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Counts the monster kills of the drop owner in memory for the /dropstats command..
+        /// </summary>
+        public static string DropStatisticsKillCounterPlugIn_Description {
+            get {
+                return ResourceManager.GetString("DropStatisticsKillCounterPlugIn_Description", resourceCulture);
             }
         }
     }

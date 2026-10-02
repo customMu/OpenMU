@@ -362,7 +362,7 @@ internal static class BotShoppingHandler
             if (inventory.GetItem(slot) is { } item
                 && item.Durability() < item.GetMaximumDurabilityOfOnePiece())
             {
-                damaged.Add((slot, PriceCalculator.CalculateRepairPrice(item, true)));
+                damaged.Add((slot, ItemRepairAction.CalculateRepairPrice(player, item, true)));
             }
         }
 

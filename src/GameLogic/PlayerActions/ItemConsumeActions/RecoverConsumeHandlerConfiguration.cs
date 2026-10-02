@@ -40,6 +40,12 @@ public class RecoverConsumeHandlerConfiguration
     public int AdditionalRecoverMinusCharacterLevel { get; set; }
 
     /// <summary>
+    /// Gets or sets the flat value which is additionally recovered, independent of the character level.
+    /// </summary>
+    [Display(Name = "Additional recover (flat)", Description = "Flat amount which is recovered in addition to the percentage, e.g. 100 HP.")]
+    public int AdditionalRecover { get; set; }
+
+    /// <summary>
     /// Gets or sets the cooldown time for the next consumption.
     /// </summary>
     [Display(ResourceType = typeof(PlugInResources), Name = nameof(PlugInResources.RecoverConsumeHandlerConfiguration_CooldownTime_Name), Description = nameof(PlugInResources.RecoverConsumeHandlerConfiguration_CooldownTime_Description))]
