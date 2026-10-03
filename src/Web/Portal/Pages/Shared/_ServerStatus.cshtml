@@ -1,9 +1,0 @@
-@model ServerStatus?
-@if (Model is { IsOnline: true })
-{
-    <div class="status online">Server online &middot; <strong>@Model.PlayerCount</strong> players</div>
-}
-else if (Model is not null)
-{
-    <div class="status offline">Server offline</div>
-}
