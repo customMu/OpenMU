@@ -53,6 +53,11 @@ public class ResetPenaltyPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Re
     /// <returns><c>true</c>, if the penalty applies.</returns>
     public bool IsPenalized(Player player, IAttackable killedObject)
     {
+        if (player.CurrentMiniGame is { IgnoresResetPenalty: true })
+        {
+            return false;
+        }
+
         var resetCount = (int)(player.Attributes?[Stats.Resets] ?? 0f);
         var monsterLevel = (int)killedObject.Attributes[Stats.Level];
         return this.GetConfiguration().IsPenalized(resetCount, monsterLevel);

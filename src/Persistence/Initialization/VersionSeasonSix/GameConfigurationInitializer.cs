@@ -90,6 +90,7 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new ChaosCastleInitializer(this.Context, this.GameConfiguration).Initialize();
         new CastleSiegeInitializer(this.Context, this.GameConfiguration).Initialize();
         new KanturuInitializer(this.Context, this.GameConfiguration).Initialize();
+        new KalimaInstanceInitializer(this.Context, this.GameConfiguration).Initialize();
 
         // At the very end, so that no other initializer copies the increased stack size (255) into rewards or similar.
         this.MakeJewelsStackable();

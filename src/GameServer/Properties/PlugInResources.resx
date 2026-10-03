@@ -2469,4 +2469,10 @@
   <data name="CastleSiegeLifeStoneStatePlugIn_Description" xml:space="preserve">
     <value>Sends Castle Siege Life Stone creation progress to the game client.</value>
   </data>
+  <data name="KundunSymbolsViewPlugIn_Name" xml:space="preserve">
+    <value>Symbols of Kundun view (custom packets)</value>
+  </data>
+  <data name="KundunSymbolsViewPlugIn_Description" xml:space="preserve">
+    <value>Sends the Symbols of Kundun balance (C1 FB 01) and the prices of the symbol shop (C2 FB 02) to the game client of this server.</value>
+  </data>
 </root>

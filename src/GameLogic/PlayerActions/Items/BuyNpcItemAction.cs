@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Items;
 
 using MUnique.OpenMU.GameLogic.CastleSiege;
+using MUnique.OpenMU.GameLogic.KundunSymbols;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 
@@ -52,11 +53,22 @@ public class BuyNpcItemAction
             return;
         }
 
+        var symbolShop = player.GameContext.FeaturePlugIns.GetPlugIn<KundunSymbolsPlugIn>() is { } symbols && symbols.IsSymbolShop(npcDefinition)
+            ? symbols
+            : null;
+        if (symbolShop is not null && symbolShop.GetConfiguration().GetPrice(storeItem) is null)
+        {
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KundunSymbolsItemNotForSale)).ConfigureAwait(false);
+            await player.InvokeViewPlugInAsync<IBuyNpcItemFailedPlugIn>(p => p.BuyNpcItemFailedAsync()).ConfigureAwait(false);
+            return;
+        }
+
         // Inventory Update:
         if (storeItem.IsStackable() && player.Inventory!.Items.FirstOrDefault(item => storeItem.CanCompletelyStackOn(item)) is { } targetItem)
         {
-            if (!await this.CheckMoneyAsync(player, storeItem).ConfigureAwait(false))
+            if (!await this.CheckMoneyAsync(player, storeItem, symbolShop).ConfigureAwait(false))
             {
+                await player.InvokeViewPlugInAsync<IBuyNpcItemFailedPlugIn>(p => p.BuyNpcItemFailedAsync()).ConfigureAwait(false);
                 return;
             }
 
@@ -74,9 +86,13 @@ public class BuyNpcItemAction
                 return;
             }
 
-            if (!await this.CheckMoneyAsync(player, storeItem).ConfigureAwait(false))
+            if (!await this.CheckMoneyAsync(player, storeItem, symbolShop).ConfigureAwait(false))
             {
-                await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.NotEnoughMoney)).ConfigureAwait(false);
+                if (symbolShop is null)
+                {
+                    await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.NotEnoughMoney)).ConfigureAwait(false);
+                }
+
                 await player.InvokeViewPlugInAsync<IBuyNpcItemFailedPlugIn>(p => p.BuyNpcItemFailedAsync()).ConfigureAwait(false);
                 return;
             }
@@ -92,8 +108,14 @@ public class BuyNpcItemAction
         await player.InvokeViewPlugInAsync<IUpdateMoneyPlugIn>(p => p.UpdateMoneyAsync()).ConfigureAwait(false);
     }
 
-    private ValueTask<bool> CheckMoneyAsync(Player player, Item item)
+    private ValueTask<bool> CheckMoneyAsync(Player player, Item item, KundunSymbolsPlugIn? symbolShop)
     {
+        if (symbolShop is not null)
+        {
+            // The symbol shop sells for Symbols of Kundun instead of zen.
+            return symbolShop.TrySpendAsync(player, symbolShop.GetConfiguration().GetPrice(item) ?? int.MaxValue);
+        }
+
         var price = this._priceCalculator.CalculateFinalBuyingPrice(item);
         return this._castleSiegeTaxProvider.TryPayStoreCostAsync(player, price);
     }

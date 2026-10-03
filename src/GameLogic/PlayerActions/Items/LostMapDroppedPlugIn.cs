@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Items;
 
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.PlugIns.ChatCommands;
@@ -34,6 +35,13 @@ public sealed class LostMapDroppedPlugIn : IItemDropPlugIn
         }
 
         cancelArgs.WasHandled = true;
+        if (player.GameContext.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>() is not null)
+        {
+            // Kalima is a daily instance now, which is entered through the gatekeeper npc only.
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KalimaInstanceOnlyThroughGatekeeper)).ConfigureAwait(false);
+            return;
+        }
+
         var currentMap = player.CurrentMap;
         if (currentMap is null)
         {

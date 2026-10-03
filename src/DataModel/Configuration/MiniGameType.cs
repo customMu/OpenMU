@@ -43,4 +43,9 @@ public enum MiniGameType
     /// The Kanturu Refinery Tower event.
     /// </summary>
     Kanturu,
+
+    /// <summary>
+    /// The daily Kalima instance for a party or a single player, entered through the Kalima gatekeeper.
+    /// </summary>
+    KalimaInstance,
 }

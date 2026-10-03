@@ -18,8 +18,10 @@ public sealed class SymbolOfKundunStackedPlugIn : IItemStackedPlugIn
     /// <inheritdoc />
     public async ValueTask ItemStackedAsync(Player player, Item sourceItem, Item targetItem)
     {
-        if (!targetItem.IsSymbolOfKundun())
+        if (!targetItem.IsSymbolOfKundun()
+            || player.GameContext.FeaturePlugIns.GetPlugIn<KundunSymbols.KundunSymbolsPlugIn>() is not null)
         {
+            // When the symbols are a currency, they are never combined to a lost map.
             return;
         }
 

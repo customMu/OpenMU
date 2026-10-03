@@ -142,6 +142,29 @@ public sealed class DroppedItem : AsyncDisposable, ILocateable
     }
 
     /// <summary>
+    /// Tries to take this item from the ground without adding it to an inventory,
+    /// e.g. because it's collected as a currency.
+    /// </summary>
+    /// <param name="player">The player who takes it.</param>
+    /// <returns><c>true</c>, if the item has been taken and removed from the map.</returns>
+    public async ValueTask<bool> TryTakeAsync(Player player)
+    {
+        using (await this._pickupLock.LockAsync())
+        {
+            if (!this._availableToPick)
+            {
+                return false;
+            }
+
+            this._availableToPick = false;
+        }
+
+        player.Logger.LogDebug("Item '{0}' was taken by player '{1}' without adding it to the inventory.", this, player);
+        this.DisposeAndDelete(null);
+        return true;
+    }
+
+    /// <summary>
     /// Determines whether the specified player is an owner of this dropped item.
     /// </summary>
     /// <param name="player">The player.</param>

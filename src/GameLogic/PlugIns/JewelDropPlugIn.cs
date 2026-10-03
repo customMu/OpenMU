@@ -30,7 +30,7 @@ public class JewelDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConfigur
         var configuration = this.Configuration ??= (JewelDropConfiguration)this.CreateDefaultConfig();
         if (args.KilledObject.IsSummonedMonster
             || args.Monster.ObjectKind != NpcObjectKind.Monster
-            || (!configuration.ApplyInMiniGames && args.Killer.CurrentMiniGame is not null))
+            || (!configuration.ApplyInMiniGames && args.Killer.CurrentMiniGame is { IsHuntingGround: false }))
         {
             return ValueTask.CompletedTask;
         }

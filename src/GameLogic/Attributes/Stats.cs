@@ -148,6 +148,21 @@ public class Stats
     public static AttributeDefinition Resets { get; } = new(new Guid("89A891A7-F9F9-4AB5-AF36-12056E53A5F7"), "Resets", "Reset quantity of current character");
 
     /// <summary>
+    /// Gets the attribute definition of the symbols of kundun, which a character collected as a currency.
+    /// </summary>
+    public static AttributeDefinition KundunSymbols { get; } = new(new Guid("C3E0A6F1-5B7D-4E2A-9F18-6D4B2C8A7E15"), "Symbols of Kundun", "The symbols of kundun which the character collected as a currency for the symbol shop.");
+
+    /// <summary>
+    /// Gets the attribute definition of the day of the last entry into the Kalima instance.
+    /// </summary>
+    public static AttributeDefinition KalimaInstanceEntryDay { get; } = new(new Guid("4A9D2B7E-1C3F-4F6A-8B05-E7D9C1A3F264"), "Kalima instance entry day", "The number of the day (by the daily reset time of the Kalima instance) of the last entry into the Kalima instance.");
+
+    /// <summary>
+    /// Gets the attribute definition of the entries into the Kalima instance on the day of <see cref="KalimaInstanceEntryDay"/>.
+    /// </summary>
+    public static AttributeDefinition KalimaInstanceEntries { get; } = new(new Guid("8E5C1F3A-7D2B-4A69-B4E0-2F6A9C8D1B37"), "Kalima instance entries", "The number of entries into the Kalima instance on the day of the last entry.");
+
+    /// <summary>
     /// Gets the registered renas / items attribute definition.
     /// </summary>
     public static AttributeDefinition RegisteredRenas { get; } = new(new Guid("45B1C2A3-3E4F-5A6B-7C8D-9E0F1A2B3C4D"), "Registered Renas", "Progress towards next item registration reward");

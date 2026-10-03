@@ -10,6 +10,7 @@ using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Threading;
 using MUnique.OpenMU.GameLogic.MiniGames;
+using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using MUnique.OpenMU.GameLogic.MiniGames.Kanturu;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
@@ -287,6 +288,10 @@ public class GameContext : AsyncDisposable, IGameContext
                 case MiniGameType.Kanturu:
                     miniGameContext = new KanturuContext(miniGameKey, miniGameDefinition, this, this._mapInitializer);
                     break;
+                case MiniGameType.KalimaInstance:
+                    var kalimaConfiguration = this.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>()?.Configuration ?? new KalimaInstanceConfiguration();
+                    miniGameContext = new KalimaInstanceContext(miniGameKey, miniGameDefinition, this, this._mapInitializer, kalimaConfiguration);
+                    break;
                 default:
                     miniGameContext = new MiniGameContext(miniGameKey, miniGameDefinition, this, this._mapInitializer);
                     break;
@@ -302,6 +307,15 @@ public class GameContext : AsyncDisposable, IGameContext
         this.GameMapCreated?.Invoke(this, createdMap);
         MiniGameCounter.Add(1);
         return miniGameContext;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<MiniGameContext?> FindMiniGameAsync(MiniGameType type, string owner)
+    {
+        using var l = await this._mapInitializerLock.LockAsync().ConfigureAwait(false);
+        return this._miniGames.Values.FirstOrDefault(game => game.Definition.Type == type
+                                                             && game.Key.Owner == owner
+                                                             && game is { IsDisposed: false, IsDisposing: false });
     }
 
     /// <inheritdoc />

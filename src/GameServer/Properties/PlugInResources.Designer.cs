@@ -7115,5 +7115,23 @@ namespace MUnique.OpenMU.GameServer.Properties {
                 return ResourceManager.GetString("CastleSiegeLifeStoneStatePlugIn_Name", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Symbols of Kundun view (custom packets).
+        /// </summary>
+        public static string KundunSymbolsViewPlugIn_Name {
+            get {
+                return ResourceManager.GetString("KundunSymbolsViewPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sends the Symbols of Kundun balance (C1 FB 01) and the prices of the symbol shop (C2 FB 02) to the game client of this server..
+        /// </summary>
+        public static string KundunSymbolsViewPlugIn_Description {
+            get {
+                return ResourceManager.GetString("KundunSymbolsViewPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

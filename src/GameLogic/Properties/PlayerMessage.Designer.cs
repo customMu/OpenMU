@@ -2129,5 +2129,113 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("WarpRequiresResetsFormat", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kalima {0}: the instance closes in {1} minutes. Players: {2}..
+        /// </summary>
+        public static string KalimaInstanceStatusFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstanceStatusFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Kalima instance closes in {0} minutes!.
+        /// </summary>
+        public static string KalimaInstanceClosesInMinutesFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstanceClosesInMinutesFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Kalima instance is not available right now..
+        /// </summary>
+        public static string KalimaInstanceNotAvailable {
+            get {
+                return ResourceManager.GetString("KalimaInstanceNotAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Kalima instance of your party is full..
+        /// </summary>
+        public static string KalimaInstanceFull {
+            get {
+                return ResourceManager.GetString("KalimaInstanceFull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You need {0} resets to enter Kalima {1}..
+        /// </summary>
+        public static string KalimaInstanceRequiresResetsFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstanceRequiresResetsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You already used your Kalima entry for today. New entries at {0}:00 (in {1} h {2} min)..
+        /// </summary>
+        public static string KalimaInstanceDailyLimitFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstanceDailyLimitFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kalima entry used. Remaining entries today: {0}. You can come back into this instance until it closes..
+        /// </summary>
+        public static string KalimaInstanceEntryUsedFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstanceEntryUsedFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kalima can only be entered through Lugard in Lorencia..
+        /// </summary>
+        public static string KalimaInstanceOnlyThroughGatekeeper {
+            get {
+                return ResourceManager.GetString("KalimaInstanceOnlyThroughGatekeeper", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to +{0} Symbol of Kundun (total: {1})..
+        /// </summary>
+        public static string KundunSymbolsCollectedFormat {
+            get {
+                return ResourceManager.GetString("KundunSymbolsCollectedFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Symbols of Kundun: {0}..
+        /// </summary>
+        public static string KundunSymbolsBalanceFormat {
+            get {
+                return ResourceManager.GetString("KundunSymbolsBalanceFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You need {0} Symbols of Kundun, you have {1}..
+        /// </summary>
+        public static string KundunSymbolsNotEnoughFormat {
+            get {
+                return ResourceManager.GetString("KundunSymbolsNotEnoughFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This item can't be bought with Symbols of Kundun..
+        /// </summary>
+        public static string KundunSymbolsItemNotForSale {
+            get {
+                return ResourceManager.GetString("KundunSymbolsItemNotForSale", resourceCulture);
+            }
+        }
     }
 }

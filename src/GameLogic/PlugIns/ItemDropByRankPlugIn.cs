@@ -48,7 +48,7 @@ public class ItemDropByRankPlugIn : IAdditionalItemDropPlugIn, ISupportCustomCon
         var configuration = this.Configuration ??= (ItemDropByRankConfiguration)this.CreateDefaultConfig();
         if (args.KilledObject.IsSummonedMonster
             || args.Monster.ObjectKind != NpcObjectKind.Monster
-            || (!configuration.ApplyInMiniGames && args.Killer.CurrentMiniGame is not null))
+            || (!configuration.ApplyInMiniGames && args.Killer.CurrentMiniGame is { IsHuntingGround: false }))
         {
             return ValueTask.CompletedTask;
         }

@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameLogic.PlayerActions;
 
 using System.Diagnostics.CodeAnalysis;
+using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 
 /// <summary>
 /// Extension methods for <see cref="GameMapDefinition"/>.
@@ -21,6 +22,13 @@ public static class GameMapDefinitionExtensions
     public static bool TryGetRequirementError(this GameMapDefinition gameMapDefinition, Player player, [MaybeNullWhen(false)] out string errorMessage)
     {
         errorMessage = null;
+
+        if (player.GameContext.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>() is { } kalimaInstance
+            && kalimaInstance.IsInstanceMap(gameMapDefinition, player.GameContext.Configuration))
+        {
+            errorMessage = player.GetLocalizedMessage(nameof(PlayerMessage.KalimaInstanceOnlyThroughGatekeeper));
+            return true;
+        }
 
         if (gameMapDefinition.MapRequirements is null || !gameMapDefinition.MapRequirements.Any())
         {

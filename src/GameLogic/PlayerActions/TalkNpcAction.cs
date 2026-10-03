@@ -4,6 +4,7 @@
 
 namespace MUnique.OpenMU.GameLogic.PlayerActions;
 
+using MUnique.OpenMU.GameLogic.KundunSymbols;
 using MUnique.OpenMU.GameLogic.MiniGames;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlayerActions.Quests;
@@ -50,6 +51,10 @@ public class TalkNpcAction
             await Task.Delay(500).ConfigureAwait(false);
             await player.InvokeViewPlugInAsync<IOpenNpcWindowPlugIn>(p => p.OpenNpcWindowAsync(npcStats.NpcWindow != NpcWindow.Undefined ? npcStats.NpcWindow : NpcWindow.Merchant)).ConfigureAwait(false);
             await player.InvokeViewPlugInAsync<IShowMerchantStoreItemListPlugIn>(p => p.ShowMerchantStoreItemListAsync(npcStats.MerchantStore.Items, StoreKind.Normal)).ConfigureAwait(false);
+            if (player.GameContext.FeaturePlugIns.GetPlugIn<KundunSymbolsPlugIn>() is { } symbols)
+            {
+                await symbols.MerchantStoreOpenedAsync(player, npcStats).ConfigureAwait(false);
+            }
         }
         else
         {

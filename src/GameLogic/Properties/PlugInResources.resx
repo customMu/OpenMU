@@ -1392,4 +1392,22 @@
   <data name="DropStatisticsKillCounterPlugIn_Description" xml:space="preserve">
     <value>Counts the monster kills of the drop owner in memory for the /dropstats command.</value>
   </data>
+  <data name="KalimaInstancePlugIn_Name" xml:space="preserve">
+    <value>Kalima instance</value>
+  </data>
+  <data name="KalimaInstancePlugIn_Description" xml:space="preserve">
+    <value>Kalima 1-7 as a daily instance for a party or a single player: entered by talking to the gatekeeper npc (Lugard in Lorencia), one entry per day, tiers by resets, monsters and drops scaled by the number of players. The regular Kalima maps and the Lost Map gates are closed.</value>
+  </data>
+  <data name="KundunSymbolsPlugIn_Name" xml:space="preserve">
+    <value>Symbols of Kundun currency</value>
+  </data>
+  <data name="KundunSymbolsPlugIn_Description" xml:space="preserve">
+    <value>Symbols of Kundun are a currency: picked up symbols are added to a counter of the character (without a stack limit) instead of the inventory, so they can't be traded. They are spent in the symbol shop (by default Delgado in Lorencia), whose prices are configured here.</value>
+  </data>
+  <data name="SymbolsChatCommandPlugIn_Name" xml:space="preserve">
+    <value>Chat command: /symbols</value>
+  </data>
+  <data name="SymbolsChatCommandPlugIn_Description" xml:space="preserve">
+    <value>Shows the Symbols of Kundun (currency) of the character.</value>
+  </data>
 </root>

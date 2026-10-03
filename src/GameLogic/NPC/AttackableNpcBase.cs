@@ -562,7 +562,7 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             : MoneyDistribution.CreateShares(amount, experienceShares);
 
         // We don't drop money in Devil Square, etc.
-        var shouldDropMoney = killer.GameContext.Configuration.ShouldDropMoney && killer.CurrentMiniGame is null;
+        var shouldDropMoney = killer.GameContext.Configuration.ShouldDropMoney && killer.CurrentMiniGame is null or { IsHuntingGround: true };
         if (!shouldDropMoney)
         {
             if (killer.Party is { } party)
@@ -612,10 +612,16 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         }
 
         var items = new List<Item>(generatedItems);
-        if (this._plugInManager?.GetPlugInPoint<IAdditionalItemDropPlugIn>() is { } additionalDropPlugIn)
+        await this.AddAdditionalItemDropsAsync(killer, items).ConfigureAwait(false);
+
+        // Mini games like the Kalima instance multiply the drop by rolling it again.
+        var additionalRolls = GetAdditionalDropRolls(killer.CurrentMiniGame?.ItemDropMultiplier ?? 1.0);
+        for (var roll = 0; roll < additionalRolls; roll++)
         {
-            var dropArgs = new AdditionalItemDropArgs(this, this.Definition, this.CurrentMap, killer, items);
-            await additionalDropPlugIn.AddItemDropsAsync(dropArgs).ConfigureAwait(false);
+            var (rolledItems, _) = await this._dropGenerator.GenerateItemDropsAsync(this.Definition, exp, killer).ConfigureAwait(false);
+            var rolled = new List<Item>(rolledItems);
+            await this.AddAdditionalItemDropsAsync(killer, rolled).ConfigureAwait(false);
+            items.AddRange(rolled);
         }
 
         var firstItem = !droppedMoney.HasValue;
@@ -635,6 +641,38 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             var owners = killer.Party?.PartyList.AsEnumerable() ?? killer.GetAsEnumerable();
             var droppedItem = new DroppedItem(item, dropCoordinates, this.CurrentMap, null, owners);
             await this.CurrentMap.AddAsync(droppedItem).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Gets the number of additional drop rolls for a drop multiplier.
+    /// The integral part (minus the regular roll) is guaranteed, the fractional part is a chance for one more roll.
+    /// </summary>
+    /// <param name="multiplier">The drop multiplier.</param>
+    /// <returns>The number of additional drop rolls.</returns>
+    private static int GetAdditionalDropRolls(double multiplier)
+    {
+        if (multiplier <= 1.0)
+        {
+            return 0;
+        }
+
+        var rolls = (int)Math.Floor(multiplier) - 1;
+        var fraction = multiplier - Math.Floor(multiplier);
+        if (fraction > 0 && Rand.NextRandomBool(fraction))
+        {
+            rolls++;
+        }
+
+        return rolls;
+    }
+
+    private async ValueTask AddAdditionalItemDropsAsync(Player killer, List<Item> items)
+    {
+        if (this._plugInManager?.GetPlugInPoint<IAdditionalItemDropPlugIn>() is { } additionalDropPlugIn)
+        {
+            var dropArgs = new AdditionalItemDropArgs(this, this.Definition, this.CurrentMap, killer, items);
+            await additionalDropPlugIn.AddItemDropsAsync(dropArgs).ConfigureAwait(false);
         }
     }
 

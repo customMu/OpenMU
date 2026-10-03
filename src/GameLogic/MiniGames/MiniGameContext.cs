@@ -107,6 +107,24 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
     public virtual bool AllowPlayerKilling { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the monsters of this game drop like on a regular hunting ground,
+    /// i.e. money and the drops of the additional item drop plugins.
+    /// </summary>
+    public virtual bool IsHuntingGround => false;
+
+    /// <summary>
+    /// Gets the multiplier of the item drops of the monsters of this game.
+    /// A value of 2.5 means two full drop rolls and a 50 % chance for a third one.
+    /// </summary>
+    public virtual double ItemDropMultiplier => 1.0;
+
+    /// <summary>
+    /// Gets a value indicating whether the experience and drop penalty by resets is ignored in this game,
+    /// e.g. because its monsters are scaled to the strength of the players.
+    /// </summary>
+    public virtual bool IgnoresResetPenalty => false;
+
+    /// <summary>
     /// Gets the remaining time of the event, in case it has been finished by the player earlier than the timeout.
     /// </summary>
     protected virtual TimeSpan RemainingTime => TimeSpan.Zero;
@@ -142,6 +160,11 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
     protected virtual int MinimumPlayerCount => 1;
 
     /// <summary>
+    /// Gets a value indicating whether the game ends as soon as all players left it after the entrance got closed.
+    /// </summary>
+    protected virtual bool EndsWhenAllPlayersLeft => true;
+
+    /// <summary>
     /// Tries to enter the mini game. It will fail, if it's full, of if it's not in an open state.
     /// </summary>
     /// <param name="player">The player which tries to enter.</param>
@@ -150,7 +173,7 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
     {
         using (await this._enterLock.WriterLockAsync().ConfigureAwait(false))
         {
-            if (this.State != MiniGameState.Open)
+            if (!this.IsEnteringAllowed(this.State))
             {
                 return EnterResult.NotOpen;
             }
@@ -235,6 +258,13 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
             this.Logger.LogError(ex, "{context}: Unexpected error during dispose: {ex}", this, ex);
         }
     }
+
+    /// <summary>
+    /// Determines whether entering the game is allowed in the specified state.
+    /// </summary>
+    /// <param name="state">The current state of the game.</param>
+    /// <returns><c>true</c>, if players can enter the game in this state.</returns>
+    protected virtual bool IsEnteringAllowed(MiniGameState state) => state == MiniGameState.Open;
 
     /// <summary>
     /// Executes the action for each player of this game.
@@ -411,7 +441,7 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
             {
                 player.Died -= this.OnPlayerDied;
                 this._enteredPlayers.Remove(player);
-                cantGameProceed = this._enteredPlayers.Count == 0 && this.State != MiniGameState.Open;
+                cantGameProceed = this.EndsWhenAllPlayersLeft && this._enteredPlayers.Count == 0 && this.State != MiniGameState.Open;
             }
 
             if (cantGameProceed)

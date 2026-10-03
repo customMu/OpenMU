@@ -807,4 +807,40 @@
   <data name="WarpRequiresResetsFormat" xml:space="preserve">
     <value>You need {0} resets to warp there.</value>
   </data>
+  <data name="KalimaInstanceStatusFormat" xml:space="preserve">
+    <value>Kalima {0}: the instance closes in {1} minutes. Players: {2}.</value>
+  </data>
+  <data name="KalimaInstanceClosesInMinutesFormat" xml:space="preserve">
+    <value>The Kalima instance closes in {0} minutes!</value>
+  </data>
+  <data name="KalimaInstanceNotAvailable" xml:space="preserve">
+    <value>The Kalima instance is not available right now.</value>
+  </data>
+  <data name="KalimaInstanceFull" xml:space="preserve">
+    <value>The Kalima instance of your party is full.</value>
+  </data>
+  <data name="KalimaInstanceRequiresResetsFormat" xml:space="preserve">
+    <value>You need {0} resets to enter Kalima {1}.</value>
+  </data>
+  <data name="KalimaInstanceDailyLimitFormat" xml:space="preserve">
+    <value>You already used your Kalima entry for today. New entries at {0}:00 (in {1} h {2} min).</value>
+  </data>
+  <data name="KalimaInstanceEntryUsedFormat" xml:space="preserve">
+    <value>Kalima entry used. Remaining entries today: {0}. You can come back into this instance until it closes.</value>
+  </data>
+  <data name="KalimaInstanceOnlyThroughGatekeeper" xml:space="preserve">
+    <value>Kalima can only be entered through Lugard in Lorencia.</value>
+  </data>
+  <data name="KundunSymbolsCollectedFormat" xml:space="preserve">
+    <value>+{0} Symbol of Kundun (total: {1}).</value>
+  </data>
+  <data name="KundunSymbolsBalanceFormat" xml:space="preserve">
+    <value>Symbols of Kundun: {0}.</value>
+  </data>
+  <data name="KundunSymbolsNotEnoughFormat" xml:space="preserve">
+    <value>You need {0} Symbols of Kundun, you have {1}.</value>
+  </data>
+  <data name="KundunSymbolsItemNotForSale" xml:space="preserve">
+    <value>This item can't be bought with Symbols of Kundun.</value>
+  </data>
 </root>

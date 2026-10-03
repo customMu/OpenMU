@@ -3886,5 +3886,59 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("DropStatisticsKillCounterPlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kalima instance.
+        /// </summary>
+        public static string KalimaInstancePlugIn_Name {
+            get {
+                return ResourceManager.GetString("KalimaInstancePlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kalima 1-7 as a daily instance for a party or a single player: entered by talking to the gatekeeper npc (Lugard in Lorencia), one entry per day, tiers by resets, monsters and drops scaled by the number of players. The regular Kalima maps and the Lost Map gates are closed..
+        /// </summary>
+        public static string KalimaInstancePlugIn_Description {
+            get {
+                return ResourceManager.GetString("KalimaInstancePlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Symbols of Kundun currency.
+        /// </summary>
+        public static string KundunSymbolsPlugIn_Name {
+            get {
+                return ResourceManager.GetString("KundunSymbolsPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Symbols of Kundun are a currency: picked up symbols are added to a counter of the character (without a stack limit) instead of the inventory, so they can't be traded. They are spent in the symbol shop (by default Delgado in Lorencia), whose prices are configured here..
+        /// </summary>
+        public static string KundunSymbolsPlugIn_Description {
+            get {
+                return ResourceManager.GetString("KundunSymbolsPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Chat command: /symbols.
+        /// </summary>
+        public static string SymbolsChatCommandPlugIn_Name {
+            get {
+                return ResourceManager.GetString("SymbolsChatCommandPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shows the Symbols of Kundun (currency) of the character..
+        /// </summary>
+        public static string SymbolsChatCommandPlugIn_Description {
+            get {
+                return ResourceManager.GetString("SymbolsChatCommandPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

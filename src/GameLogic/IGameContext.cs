@@ -1,4 +1,4 @@
-// <copyright file="IGameContext.cs" company="MUnique">
+﻿// <copyright file="IGameContext.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -169,6 +169,14 @@ public interface IGameContext
     /// The state of the mini game which contains the hosted GameMap instance.
     /// </returns>
     ValueTask<MiniGameContext> GetMiniGameAsync(MiniGameDefinition miniGameDefinition, Player requester);
+
+    /// <summary>
+    /// Finds a running mini game of the specified type and owner.
+    /// </summary>
+    /// <param name="type">The type of the mini game.</param>
+    /// <param name="owner">The owner of the mini game, see <see cref="MiniGameMapKey.Owner"/>.</param>
+    /// <returns>The running mini game, if found.</returns>
+    ValueTask<MiniGameContext?> FindMiniGameAsync(MiniGameType type, string owner);
 
     /// <summary>
     /// Removes the mini game instance from the context.
