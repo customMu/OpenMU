@@ -20,6 +20,7 @@ using MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix;
 using MUnique.OpenMU.Web.AdminPanel.Auth;
 using MUnique.OpenMU.Web.AdminPanel.Components;
 using MUnique.OpenMU.Web.AdminPanel.Services;
+using MUnique.OpenMU.Web.AdminPanel.Services.Vault;
 using MUnique.OpenMU.Web.Shared.Components.Modal;
 using MUnique.OpenMU.Web.Shared.Models;
 using MUnique.OpenMU.Web.Shared.Services;
@@ -101,6 +102,7 @@ public static class WebApplicationExtensions
         services.AddScoped<LoadingOverlayService>();
         services.AddScoped<IDataService<LoggedInAccount>>(serviceProvider => serviceProvider.GetService<LoggedInAccountService>()!);
         services.AddScoped<OfflineAccountService>();
+        services.AddSingleton<AccountVaultService>();
         services.AddScoped<IDataService<OfflineAccount>>(serviceProvider => serviceProvider.GetService<OfflineAccountService>()!);
 
         StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);

@@ -178,6 +178,10 @@ A key has the same [roles](#roles) as a user, and defaults to **Viewer**:
 | `GET /api/status` | Viewer |
 | `GET /api/is-online/{account}` | Viewer |
 | `GET /api/send/{server}?msg=` | Operator |
+| `GET /api/accounts/{account}/vault` | Operator |
+| `POST /api/accounts/{account}/vault/money` | Operator |
+| `POST /api/accounts/{account}/vault/items/{item}/take` | Operator |
+| `POST /api/accounts/{account}/vault/items` | Operator |
 
 So a status page gets a Viewer key and can only read, while an application which
 announces something in the game needs an Operator key. The role is chosen when
@@ -195,6 +199,27 @@ lacks the role get `403`.
 :::
 
 Like the panel itself, the API is open as long as [no user exists at all](#the-first-user).
+The vault endpoints are the exception: they always need a key or a signed in user.
+
+### The vault of an account
+
+The vault endpoints let a website move zen and items between the game and its own
+features, e.g. an auction. They work while the player is in the game: the change
+is made on the account in memory of the game server and saved right away, and the
+player gets a message. Only the vault window must be closed in the game. While the
+player is offline, the account is blocked from logging in for the moment of the change.
+
+* `GET` returns the zen and the items with name, options, picture file name (of
+  `src/Web/ItemEditor/wwwroot/img/items`) and the data to create the item again.
+* `POST .../money` with `{ "amount": 1000 }` puts zen into the vault, a negative
+  amount takes it out.
+* `POST .../items/{item}/take` removes the item from the vault and from the game
+  and returns it with its data.
+* `POST .../items` with that data creates the item in a free place of the vault.
+
+Errors are `{ "error": "..." }` with `404` (`NotFound`), `409` (`Busy`, `VaultOpen`:
+try again later), `422` (`NotEnoughMoney`, `MoneyLimitExceeded`, `NoSpace`), `400`
+(`InvalidItem`) or `503` (`Unavailable`: no game server in this process).
 
 ## Keeping the sessions alive across restarts
 
