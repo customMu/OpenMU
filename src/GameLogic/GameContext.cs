@@ -292,6 +292,11 @@ public class GameContext : AsyncDisposable, IGameContext
                     var kalimaConfiguration = this.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>()?.Configuration ?? new KalimaInstanceConfiguration();
                     miniGameContext = new KalimaInstanceContext(miniGameKey, miniGameDefinition, this, this._mapInitializer, kalimaConfiguration);
                     break;
+                case MiniGameType.KundunChamber:
+                    var chamberConfiguration = this.FeaturePlugIns.GetPlugIn<KundunChamberPlugIn>()?.Configuration ?? new KundunChamberConfiguration();
+                    var kalimaTiers = this.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>()?.Configuration ?? new KalimaInstanceConfiguration();
+                    miniGameContext = new KundunChamberContext(miniGameKey, miniGameDefinition, this, this._mapInitializer, chamberConfiguration, kalimaTiers);
+                    break;
                 default:
                     miniGameContext = new MiniGameContext(miniGameKey, miniGameDefinition, this, this._mapInitializer);
                     break;

@@ -2327,5 +2327,131 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("PartyDropModeRoundRobinFormat", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The chamber of Kundun closes in {0} min.!.
+        /// </summary>
+        public static string KundunChamberClosesInMinutesFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberClosesInMinutesFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Time is over. Kundun has driven you out of his chamber..
+        /// </summary>
+        public static string KundunChamberTimeOver {
+            get {
+                return ResourceManager.GetString("KundunChamberTimeOver", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kundun has awakened!.
+        /// </summary>
+        public static string KundunChamberKundunAppeared {
+            get {
+                return ResourceManager.GetString("KundunChamberKundunAppeared", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Chamber of Kundun {0}: Kundun has {1} % health, the chamber closes in {2} min..
+        /// </summary>
+        public static string KundunChamberStatusFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberStatusFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} %: Kundun calls {1} Illusion(s) and is protected until they are destroyed!.
+        /// </summary>
+        public static string KundunChamberPhaseFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberPhaseFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Illusions are destroyed after {0} s. Kundun healed {1} %, defense +{2} %, damage +{3} %..
+        /// </summary>
+        public static string KundunChamberPhaseEndedFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberPhaseEndedFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kundun {0} is defeated! Time: {1} min {2} s..
+        /// </summary>
+        public static string KundunChamberVictoryFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberVictoryFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The chamber of Kundun is currently not available..
+        /// </summary>
+        public static string KundunChamberNotAvailable {
+            get {
+                return ResourceManager.GetString("KundunChamberNotAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The chamber of Kundun of your party is full..
+        /// </summary>
+        public static string KundunChamberFull {
+            get {
+                return ResourceManager.GetString("KundunChamberFull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You need {0} resets to enter the chamber of Kundun..
+        /// </summary>
+        public static string KundunChamberRequiresResetsFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberRequiresResetsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} doesn't meet the conditions: the chamber of Kundun {1} is for {2} resets, {0} has {3}..
+        /// </summary>
+        public static string KundunChamberMemberNotInRangeFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberMemberNotInRangeFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You need a Lost Map +{0} to enter the chamber of Kundun {0}..
+        /// </summary>
+        public static string KundunChamberNeedsLostMapFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberNeedsLostMapFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The weekly entries into the chamber of Kundun are used. New entries in {0} d {1} h {2} min..
+        /// </summary>
+        public static string KundunChamberWeeklyLimitFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberWeeklyLimitFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Lost Map +{0} was used. Remaining entries this week: {1}. You can return to this chamber until it closes..
+        /// </summary>
+        public static string KundunChamberEntryUsedFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberEntryUsedFormat", resourceCulture);
+            }
+        }
     }
 }

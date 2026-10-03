@@ -183,4 +183,46 @@
   <data name="PartyDropModeRoundRobinFormat" xml:space="preserve">
     <value>{0} выбрал режим дропа: по очереди - вещи достаются участникам рядом по очереди.</value>
   </data>
+  <data name="KundunChamberClosesInMinutesFormat" xml:space="preserve">
+    <value>Покои Кундуна закроются через {0} мин.!</value>
+  </data>
+  <data name="KundunChamberTimeOver" xml:space="preserve">
+    <value>Время вышло. Кундун изгнал вас из своих покоев.</value>
+  </data>
+  <data name="KundunChamberKundunAppeared" xml:space="preserve">
+    <value>Кундун пробудился!</value>
+  </data>
+  <data name="KundunChamberStatusFormat" xml:space="preserve">
+    <value>Покои Кундуна {0}: у Кундуна {1}% здоровья, покои закроются через {2} мин.</value>
+  </data>
+  <data name="KundunChamberPhaseFormat" xml:space="preserve">
+    <value>{0}%: Кундун призывает Иллюзии ({1}) и неуязвим, пока они живы!</value>
+  </data>
+  <data name="KundunChamberPhaseEndedFormat" xml:space="preserve">
+    <value>Иллюзии уничтожены за {0} сек. Кундун восстановил {1}% здоровья, защита +{2}%, урон +{3}%.</value>
+  </data>
+  <data name="KundunChamberVictoryFormat" xml:space="preserve">
+    <value>Кундун {0} повержен! Время: {1} мин {2} сек.</value>
+  </data>
+  <data name="KundunChamberNotAvailable" xml:space="preserve">
+    <value>Покои Кундуна сейчас недоступны.</value>
+  </data>
+  <data name="KundunChamberFull" xml:space="preserve">
+    <value>Покои Кундуна вашей группы заполнены.</value>
+  </data>
+  <data name="KundunChamberRequiresResetsFormat" xml:space="preserve">
+    <value>Для входа в Покои Кундуна нужно {0} ресетов.</value>
+  </data>
+  <data name="KundunChamberMemberNotInRangeFormat" xml:space="preserve">
+    <value>{0} не подходит по условиям: Покои Кундуна {1} — для {2} ресетов, у {0} {3}.</value>
+  </data>
+  <data name="KundunChamberNeedsLostMapFormat" xml:space="preserve">
+    <value>Для входа в Покои Кундуна {0} нужна Lost Map +{0}.</value>
+  </data>
+  <data name="KundunChamberWeeklyLimitFormat" xml:space="preserve">
+    <value>Входы в Покои Кундуна на этой неделе использованы. Новые входы через {0} д {1} ч {2} мин.</value>
+  </data>
+  <data name="KundunChamberEntryUsedFormat" xml:space="preserve">
+    <value>Lost Map +{0} использована. Осталось входов на этой неделе: {1}. Вернуться в эти покои можно, пока они не закроются.</value>
+  </data>
 </root>

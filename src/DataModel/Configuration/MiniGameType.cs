@@ -48,4 +48,9 @@ public enum MiniGameType
     /// The daily Kalima instance for a party or a single player, entered through the Kalima gatekeeper.
     /// </summary>
     KalimaInstance,
+
+    /// <summary>
+    /// The weekly chamber of Kundun for a party or a single player, entered with a Lost Map through the chamber keeper.
+    /// </summary>
+    KundunChamber,
 }

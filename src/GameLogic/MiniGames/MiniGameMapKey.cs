@@ -14,7 +14,11 @@ namespace MUnique.OpenMU.GameLogic.MiniGames;
 /// When the owner is a party, it contains the <see cref="Character.Name"/> of the party leader.
 /// Empty, if the instance of the game is not assigned to a player or party.
 /// </param>
-public record MiniGameMapKey(short MapNumber, byte MiniGameLevel, string Owner)
+/// <param name="Type">
+/// The type of the mini game, <see cref="MiniGameDefinition.Type"/>. Different mini games can use the same map,
+/// e.g. the Kalima instance and the chamber of Kundun.
+/// </param>
+public record MiniGameMapKey(short MapNumber, byte MiniGameLevel, string Owner, MiniGameType Type = default)
 {
     /// <summary>
     /// Creates a new instance of a <see cref="MiniGameMapKey"/>.
@@ -29,13 +33,13 @@ public record MiniGameMapKey(short MapNumber, byte MiniGameLevel, string Owner)
         switch (definition.MapCreationPolicy)
         {
             case MiniGameMapCreationPolicy.OnePerPlayer:
-                miniGameKey = new MiniGameMapKey(mapDefinition.Number, definition.GameLevel, requester.Name);
+                miniGameKey = new MiniGameMapKey(mapDefinition.Number, definition.GameLevel, requester.Name, definition.Type);
                 break;
             case MiniGameMapCreationPolicy.OnePerParty:
-                miniGameKey = new MiniGameMapKey(mapDefinition.Number, definition.GameLevel, requester.Party?.PartyMaster?.Name ?? requester.Name);
+                miniGameKey = new MiniGameMapKey(mapDefinition.Number, definition.GameLevel, requester.Party?.PartyMaster?.Name ?? requester.Name, definition.Type);
                 break;
             case MiniGameMapCreationPolicy.Shared:
-                miniGameKey = new MiniGameMapKey(mapDefinition.Number, definition.GameLevel, string.Empty);
+                miniGameKey = new MiniGameMapKey(mapDefinition.Number, definition.GameLevel, string.Empty, definition.Type);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

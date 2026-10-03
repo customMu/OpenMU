@@ -873,4 +873,46 @@
   <data name="PartyDropModeRoundRobinFormat" xml:space="preserve">
     <value>{0} set the drop mode: in turn - the items belong to the members nearby in turn.</value>
   </data>
+  <data name="KundunChamberClosesInMinutesFormat" xml:space="preserve">
+    <value>The chamber of Kundun closes in {0} min.!</value>
+  </data>
+  <data name="KundunChamberTimeOver" xml:space="preserve">
+    <value>Time is over. Kundun has driven you out of his chamber.</value>
+  </data>
+  <data name="KundunChamberKundunAppeared" xml:space="preserve">
+    <value>Kundun has awakened!</value>
+  </data>
+  <data name="KundunChamberStatusFormat" xml:space="preserve">
+    <value>Chamber of Kundun {0}: Kundun has {1} % health, the chamber closes in {2} min.</value>
+  </data>
+  <data name="KundunChamberPhaseFormat" xml:space="preserve">
+    <value>{0} %: Kundun calls {1} Illusion(s) and is protected until they are destroyed!</value>
+  </data>
+  <data name="KundunChamberPhaseEndedFormat" xml:space="preserve">
+    <value>The Illusions are destroyed after {0} s. Kundun healed {1} %, defense +{2} %, damage +{3} %.</value>
+  </data>
+  <data name="KundunChamberVictoryFormat" xml:space="preserve">
+    <value>Kundun {0} is defeated! Time: {1} min {2} s.</value>
+  </data>
+  <data name="KundunChamberNotAvailable" xml:space="preserve">
+    <value>The chamber of Kundun is currently not available.</value>
+  </data>
+  <data name="KundunChamberFull" xml:space="preserve">
+    <value>The chamber of Kundun of your party is full.</value>
+  </data>
+  <data name="KundunChamberRequiresResetsFormat" xml:space="preserve">
+    <value>You need {0} resets to enter the chamber of Kundun.</value>
+  </data>
+  <data name="KundunChamberMemberNotInRangeFormat" xml:space="preserve">
+    <value>{0} doesn't meet the conditions: the chamber of Kundun {1} is for {2} resets, {0} has {3}.</value>
+  </data>
+  <data name="KundunChamberNeedsLostMapFormat" xml:space="preserve">
+    <value>You need a Lost Map +{0} to enter the chamber of Kundun {0}.</value>
+  </data>
+  <data name="KundunChamberWeeklyLimitFormat" xml:space="preserve">
+    <value>The weekly entries into the chamber of Kundun are used. New entries in {0} d {1} h {2} min.</value>
+  </data>
+  <data name="KundunChamberEntryUsedFormat" xml:space="preserve">
+    <value>The Lost Map +{0} was used. Remaining entries this week: {1}. You can return to this chamber until it closes.</value>
+  </data>
 </root>

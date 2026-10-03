@@ -103,6 +103,11 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         set => Interlocked.Exchange(ref this._health, value);
     }
 
+    /// <summary>
+    /// Gets or sets the limiter of the damage which this npc takes, e.g. for the phases of a boss.
+    /// </summary>
+    public IDamageLimiter? DamageLimiter { get; set; }
+
     private bool ShouldRespawn => this.SpawnArea.SpawnTrigger == SpawnTrigger.Automatic
                                   || (this.SpawnArea.SpawnTrigger == SpawnTrigger.AutomaticDuringEvent && (this._eventStateProvider?.IsEventRunning ?? false))
                                   || (this.SpawnArea.SpawnTrigger == SpawnTrigger.AutomaticDuringWave && (this._eventStateProvider?.IsSpawnWaveActive(this.SpawnArea.WaveNumber) ?? false));
@@ -466,6 +471,19 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
     }
 
     private bool TryHit(uint damage, IAttacker attacker)
+    {
+        if (this.DamageLimiter is { } limiter)
+        {
+            lock (limiter)
+            {
+                return this.ApplyHit(limiter.LimitDamage(this, damage), attacker);
+            }
+        }
+
+        return this.ApplyHit(damage, attacker);
+    }
+
+    private bool ApplyHit(uint damage, IAttacker attacker)
     {
         if (damage > 0)
         {

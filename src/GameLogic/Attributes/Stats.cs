@@ -164,6 +164,21 @@ public class Stats
     public static AttributeDefinition KalimaInstanceEntries { get; } = new(new Guid("8E5C1F3A-7D2B-4A69-B4E0-2F6A9C8D1B37"), "Kalima instance entries", "The number of entries into the Kalima instance on the day of the last entry.");
 
     /// <summary>
+    /// Gets the attribute definition of the week of the last entry into the chamber of Kundun.
+    /// </summary>
+    public static AttributeDefinition KundunChamberEntryWeek { get; } = new(new Guid("B1D84E26-3F7A-4C59-9E02-6A1C5B8D3F74"), "Kundun chamber entry week", "The number of the week (by the weekly reset of the chamber of Kundun) of the last entry into the chamber of Kundun.");
+
+    /// <summary>
+    /// Gets the attribute definition of the entries into the chamber of Kundun in the week of <see cref="KundunChamberEntryWeek"/>.
+    /// </summary>
+    public static AttributeDefinition KundunChamberEntries { get; } = new(new Guid("5C27A9E3-8B41-4D6F-A3C8-0E9F2B7D4A16"), "Kundun chamber entries", "The number of entries into the chamber of Kundun in the week of the last entry.");
+
+    /// <summary>
+    /// Gets the attribute definition of the last day of the chamber pass of a character, which gives more weekly entries into the chamber of Kundun.
+    /// </summary>
+    public static AttributeDefinition KundunChamberPassUntilDay { get; } = new(new Guid("E7A35C18-2D9B-4F60-8C14-B3F6A0D9E527"), "Kundun chamber pass until day", "The last day (number of days since 2000-01-01, UTC) on which the chamber pass of the character is active. It gives more weekly entries into the chamber of Kundun. Set e.g. by the website.");
+
+    /// <summary>
     /// Gets the registered renas / items attribute definition.
     /// </summary>
     public static AttributeDefinition RegisteredRenas { get; } = new(new Guid("45B1C2A3-3E4F-5A6B-7C8D-9E0F1A2B3C4D"), "Registered Renas", "Progress towards next item registration reward");

@@ -4,10 +4,6 @@
 
 namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 
-using System.Threading;
-using MUnique.OpenMU.AttributeSystem;
-using MUnique.OpenMU.DataModel.Configuration.Items;
-using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns;
@@ -19,34 +15,16 @@ using MUnique.OpenMU.Pathfinding;
 /// the Illusion of Kundun after the last pack. The monsters have the fixed strength of the tier.
 /// Players can leave and enter again (e.g. after a death) as long as the instance is running.
 /// </summary>
-public sealed class KalimaInstanceContext : MiniGameContext
+public sealed class KalimaInstanceContext : KalimaRunContextBase
 {
     private const int PackSpawnSpread = 2;
 
-    private const byte DropSpread = 3;
-
-    private static readonly int[] NoticeMinutes = [30, 10, 5, 1];
-
     private readonly KalimaInstanceConfiguration _configuration;
-    private readonly IGameContext _gameContext;
-    private readonly IMapInitializer _mapInitializer;
-    private readonly SimpleElement _healthMultiplier = new(1.0f, AggregateType.Multiplicate);
-    private readonly SimpleElement _bossHealthMultiplier = new(1.0f, AggregateType.Multiplicate);
-    private readonly SimpleElement _damageMultiplier = new(1.0f, AggregateType.Multiplicate);
-    private readonly SimpleElement _defenseMultiplier = new(1.0f, AggregateType.Multiplicate);
-    private readonly SimpleElement _rateMultiplier = new(1.0f, AggregateType.Multiplicate);
-    private readonly SimpleElement _levelIncrease = new(0f, AggregateType.AddRaw);
-    private readonly HashSet<string> _registeredCharacters = new(StringComparer.Ordinal);
-    private readonly HashSet<Player> _playersOnMap = new();
     private readonly HashSet<AttackableNpcBase> _alivePackMonsters = new();
-    private readonly object _syncRoot = new();
-    private readonly DateTime _endsAt;
     private readonly IReadOnlyList<IReadOnlyList<MonsterSpawnArea>> _packs;
-    private readonly MonsterSpawnArea? _bossSpawn;
 
     private int _currentPack = -1;
     private bool _bossSpawned;
-    private int _emptyCheckVersion;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KalimaInstanceContext"/> class.
@@ -57,41 +35,11 @@ public sealed class KalimaInstanceContext : MiniGameContext
     /// <param name="mapInitializer">The map initializer, which is used when the event starts.</param>
     /// <param name="configuration">The configuration of the Kalima instance.</param>
     public KalimaInstanceContext(MiniGameMapKey key, MiniGameDefinition definition, IGameContext gameContext, IMapInitializer mapInitializer, KalimaInstanceConfiguration configuration)
-        : base(key, definition, gameContext, mapInitializer)
+        : base(key, definition, gameContext, mapInitializer, configuration, configuration.Duration, configuration.CloseWhenEmptyAfter)
     {
         this._configuration = configuration;
-        this._gameContext = gameContext;
-        this._mapInitializer = mapInitializer;
-        this.Tier = configuration.GetTier(definition.GameLevel) ?? new KalimaInstanceTier { Level = definition.GameLevel };
-        this.Strength = KalimaStrengthCalculator.Calculate(gameContext.Configuration, configuration).GetValueOrDefault(this.Tier.Level);
-        this._endsAt = DateTime.UtcNow + configuration.Duration;
-
-        var monsterSpawns = this.Map.Definition.MonsterSpawns
-            .Where(area => area is { SpawnTrigger: SpawnTrigger.Automatic, MonsterDefinition.ObjectKind: NpcObjectKind.Monster })
-            .ToList();
-        var regularSpawns = monsterSpawns.Where(area => !this.IsBoss(area.MonsterDefinition!)).ToList();
-        this._bossSpawn = monsterSpawns.FirstOrDefault(area => this.IsBoss(area.MonsterDefinition!));
-        this._packs = KalimaPackPlanner.PlanPacks(regularSpawns, GetEntrancePoint(definition), this.Map.Terrain.WalkMap, configuration.PackCount);
-        this.CalculateStrength(regularSpawns);
-
-        _ = Task.Run(() => this.RunTimerAsync(this.GameEndedToken), this.GameEndedToken);
-        this.StartEmptyCheck();
+        this._packs = KalimaPackPlanner.PlanPacks(this.RegularSpawns.ToList(), GetEntrancePoint(definition), this.Map.Terrain.WalkMap, configuration.PackCount);
     }
-
-    /// <summary>
-    /// Gets the tier of this instance.
-    /// </summary>
-    public KalimaInstanceTier Tier { get; }
-
-    /// <summary>
-    /// Gets the strength of the regular monsters, if the reference map of the tier has monsters.
-    /// </summary>
-    public KalimaStrength? Strength { get; }
-
-    /// <summary>
-    /// Gets the remaining time until the instance closes.
-    /// </summary>
-    public TimeSpan TimeLeft => (this._endsAt - DateTime.UtcNow).AtLeast(TimeSpan.Zero);
 
     /// <summary>
     /// Gets the experience multiplier of the instance.
@@ -99,122 +47,39 @@ public sealed class KalimaInstanceContext : MiniGameContext
     public float ExperienceMultiplier => this._configuration.ExperienceMultiplier;
 
     /// <inheritdoc />
-    public override bool IsHuntingGround => true;
-
-    /// <inheritdoc />
-    public override bool IgnoresResetPenalty => true;
-
-    /// <inheritdoc />
     public override double ItemDropMultiplier => this.Tier.DropMultiplier;
 
-    /// <summary>
-    /// Gets a value indicating whether the instance accepts players.
-    /// </summary>
-    public bool IsAcceptingPlayers => this.IsEnteringAllowed(this.State) && !this.IsDisposing && !this.IsDisposed;
+    /// <inheritdoc />
+    protected override string ClosesInMinutesMessageKey => nameof(PlayerMessage.KalimaInstanceClosesInMinutesFormat);
 
     /// <inheritdoc />
-    protected override bool EndsWhenAllPlayersLeft => false;
-
-    /// <summary>
-    /// Determines whether the character of the player already used an entry for this instance,
-    /// so that it can enter again without using another one.
-    /// </summary>
-    /// <param name="player">The player.</param>
-    /// <returns><c>true</c>, if the player is registered for this instance.</returns>
-    public bool IsRegistered(Player player)
-    {
-        lock (this._syncRoot)
-        {
-            return player.SelectedCharacter is { } character && this._registeredCharacters.Contains(character.Name);
-        }
-    }
-
-    /// <summary>
-    /// Registers the character of the player for this instance.
-    /// </summary>
-    /// <param name="player">The player.</param>
-    public void Register(Player player)
-    {
-        lock (this._syncRoot)
-        {
-            if (player.SelectedCharacter is { } character)
-            {
-                this._registeredCharacters.Add(character.Name);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Spawns the npcs of the map (e.g. the potion seller) and the first pack, instead of all monsters of the map.
-    /// </summary>
-    /// <returns>The task.</returns>
-    public override async ValueTask InitializeMapStateAsync()
-    {
-        var npcSpawns = this.Map.Definition.MonsterSpawns
-            .Where(area => area is { SpawnTrigger: SpawnTrigger.Automatic, MonsterDefinition: { } npc } && npc.ObjectKind != NpcObjectKind.Monster);
-        foreach (var area in npcSpawns)
-        {
-            for (var i = 0; i < area.Quantity; i++)
-            {
-                await this._mapInitializer.InitializeSpawnAsync(i, this.Map, area).ConfigureAwait(false);
-            }
-        }
-
-        await this.SpawnNextPackAsync().ConfigureAwait(false);
-    }
+    protected override string TimeOverMessageKey => nameof(PlayerMessage.KalimaInstanceTimeOver);
 
     /// <inheritdoc />
-    protected override bool IsEnteringAllowed(MiniGameState state) => state is MiniGameState.Open or MiniGameState.Closed or MiniGameState.Playing;
+    protected override ValueTask SpawnInitialMonstersAsync() => this.SpawnNextPackAsync();
 
     /// <inheritdoc />
-    protected override async ValueTask OnObjectAddedToMapAsync((GameMap Map, ILocateable Object) args)
+    protected override void ApplyStrength(Monster monster)
     {
-        await base.OnObjectAddedToMapAsync(args).ConfigureAwait(false);
-
-        switch (args.Object)
+        if (this.IsIllusionOfKundun(monster.Definition))
         {
-            case Monster { SummonedBy: null } monster:
-                this.ApplyStrength(monster);
-                break;
-            case Player player:
-                lock (this._syncRoot)
-                {
-                    this._playersOnMap.Add(player);
-                    this._emptyCheckVersion++;
-                }
-
-                await player.ShowLocalizedBlueMessageAsync(
-                    nameof(PlayerMessage.KalimaInstanceStatusFormat),
-                    this.Tier.Level,
-                    Math.Min(this._currentPack + 1, this._packs.Count),
-                    this._packs.Count,
-                    (int)Math.Ceiling(this.TimeLeft.TotalMinutes)).ConfigureAwait(false);
-                break;
-            default:
-                // nothing to do
-                break;
+            this.Scaling.ApplySpecial(monster, this.BossHealth);
+        }
+        else
+        {
+            this.Scaling.ApplyRegular(monster);
         }
     }
 
     /// <inheritdoc />
-    protected override async ValueTask OnObjectRemovedFromMapAsync((GameMap Map, ILocateable Object) args)
+    protected override ValueTask OnPlayerEnteredAsync(Player player)
     {
-        await base.OnObjectRemovedFromMapAsync(args).ConfigureAwait(false);
-
-        if (args.Object is Player player)
-        {
-            bool isEmpty;
-            lock (this._syncRoot)
-            {
-                this._playersOnMap.Remove(player);
-                isEmpty = this._playersOnMap.Count == 0;
-            }
-
-            if (isEmpty)
-            {
-                this.StartEmptyCheck();
-            }
-        }
+        return player.ShowLocalizedBlueMessageAsync(
+            nameof(PlayerMessage.KalimaInstanceStatusFormat),
+            this.Tier.Level,
+            Math.Min(this._currentPack + 1, this._packs.Count),
+            this._packs.Count,
+            (int)Math.Ceiling(this.TimeLeft.TotalMinutes));
     }
 
     /// <inheritdoc />
@@ -226,9 +91,9 @@ public sealed class KalimaInstanceContext : MiniGameContext
             return;
         }
 
-        var isBoss = this.IsBoss(monster.Definition);
+        var isBoss = this.IsIllusionOfKundun(monster.Definition);
         bool isPackCleared;
-        lock (this._syncRoot)
+        lock (this.SyncRoot)
         {
             isPackCleared = this._alivePackMonsters.Remove(monster) && this._alivePackMonsters.Count == 0;
         }
@@ -265,56 +130,6 @@ public sealed class KalimaInstanceContext : MiniGameContext
             : new Point((byte)((entrance.X1 + entrance.X2) / 2), (byte)((entrance.Y1 + entrance.Y2) / 2));
     }
 
-    private static float GetAverage(IReadOnlyCollection<MonsterSpawnArea> spawns, AttributeDefinition attribute)
-    {
-        return spawns.Count == 0 ? 0 : spawns.Average(area => KalimaStrengthCalculator.GetValue(area.MonsterDefinition!, attribute));
-    }
-
-    private static float GetRatio(float target, float average) => target > 0 && average > 0 ? target / average : 1.0f;
-
-    private static int RollAmount(float chance, int amount) => chance > 0 && Rand.NextRandomBool((double)Math.Min(chance, 1f)) ? amount : 0;
-
-    private bool IsBoss(MonsterDefinition monster) => this._configuration.BossMonsterNumbers.Contains(monster.Number);
-
-    /// <summary>
-    /// Calculates the multipliers which give the regular monsters the average strength of the tier.
-    /// The differences between the monster types stay.
-    /// </summary>
-    /// <param name="regularSpawns">The spawns of the regular monsters.</param>
-    private void CalculateStrength(IReadOnlyCollection<MonsterSpawnArea> regularSpawns)
-    {
-        if (this.Strength is not { } strength)
-        {
-            this.Logger.LogWarning("{context}: The reference map of the tier has no monsters, the monsters keep their strength.", this);
-            return;
-        }
-
-        var averageHealth = GetAverage(regularSpawns, Stats.MaximumHealth);
-        var averageLevel = GetAverage(regularSpawns, Stats.Level);
-
-        this._healthMultiplier.Value = GetRatio(strength.Health, averageHealth);
-        this._damageMultiplier.Value = GetRatio(strength.Damage, GetAverage(regularSpawns, Stats.MaximumPhysBaseDmg));
-        this._defenseMultiplier.Value = GetRatio(strength.Defense, GetAverage(regularSpawns, Stats.DefenseBase));
-        this._rateMultiplier.Value = GetRatio(strength.Level, averageLevel);
-        this._levelIncrease.Value = strength.Level > 0 && averageLevel > 0 ? strength.Level - averageLevel : 0;
-
-        var bossHealth = this._bossSpawn?.MonsterDefinition is { } boss ? KalimaStrengthCalculator.GetValue(boss, Stats.MaximumHealth) : 0;
-        this._bossHealthMultiplier.Value = bossHealth > 0 ? this._configuration.BossHealthFactor * strength.Health / bossHealth : 1.0f;
-    }
-
-    private void ApplyStrength(Monster monster)
-    {
-        var attributes = monster.Attributes;
-        attributes.AddElement(this.IsBoss(monster.Definition) ? this._bossHealthMultiplier : this._healthMultiplier, Stats.MaximumHealth);
-        attributes.AddElement(this._damageMultiplier, Stats.MinimumPhysBaseDmg);
-        attributes.AddElement(this._damageMultiplier, Stats.MaximumPhysBaseDmg);
-        attributes.AddElement(this._defenseMultiplier, Stats.DefenseBase);
-        attributes.AddElement(this._rateMultiplier, Stats.AttackRatePvm);
-        attributes.AddElement(this._rateMultiplier, Stats.DefenseRatePvm);
-        attributes.AddElement(this._levelIncrease, Stats.Level);
-        monster.Health = (int)attributes[Stats.MaximumHealth];
-    }
-
     /// <summary>
     /// Spawns the next pack, or the boss after the last pack.
     /// </summary>
@@ -323,7 +138,7 @@ public sealed class KalimaInstanceContext : MiniGameContext
         while (!this.IsDisposing && !this.IsDisposed)
         {
             int packIndex;
-            lock (this._syncRoot)
+            lock (this.SyncRoot)
             {
                 if (this._alivePackMonsters.Count > 0)
                 {
@@ -367,9 +182,9 @@ public sealed class KalimaInstanceContext : MiniGameContext
                 Y2 = (byte)Math.Min(point.Y1 + PackSpawnSpread, byte.MaxValue),
             };
 
-            if (await this._mapInitializer.InitializeSpawnAsync(i, this.Map, area, this).ConfigureAwait(false) is AttackableNpcBase { IsAlive: true } monster)
+            if (await this.MapInitializer.InitializeSpawnAsync(i, this.Map, area, this).ConfigureAwait(false) is AttackableNpcBase { IsAlive: true } monster)
             {
-                lock (this._syncRoot)
+                lock (this.SyncRoot)
                 {
                     this._alivePackMonsters.Add(monster);
                 }
@@ -383,9 +198,9 @@ public sealed class KalimaInstanceContext : MiniGameContext
 
     private async ValueTask SpawnBossAsync()
     {
-        lock (this._syncRoot)
+        lock (this.SyncRoot)
         {
-            if (this._bossSpawned || this._bossSpawn is null)
+            if (this._bossSpawned || this.BossSpawn?.MonsterDefinition is null)
             {
                 return;
             }
@@ -393,20 +208,8 @@ public sealed class KalimaInstanceContext : MiniGameContext
             this._bossSpawned = true;
         }
 
-        var area = new MonsterSpawnArea
-        {
-            GameMap = this.Map.Definition,
-            MonsterDefinition = this._bossSpawn.MonsterDefinition,
-            SpawnTrigger = SpawnTrigger.OnceAtEventStart,
-            Quantity = 1,
-            Direction = this._bossSpawn.Direction,
-            X1 = this._bossSpawn.X1,
-            X2 = this._bossSpawn.X2,
-            Y1 = this._bossSpawn.Y1,
-            Y2 = this._bossSpawn.Y2,
-        };
-
-        await this._mapInitializer.InitializeSpawnAsync(0, this.Map, area, this).ConfigureAwait(false);
+        var spawn = this.BossSpawn;
+        await this.SpawnMonsterAsync(0, spawn.MonsterDefinition, spawn.X1, spawn.Y1, spawn.X2, spawn.Y2, spawn.Direction).ConfigureAwait(false);
         await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceBossAppeared)).ConfigureAwait(false);
     }
 
@@ -418,16 +221,12 @@ public sealed class KalimaInstanceContext : MiniGameContext
     /// <param name="isBoss">If set to <c>true</c>, the monster is the boss.</param>
     private async ValueTask GiveEssenceAsync(Monster monster, bool isBoss)
     {
-        if (this._gameContext.FeaturePlugIns.GetPlugIn<KundunEssencePlugIn>() is not { } essence)
+        if (this.GameContext.FeaturePlugIns.GetPlugIn<KundunEssencePlugIn>() is not { } essence)
         {
             return;
         }
 
-        List<Player> players;
-        lock (this._syncRoot)
-        {
-            players = this._playersOnMap.ToList();
-        }
+        var players = this.GetPlayersOnMap();
 
         var configuration = this._configuration;
         foreach (var player in players)
@@ -454,14 +253,9 @@ public sealed class KalimaInstanceContext : MiniGameContext
     /// <param name="isBoss">If set to <c>true</c>, the monster is the boss.</param>
     private async ValueTask DropItemsAsync(Point position, string killerName, bool isBoss)
     {
-        Player? killer;
-        int playerCount;
-        lock (this._syncRoot)
-        {
-            killer = this._playersOnMap.FirstOrDefault(p => p.Name == killerName) ?? this._playersOnMap.FirstOrDefault();
-            playerCount = this._playersOnMap.Count;
-        }
-
+        var players = this.GetPlayersOnMap();
+        var killer = players.FirstOrDefault(p => p.Name == killerName) ?? players.FirstOrDefault();
+        var playerCount = players.Count;
         if (killer is null)
         {
             return;
@@ -473,97 +267,9 @@ public sealed class KalimaInstanceContext : MiniGameContext
             : RollAmount(configuration.SymbolDropChance, 1);
         var lostMaps = isBoss ? RollAmount(configuration.BossLostMapChance, 1) : 0;
 
-        var items = this._gameContext.Configuration.Items;
-        await this.DropAsync(killer, items.FirstOrDefault(d => d is { Group: KalimaConstants.SymbolOfKundunGroup, Number: KalimaConstants.SymbolOfKundunNumber }), symbols, position).ConfigureAwait(false);
-        await this.DropAsync(killer, items.FirstOrDefault(d => d.IsLostMap()), lostMaps, position).ConfigureAwait(false);
-    }
-
-    private async ValueTask DropAsync(Player killer, ItemDefinition? definition, int count, Point position)
-    {
-        if (definition is null)
-        {
-            if (count > 0)
-            {
-                this.Logger.LogWarning("{context}: The item definition to drop is missing.", this);
-            }
-
-            return;
-        }
-
-        for (var i = 0; i < count; i++)
-        {
-            var item = new TemporaryItem
-            {
-                Definition = definition,
-                Level = (byte)this.Tier.Level,
-                Durability = 1,
-            };
-            var dropPosition = i == 0 ? position : this.Map.Terrain.GetRandomCoordinate(position, DropSpread);
-            await this.Map.AddAsync(killer.CreateDropForKiller(item, dropPosition, this.Map)).ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>
-    /// Closes the instance after some time without players, so that it doesn't use resources for nothing.
-    /// </summary>
-    private void StartEmptyCheck()
-    {
-        int version;
-        lock (this._syncRoot)
-        {
-            version = ++this._emptyCheckVersion;
-        }
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(this._configuration.CloseWhenEmptyAfter, this.GameEndedToken).ConfigureAwait(false);
-                lock (this._syncRoot)
-                {
-                    if (version != this._emptyCheckVersion || this._playersOnMap.Count > 0)
-                    {
-                        return;
-                    }
-                }
-
-                this.Logger.LogDebug("{context}: Closing the empty instance.", this);
-                this.FinishEvent();
-            }
-            catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException)
-            {
-                // the game ended
-            }
-        });
-    }
-
-    private async Task RunTimerAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            foreach (var minutes in NoticeMinutes)
-            {
-                var delay = this.TimeLeft - TimeSpan.FromMinutes(minutes);
-                if (delay < TimeSpan.Zero)
-                {
-                    continue;
-                }
-
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceClosesInMinutesFormat), minutes).ConfigureAwait(false);
-            }
-
-            await Task.Delay(this.TimeLeft, cancellationToken).ConfigureAwait(false);
-            await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceTimeOver)).ConfigureAwait(false);
-            this.FinishEvent();
-        }
-        catch (OperationCanceledException)
-        {
-            // the game ended
-        }
-        catch (Exception ex)
-        {
-            this.Logger.LogError(ex, "{context}: Unexpected error in the timer of the instance.", this);
-        }
+        var items = this.GameContext.Configuration.Items;
+        var level = (byte)this.Tier.Level;
+        await this.DropAsync(killer, items.FirstOrDefault(d => d is { Group: KalimaConstants.SymbolOfKundunGroup, Number: KalimaConstants.SymbolOfKundunNumber }), level, symbols, position).ConfigureAwait(false);
+        await this.DropAsync(killer, items.FirstOrDefault(d => d.IsLostMap()), level, lostMaps, position).ConfigureAwait(false);
     }
 }

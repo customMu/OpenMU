@@ -1410,4 +1410,10 @@
   <data name="EssenceChatCommandPlugIn_Description" xml:space="preserve">
     <value>Shows the Kundun Essence (currency) of the character.</value>
   </data>
+  <data name="KundunChamberPlugIn_Name" xml:space="preserve">
+    <value>Chamber of Kundun</value>
+  </data>
+  <data name="KundunChamberPlugIn_Description" xml:space="preserve">
+    <value>The weekly fight against Kundun in 3 phases on the Kalima map of the tier, for a party or a single player. It's entered through the keeper npc (David in Lorencia); each character pays with a Lost Map of the level of the chamber. The kill times are saved as ranking of the mini game.</value>
+  </data>
 </root>

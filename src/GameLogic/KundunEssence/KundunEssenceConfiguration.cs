@@ -20,8 +20,8 @@ public class KundunEssenceConfiguration
     /// <summary>
     /// Gets or sets a value indicating whether lost maps which are bought in the essence shop are bound to the character.
     /// </summary>
-    [Display(Name = "Bind bought lost maps", Description = "Lost maps which are bought for essence are bound to the character: they can't be traded, sold or put into the vault. Dropped lost maps (from the Illusion of Kundun or of 5 Symbols of Kundun) stay tradable.")]
-    public bool BindBoughtLostMaps { get; set; } = true;
+    [Display(Name = "Bind bought lost maps", Description = "Lost maps which are bought for essence are bound to the character: they can't be traded, sold or put into the vault. By default, they are tradable like the dropped ones; only lost maps of a donation are bound.")]
+    public bool BindBoughtLostMaps { get; set; }
 
     /// <summary>
     /// Gets or sets the prices of the essence shop.

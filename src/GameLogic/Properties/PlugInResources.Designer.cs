@@ -3940,5 +3940,23 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("EssenceChatCommandPlugIn_Description", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Chamber of Kundun.
+        /// </summary>
+        public static string KundunChamberPlugIn_Name {
+            get {
+                return ResourceManager.GetString("KundunChamberPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The weekly fight against Kundun in 3 phases on the Kalima map of the tier, for a party or a single player. It's entered through the keeper npc (David in Lorencia); each character pays with a Lost Map of the level of the chamber. The kill times are saved as ranking of the mini game..
+        /// </summary>
+        public static string KundunChamberPlugIn_Description {
+            get {
+                return ResourceManager.GetString("KundunChamberPlugIn_Description", resourceCulture);
+            }
+        }
     }
 }

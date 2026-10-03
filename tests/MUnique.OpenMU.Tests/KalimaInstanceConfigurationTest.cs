@@ -100,12 +100,13 @@ public class KalimaInstanceConfigurationTest
     }
 
     /// <summary>
-    /// A lost map which is bought in the essence shop is bound to the character, a dropped one is not.
+    /// A lost map which is bought in the essence shop is bound to the character, if it's configured so.
     /// </summary>
     [Test]
     public void BoughtLostMapIsBound()
     {
-        var plugIn = new KundunEssencePlugIn();
+        Assert.That(new KundunEssenceConfiguration().BindBoughtLostMaps, Is.False, "by default, bought lost maps are tradable");
+        var plugIn = new KundunEssencePlugIn { Configuration = new KundunEssenceConfiguration { BindBoughtLostMaps = true } };
         var lostMap = new Item { Definition = new ItemDefinition { Group = 14, Number = 28 }, Level = 3 };
         var jewel = new Item { Definition = new ItemDefinition { Group = 14, Number = 13 } };
         Assert.That(lostMap.IsBoundToCharacter(), Is.False);
