@@ -16,7 +16,7 @@ using MUnique.OpenMU.PlugIns;
 [PlugIn]
 [Display(Name = nameof(PlugInResources.KalimaInstancePlugIn_Name), Description = nameof(PlugInResources.KalimaInstancePlugIn_Description), ResourceType = typeof(PlugInResources))]
 [Guid("6F2B9D41-3A7C-4E85-9C1D-8B4E2F7A6C13")]
-public class KalimaInstancePlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, IPlayerStateChangedPlugIn, ISupportCustomConfiguration<KalimaInstanceConfiguration>, ISupportDefaultCustomConfiguration
+public class KalimaInstancePlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, IPlayerStateChangedPlugIn, IExperienceCalculationPlugIn, ISupportCustomConfiguration<KalimaInstanceConfiguration>, ISupportDefaultCustomConfiguration
 {
     /// <summary>
     /// Gets or sets the configuration.
@@ -93,6 +93,17 @@ public class KalimaInstancePlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, IPla
                 player.Logger.LogError(ex, "Error when moving {player} out of the regular Kalima map.", player);
             }
         });
+
+        return ValueTask.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public ValueTask CalculateExperienceAsync(Player player, ExperienceCalculationArgs args)
+    {
+        if (player.CurrentMiniGame is KalimaInstanceContext instance)
+        {
+            args.Experience *= instance.ExperienceMultiplier;
+        }
 
         return ValueTask.CompletedTask;
     }

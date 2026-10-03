@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="KalimaInstanceStatusFormat" xml:space="preserve">
-    <value>Калима {0}: инстанс закроется через {1} мин. Игроков: {2}.</value>
+    <value>Калима {0}: пачка {1}/{2}, инстанс закроется через {3} мин.</value>
   </data>
   <data name="KalimaInstanceClosesInMinutesFormat" xml:space="preserve">
     <value>Инстанс Калимы закроется через {0} мин.!</value>
@@ -152,5 +152,17 @@
   </data>
   <data name="KundunSymbolsItemNotForSale" xml:space="preserve">
     <value>Этот предмет нельзя купить за Символы Кундуна.</value>
+  </data>
+  <data name="KalimaInstancePackFormat" xml:space="preserve">
+    <value>Пачка {0}/{1}!</value>
+  </data>
+  <data name="KalimaInstanceBossAppeared" xml:space="preserve">
+    <value>Появилась Иллюзия Кундуна!</value>
+  </data>
+  <data name="KalimaInstanceBossDefeated" xml:space="preserve">
+    <value>Иллюзия Кундуна повержена!</value>
+  </data>
+  <data name="KalimaInstanceTimeOver" xml:space="preserve">
+    <value>Время инстанса Калимы вышло.</value>
   </data>
 </root>

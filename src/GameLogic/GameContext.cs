@@ -303,7 +303,7 @@ public class GameContext : AsyncDisposable, IGameContext
         var createdMap = miniGameContext.Map;
 
         // ReSharper disable once InconsistentlySynchronizedField it's desired behavior to initialize the map outside the lock to keep locked timespan short.
-        await this._mapInitializer.InitializeStateAsync(createdMap).ConfigureAwait(false);
+        await miniGameContext.InitializeMapStateAsync().ConfigureAwait(false);
         this.GameMapCreated?.Invoke(this, createdMap);
         MiniGameCounter.Add(1);
         return miniGameContext;

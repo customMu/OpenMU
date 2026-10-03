@@ -2131,7 +2131,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Kalima {0}: the instance closes in {1} minutes. Players: {2}..
+        ///   Looks up a localized string similar to Kalima {0}: pack {1}/{2}, the instance closes in {3} minutes..
         /// </summary>
         public static string KalimaInstanceStatusFormat {
             get {
@@ -2235,6 +2235,42 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         public static string KundunSymbolsItemNotForSale {
             get {
                 return ResourceManager.GetString("KundunSymbolsItemNotForSale", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Pack {0}/{1}!.
+        /// </summary>
+        public static string KalimaInstancePackFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstancePackFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Illusion of Kundun appeared!.
+        /// </summary>
+        public static string KalimaInstanceBossAppeared {
+            get {
+                return ResourceManager.GetString("KalimaInstanceBossAppeared", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Illusion of Kundun is defeated!.
+        /// </summary>
+        public static string KalimaInstanceBossDefeated {
+            get {
+                return ResourceManager.GetString("KalimaInstanceBossDefeated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The time of the Kalima instance is over..
+        /// </summary>
+        public static string KalimaInstanceTimeOver {
+            get {
+                return ResourceManager.GetString("KalimaInstanceTimeOver", resourceCulture);
             }
         }
     }

@@ -197,6 +197,12 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
         return EnterResult.Success;
     }
 
+    /// <summary>
+    /// Initializes the state of the map after the game got created, which spawns its automatic npcs and monsters.
+    /// </summary>
+    /// <returns>The task.</returns>
+    public virtual ValueTask InitializeMapStateAsync() => this._mapInitializer.InitializeStateAsync(this.Map);
+
     /// <inheritdoc />
     public bool IsSpawnWaveActive(byte waveNumber)
     {

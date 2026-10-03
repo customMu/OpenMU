@@ -16,24 +16,6 @@ using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 public class KalimaInstanceConfigurationTest
 {
     /// <summary>
-    /// The factor grows by (per player - 1) for each additional player, up to a full party.
-    /// </summary>
-    [TestCase(2.0f, 0, 1.0f)]
-    [TestCase(2.0f, 1, 1.0f)]
-    [TestCase(2.0f, 2, 2.0f)]
-    [TestCase(2.0f, 5, 5.0f)]
-    [TestCase(2.0f, 10, 5.0f)]
-    [TestCase(1.6f, 2, 1.6f)]
-    [TestCase(1.6f, 5, 3.4f)]
-    [TestCase(2.1f, 2, 2.1f)]
-    [TestCase(2.1f, 5, 5.4f)]
-    public void PlayerFactor(float perPlayer, int players, float expected)
-    {
-        var configuration = new KalimaInstanceConfiguration();
-        Assert.That(configuration.GetPlayerFactor(perPlayer, players), Is.EqualTo(expected).Within(0.0001f));
-    }
-
-    /// <summary>
     /// A new day starts at the daily reset hour, the time before still belongs to the previous day.
     /// </summary>
     [Test]
@@ -77,20 +59,6 @@ public class KalimaInstanceConfigurationTest
     {
         var configuration = new KalimaInstanceConfiguration();
         Assert.That(configuration.GetHighestTier(resets)?.Level, Is.EqualTo(expectedLevel));
-    }
-
-    /// <summary>
-    /// The symbols are personal; the chance of each player grows with the party size.
-    /// </summary>
-    [TestCase(1, 0.12f)]
-    [TestCase(2, 0.132f)]
-    [TestCase(5, 0.168f)]
-    [TestCase(10, 0.168f)]
-    public void SymbolChance(int players, float expected)
-    {
-        var configuration = new KalimaInstanceConfiguration();
-        var tier = configuration.GetTier(7)!;
-        Assert.That(configuration.GetSymbolChance(tier, players), Is.EqualTo(expected).Within(0.0001f));
     }
 
     /// <summary>

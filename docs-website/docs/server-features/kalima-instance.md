@@ -25,63 +25,70 @@ Symbols of Kundun are a **currency** which is spent in the symbol shop.
 - **One entry per day.** The entries are reset every day at 06:00 (server time,
   or the configured time zone). Going back into the own instance, e.g. after a
   death, is free as long as it's running.
-- An instance runs for **60 minutes**. Notices are shown 30, 10, 5 and 1 minute
+- An instance runs for **40 minutes**. Notices are shown 30, 10, 5 and 1 minute
   before it closes. After a death you respawn in Lorencia and can talk to Lugard
-  again to go back.
-- The monsters are much stronger than on a regular map, and they get stronger
-  with each player in the instance - but the drop grows faster than the monsters.
-- **Symbols of Kundun** only come from the Kalima instance and are personal: for
-  every killed monster each player in the instance rolls its own chance, and the
-  Illusion of Kundun (once per instance, it doesn't respawn within an hour) gives
-  a fixed amount to everyone. They go into a counter of the character (no stack
-  limit), so they can't be traded or sold. The regular monsters respawn after
-  10 seconds.
+  again to go back; the killed packs stay killed. An instance without players
+  is closed after 5 minutes.
+- **Symbols of Kundun** only come from the Kalima instance and go into a counter
+  of the character (no stack limit), so they can't be traded or sold.
   `/symbols` shows the balance; the client shows it when the mouse is over the
   zen in the inventory.
 - **Delgado** in Lorencia sells for symbols instead of zen.
 - The Lost Map doesn't open a gate anymore, and symbols aren't combined to a
   Lost Map.
 
-## Scaling by players
+## The run: packs and the boss
 
-For each player in the instance (up to a full party) the monsters and the drop
-are multiplied with:
+There is no respawn. The monsters come in **10 packs of 8** along the way from
+the entrance to the Illusion of Kundun (the spawn points of the regular Kalima
+map, ordered by their walking distance from the entrance). The next pack
+appears when the previous one is killed, the **Illusion of Kundun** after the
+last pack.
 
-```
-factor = 1 + (per player - 1) * (players - 1)
-```
+The difficulty is fixed - it doesn't depend on the number of players. It's made
+for a party of 3-4 well equipped players: about the monsters of the reset ladder
+5 resets above the tier, with ten times their health. A single player can
+survive, but hardly reaches the boss in time.
 
-| Per player (default) | 1 player | 2 players | 3 players | 5 players |
-|---|---|---|---|---|
-| Health ×2.0 | ×1 | ×2 | ×3 | ×5 |
-| Defense ×2.0 | ×1 | ×2 | ×3 | ×5 |
-| Damage ×1.6 | ×1 | ×1.6 | ×2.2 | ×3.4 |
-| Drop ×2.1 | ×1 | ×2.1 | ×3.2 | ×5.4 |
+| Kalima | Resets | Monster level | Health | Damage | Defense | Boss health |
+|---|---|---|---|---|---|---|
+| 1 | 5 | 100 | 400 000 | 1 200 | 450 | 20 M |
+| 2 | 10 | 110 | 700 000 | 1 500 | 500 | 35 M |
+| 3 | 15 | 117 | 900 000 | 1 650 | 620 | 45 M |
+| 4 | 22 | 122 | 1 000 000 | 1 800 | 680 | 50 M |
+| 5 | 30 | 130 | 1 000 000 | 2 800 | 650 | 50 M |
+| 6 | 40 | 140 | 2 400 000 | 3 100 | 820 | 120 M |
+| 7 | 50 | 145 | 2 600 000 | 3 300 | 900 | 130 M |
 
-The factors are multiplied with the base multipliers of the Kalima level (the
-monsters of Kalima 1 are made for characters without resets, so they get the
-highest base multipliers). The number of monsters stays the same.
+The values are the averages of the regular monsters; the differences between
+the monster types of the map stay. The boss has 50 times the health of a
+regular monster. The level counts for the experience and the attack and
+defense rates. The damage of Kalima 5-7 is lower than double of the reference
+maps, because the monsters of Raklion already hit very hard; the defense is not
+multiplied, because it's subtracted from the damage and would make weaker
+players useless.
 
-A drop multiplier of 2.5 means two full drop rolls and a 50 % chance for a third
-one; every roll includes the regular drop groups and the additional drops
-(jewels, items by rank). Money drops like on a regular map. The penalty by
-resets doesn't apply in the instance.
-
-When a player enters or leaves, the multipliers are updated at once; the health
-of the living monsters is adapted, so their health bar keeps its percentage.
+The experience is multiplied by 20, money drops like on a regular map, and the
+penalty by resets doesn't apply in the instance.
 
 ## Symbols per run
 
-| Kalima | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-|---|---|---|---|---|---|---|---|
-| Chance per kill | 6 % | 7 % | 8 % | 9 % | 10 % | 11 % | 12 % |
-| Boss | 2 | 4 | 6 | 8 | 10 | 12 | 15 |
+- For every killed monster, each living player within 15 tiles rolls **5 %** for
+  **1 × Kalima level** symbols.
+- The Illusion of Kundun gives **5 × Kalima level** symbols to everyone in the
+  instance (the daily boss reward).
 
-The chance of each player grows by 10 % per additional player
-(`chance = base * (1 + 0.1 * (players - 1))`, +40 % in a full party). As the
-monster health grows with the players, a party kills about as fast as a single
-player of the same strength, so every member gets about 1.4 times the symbols
-of a solo run - and players who only follow without damage slow the party down.
+| Kalima | 1 | 4 | 7 |
+|---|---|---|---|
+| Expected from the 80 monsters | ~4 | ~16 | ~28 |
+| Boss | 5 | 20 | 35 |
+| Per day | ~9 | ~36 | ~63 |
+
+The total health of a run shows the damage which is needed: at Kalima 1 about
+52 M (80 × 400 000 + 20 M), at Kalima 7 about 340 M. For 30 minutes of fighting
+this is about 29 000 damage per second for the party at Kalima 1, and about
+190 000 at Kalima 7. The values of the tiers are a starting point and should be
+adjusted to the real damage of the characters of the server.
 
 ## For admins
 
@@ -95,12 +102,13 @@ of a solo run - and players who only follow without damage slow the party down.
 2. The plugins **"Kalima instance"** and **"Symbols of Kundun currency"** are
    active by default. Their configuration (Admin panel → Plugins):
    - Kalima instance: gatekeeper npc, entries per day, daily reset hour, time
-     zone, multipliers per player, tiers (minimum resets and base multipliers per
-     Kalima level).
+     zone, duration, packs, monsters per pack, experience multiplier, symbol
+     chance and amounts, boss health factor, tiers (minimum resets, monster
+     level, health, damage, defense, drop multiplier per Kalima level).
    - Symbols of Kundun: symbol shop npc and the prices (by item group, number and
      level). The items of the shop are edited at the merchant store of the npc.
-3. The playing time is the game duration of the mini game definition plus one
-   minute (the entrance phase).
+3. The playing time is the duration of the plugin configuration; the game
+   duration of the mini game definitions has to be longer.
 
 The game client of this server shows the symbol balance and the symbol prices
 of the shop with two custom packets (`C1 FB 01` balance, `C2 FB 02` shop

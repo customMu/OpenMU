@@ -3897,7 +3897,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Kalima 1-7 as a daily instance for a party or a single player: entered by talking to the gatekeeper npc (Lugard in Lorencia), one entry per day, tiers by resets, monsters and drops scaled by the number of players. The regular Kalima maps and the Lost Map gates are closed..
+        ///   Looks up a localized string similar to Kalima 1-7 as a daily instance for a party or a single player: entered by talking to the gatekeeper npc (Lugard in Lorencia), one entry per day, tiers by resets, 10 packs of monsters and the Illusion of Kundun within 40 minutes, a fixed difficulty for a party of 3-4 players. The regular Kalima maps and the Lost Map gates are closed..
         /// </summary>
         public static string KalimaInstancePlugIn_Description {
             get {

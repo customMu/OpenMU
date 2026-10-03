@@ -97,7 +97,7 @@ internal class KalimaInstanceInitializer : InitializerBase
             this.GameConfiguration.MiniGameDefinitions.Add(definition);
             definition.SetGuid((short)MiniGameType.KalimaInstance, level);
             definition.Name = $"Kalima Instance {level}";
-            definition.Description = $"The daily Kalima {level} instance for a party or a single player. The game duration plus one minute is the playing time.";
+            definition.Description = $"The daily Kalima {level} instance for a party or a single player. The playing time is configured in the plugin \"Kalima instance\", the game duration has to be longer.";
             definition.Type = MiniGameType.KalimaInstance;
             definition.GameLevel = level;
             definition.EnterDuration = TimeSpan.Zero;

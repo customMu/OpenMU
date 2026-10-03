@@ -808,7 +808,7 @@
     <value>You need {0} resets to warp there.</value>
   </data>
   <data name="KalimaInstanceStatusFormat" xml:space="preserve">
-    <value>Kalima {0}: the instance closes in {1} minutes. Players: {2}.</value>
+    <value>Kalima {0}: pack {1}/{2}, the instance closes in {3} minutes.</value>
   </data>
   <data name="KalimaInstanceClosesInMinutesFormat" xml:space="preserve">
     <value>The Kalima instance closes in {0} minutes!</value>
@@ -842,5 +842,17 @@
   </data>
   <data name="KundunSymbolsItemNotForSale" xml:space="preserve">
     <value>This item can't be bought with Symbols of Kundun.</value>
+  </data>
+  <data name="KalimaInstancePackFormat" xml:space="preserve">
+    <value>Pack {0}/{1}!</value>
+  </data>
+  <data name="KalimaInstanceBossAppeared" xml:space="preserve">
+    <value>The Illusion of Kundun appeared!</value>
+  </data>
+  <data name="KalimaInstanceBossDefeated" xml:space="preserve">
+    <value>The Illusion of Kundun is defeated!</value>
+  </data>
+  <data name="KalimaInstanceTimeOver" xml:space="preserve">
+    <value>The time of the Kalima instance is over.</value>
   </data>
 </root>

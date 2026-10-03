@@ -22,40 +22,34 @@ public class KalimaInstanceTier
     public int MinimumResets { get; set; }
 
     /// <summary>
-    /// Gets or sets the health multiplier of the monsters for a single player.
+    /// Gets or sets the average level of the monsters.
     /// </summary>
-    [Display(Name = "Health multiplier")]
-    public float HealthMultiplier { get; set; } = 1.0f;
+    [Display(Name = "Monster level", Description = "Average level of the monsters, which counts for the experience and the attack and defense rates.")]
+    public int MonsterLevel { get; set; }
 
     /// <summary>
-    /// Gets or sets the defense multiplier of the monsters for a single player.
+    /// Gets or sets the average health of the monsters.
     /// </summary>
-    [Display(Name = "Defense multiplier")]
-    public float DefenseMultiplier { get; set; } = 1.0f;
+    [Display(Name = "Health", Description = "Average maximum health of the regular monsters.")]
+    public int Health { get; set; }
 
     /// <summary>
-    /// Gets or sets the damage multiplier of the monsters for a single player.
+    /// Gets or sets the average maximum damage of the monsters.
     /// </summary>
-    [Display(Name = "Damage multiplier")]
-    public float DamageMultiplier { get; set; } = 1.0f;
+    [Display(Name = "Damage", Description = "Average maximum base damage of the monsters.")]
+    public int Damage { get; set; }
 
     /// <summary>
-    /// Gets or sets the item drop multiplier for a single player.
+    /// Gets or sets the average defense of the monsters.
     /// </summary>
-    [Display(Name = "Drop multiplier")]
+    [Display(Name = "Defense", Description = "Average defense of the monsters.")]
+    public int Defense { get; set; }
+
+    /// <summary>
+    /// Gets or sets the item drop multiplier.
+    /// </summary>
+    [Display(Name = "Drop multiplier", Description = "Item drop multiplier, 1.5 means one roll and a 50 % chance for a second one.")]
     public float DropMultiplier { get; set; } = 1.0f;
-
-    /// <summary>
-    /// Gets or sets the chance per killed monster that each player in the instance gets a Symbol of Kundun, for a single player.
-    /// </summary>
-    [Display(Name = "Symbol chance per kill", Description = "Chance (0.1 = 10 %) per killed monster that each player in the instance gets a Symbol of Kundun. Values above 1 give several symbols.")]
-    public float SymbolChancePerKill { get; set; }
-
-    /// <summary>
-    /// Gets or sets the symbols which each player in the instance gets for killing the Illusion of Kundun.
-    /// </summary>
-    [Display(Name = "Symbols for the boss", Description = "Symbols of Kundun which each player in the instance gets when the Illusion of Kundun is killed (once per instance, it doesn't respawn within an hour).")]
-    public int BossSymbols { get; set; }
 
     /// <inheritdoc />
     public override string ToString() => $"Kalima {this.Level}: {this.MinimumResets} resets";

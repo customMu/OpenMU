@@ -41,45 +41,69 @@ public class KalimaInstanceConfiguration
     public string TimeZoneId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the maximum player count which is considered for the party scaling.
+    /// Gets or sets the duration of an instance.
     /// </summary>
-    [Display(Name = "Maximum scaled players", Description = "The scaling by players stops at this player count (a full party).")]
-    public int MaximumScaledPlayers { get; set; } = 5;
+    [Display(Name = "Duration", Description = "How long an instance runs. The game duration of the mini game definitions has to be longer.")]
+    public TimeSpan Duration { get; set; } = TimeSpan.FromMinutes(40);
 
     /// <summary>
-    /// Gets or sets the health multiplier per additional player.
+    /// Gets or sets the time after which an instance without players is closed.
     /// </summary>
-    [Display(Name = "Health per player", Description = "Health multiplier of the monsters for each player in the instance: factor = 1 + (value - 1) * (players - 1). 2 means double health with 2 players, five times with 5 players.")]
-    public float HealthPerPlayer { get; set; } = 2.0f;
+    [Display(Name = "Close when empty after", Description = "An instance without players is closed after this time (players who died have this time to come back).")]
+    public TimeSpan CloseWhenEmptyAfter { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// Gets or sets the defense multiplier per additional player.
+    /// Gets or sets the number of packs before the boss.
     /// </summary>
-    [Display(Name = "Defense per player", Description = "Defense multiplier of the monsters for each player in the instance, same formula as the health.")]
-    public float DefensePerPlayer { get; set; } = 2.0f;
+    [Display(Name = "Packs", Description = "Number of monster packs along the way to the Illusion of Kundun. The next pack appears when the previous one is killed, the boss after the last one.")]
+    public int PackCount { get; set; } = 10;
 
     /// <summary>
-    /// Gets or sets the damage multiplier per additional player.
+    /// Gets or sets the number of monsters per pack.
     /// </summary>
-    [Display(Name = "Damage per player", Description = "Damage multiplier of the monsters for each player in the instance, same formula as the health.")]
-    public float DamagePerPlayer { get; set; } = 1.6f;
+    [Display(Name = "Monsters per pack")]
+    public int MonstersPerPack { get; set; } = 8;
 
     /// <summary>
-    /// Gets or sets the drop multiplier per additional player.
+    /// Gets or sets the experience multiplier in the instance.
     /// </summary>
-    [Display(Name = "Drop per player", Description = "Item drop multiplier for each player in the instance, same formula as the health. Each full multiple is an additional drop roll, the fraction is the chance for one more.")]
-    public float DropPerPlayer { get; set; } = 2.1f;
+    [Display(Name = "Experience multiplier", Description = "Multiplier of the experience for the monsters of the instance.")]
+    public float ExperienceMultiplier { get; set; } = 20f;
 
     /// <summary>
-    /// Gets or sets the bonus on the symbol chance per additional player.
+    /// Gets or sets the chance per kill that a player near the killed monster gets symbols.
     /// </summary>
-    [Display(Name = "Symbol bonus per player", Description = "The symbols are personal: every player in the instance rolls for each kill. The chance grows by this value for each additional player: chance = base * (1 + value * (players - 1)), so 0.1 means +40 % for each member of a full party.")]
-    public float SymbolBonusPerPlayer { get; set; } = 0.1f;
+    [Display(Name = "Symbol chance per kill", Description = "Chance (0.05 = 5 %) per killed monster that each living player near it gets 'Symbols per kill' x Kalima level.")]
+    public float SymbolChancePerKill { get; set; } = 0.05f;
+
+    /// <summary>
+    /// Gets or sets the symbols per kill and Kalima level.
+    /// </summary>
+    [Display(Name = "Symbols per kill", Description = "Symbols per successful roll, multiplied with the Kalima level.")]
+    public int SymbolsPerKill { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets the symbols for the boss and Kalima level.
+    /// </summary>
+    [Display(Name = "Symbols for the boss", Description = "Symbols which each player in the instance gets for the Illusion of Kundun, multiplied with the Kalima level (the daily boss reward).")]
+    public int BossSymbols { get; set; } = 5;
+
+    /// <summary>
+    /// Gets or sets the range around a killed monster, in which players get symbols.
+    /// </summary>
+    [Display(Name = "Symbol range", Description = "Players within this distance (in tiles) of a killed monster roll for symbols.")]
+    public int SymbolRange { get; set; } = 15;
+
+    /// <summary>
+    /// Gets or sets the health of the boss in relation to the health of the regular monsters.
+    /// </summary>
+    [Display(Name = "Boss health factor", Description = "The health of the Illusion of Kundun is this factor times the health of a regular monster of the tier.")]
+    public float BossHealthFactor { get; set; } = 50f;
 
     /// <summary>
     /// Gets or sets the numbers of the boss monsters (Illusion of Kundun 1-7).
     /// </summary>
-    [Display(Name = "Boss monster numbers", Description = "Monster numbers of the Illusion of Kundun 1-7; killing one gives 'Symbols for the boss' to each player in the instance.")]
+    [Display(Name = "Boss monster numbers", Description = "Monster numbers of the Illusion of Kundun 1-7; killing one gives 'Symbols for the boss' x Kalima level to each player in the instance.")]
     public ICollection<short> BossMonsterNumbers { get; set; } = new List<short> { 161, 181, 189, 197, 267, 275, 338 };
 
     /// <summary>
@@ -87,32 +111,8 @@ public class KalimaInstanceConfiguration
     /// </summary>
     [MemberOfAggregate]
     [ScaffoldColumn(true)]
-    [Display(Name = "Tiers", Description = "The Kalima maps by resets. A party enters the highest tier which all of its members reached. The multipliers are the base values for a single player.")]
+    [Display(Name = "Tiers", Description = "The Kalima maps by resets. A party enters the highest tier which all of its members reached. The monsters get the average level, health, damage and defense of the tier, their differences among each other stay.")]
     public ICollection<KalimaInstanceTier> Tiers { get; set; } = CreateDefaultTiers();
-
-    /// <summary>
-    /// Gets the scaling factor for the specified player count.
-    /// </summary>
-    /// <param name="perPlayer">The multiplier per player.</param>
-    /// <param name="playerCount">The player count.</param>
-    /// <returns>The factor, at least 1 player and at most <see cref="MaximumScaledPlayers"/> are considered.</returns>
-    public float GetPlayerFactor(float perPlayer, int playerCount)
-    {
-        var players = Math.Clamp(playerCount, 1, Math.Max(1, this.MaximumScaledPlayers));
-        return Math.Max(0.01f, 1 + ((perPlayer - 1) * (players - 1)));
-    }
-
-    /// <summary>
-    /// Gets the chance per kill that a player gets a Symbol of Kundun.
-    /// </summary>
-    /// <param name="tier">The tier.</param>
-    /// <param name="playerCount">The player count.</param>
-    /// <returns>The chance; values above 1 give several symbols.</returns>
-    public float GetSymbolChance(KalimaInstanceTier tier, int playerCount)
-    {
-        var players = Math.Clamp(playerCount, 1, Math.Max(1, this.MaximumScaledPlayers));
-        return Math.Max(0, tier.SymbolChancePerKill * (1 + (this.SymbolBonusPerPlayer * (players - 1))));
-    }
 
     /// <summary>
     /// Gets the tier of the specified level.
@@ -171,15 +171,18 @@ public class KalimaInstanceConfiguration
         return nextReset - localTime;
     }
 
+    // About 5 resets stronger than the maps of the reset ladder at the minimum resets of the tier,
+    // with ten times their health (a party of 3-4 well equipped players). The damage of Kalima 5-7
+    // is lower than double, because the monsters of Raklion already hit very hard.
     private static List<KalimaInstanceTier> CreateDefaultTiers() =>
     [
-        new() { Level = 1, MinimumResets = 5, HealthMultiplier = 6.0f, DefenseMultiplier = 3.0f, DamageMultiplier = 3.0f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.06f, BossSymbols = 2 },
-        new() { Level = 2, MinimumResets = 10, HealthMultiplier = 5.0f, DefenseMultiplier = 2.5f, DamageMultiplier = 2.5f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.07f, BossSymbols = 4 },
-        new() { Level = 3, MinimumResets = 15, HealthMultiplier = 4.0f, DefenseMultiplier = 2.2f, DamageMultiplier = 2.2f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.08f, BossSymbols = 6 },
-        new() { Level = 4, MinimumResets = 22, HealthMultiplier = 3.5f, DefenseMultiplier = 2.0f, DamageMultiplier = 2.0f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.09f, BossSymbols = 8 },
-        new() { Level = 5, MinimumResets = 30, HealthMultiplier = 3.0f, DefenseMultiplier = 1.8f, DamageMultiplier = 1.8f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.1f, BossSymbols = 10 },
-        new() { Level = 6, MinimumResets = 40, HealthMultiplier = 3.0f, DefenseMultiplier = 1.6f, DamageMultiplier = 1.6f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.11f, BossSymbols = 12 },
-        new() { Level = 7, MinimumResets = 50, HealthMultiplier = 3.0f, DefenseMultiplier = 1.5f, DamageMultiplier = 1.5f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.12f, BossSymbols = 15 },
+        new() { Level = 1, MinimumResets = 5, MonsterLevel = 100, Health = 400_000, Damage = 1200, Defense = 450 },
+        new() { Level = 2, MinimumResets = 10, MonsterLevel = 110, Health = 700_000, Damage = 1500, Defense = 500 },
+        new() { Level = 3, MinimumResets = 15, MonsterLevel = 117, Health = 900_000, Damage = 1650, Defense = 620 },
+        new() { Level = 4, MinimumResets = 22, MonsterLevel = 122, Health = 1_000_000, Damage = 1800, Defense = 680 },
+        new() { Level = 5, MinimumResets = 30, MonsterLevel = 130, Health = 1_000_000, Damage = 2800, Defense = 650 },
+        new() { Level = 6, MinimumResets = 40, MonsterLevel = 140, Health = 2_400_000, Damage = 3100, Defense = 820 },
+        new() { Level = 7, MinimumResets = 50, MonsterLevel = 145, Health = 2_600_000, Damage = 3300, Defense = 900 },
     ];
 
     private DateTime ToLocalTime(DateTime utcNow)
