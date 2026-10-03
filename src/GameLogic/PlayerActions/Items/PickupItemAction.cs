@@ -6,8 +6,6 @@ namespace MUnique.OpenMU.GameLogic.PlayerActions.Items;
 
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Configuration.Quests;
-using MUnique.OpenMU.GameLogic.KundunSymbols;
-using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 using MUnique.OpenMU.Interfaces;
@@ -34,10 +32,6 @@ public class PickupItemAction
                     await player.InvokeViewPlugInAsync<IItemPickUpFailedPlugIn>(p => p.ItemPickUpFailedAsync(ItemPickFailReason.General)).ConfigureAwait(false);
                 }
 
-                break;
-            case DroppedItem droppedItem when await TryCollectSymbolsAsync(player, droppedItem).ConfigureAwait(false) is not null:
-                // Symbols of Kundun are a currency, they don't go into the inventory.
-                await player.InvokeViewPlugInAsync<IItemPickUpFailedPlugIn>(p => p.ItemPickUpFailedAsync(ItemPickFailReason.General)).ConfigureAwait(false);
                 break;
             case DroppedItem droppedItem:
                 {
@@ -66,40 +60,6 @@ public class PickupItemAction
                 await player.InvokeViewPlugInAsync<IItemPickUpFailedPlugIn>(p => p.ItemPickUpFailedAsync(ItemPickFailReason.General)).ConfigureAwait(false);
                 break;
         }
-    }
-
-    /// <summary>
-    /// Collects the dropped item into the symbol balance of the player, if it's a Symbol of Kundun and the currency is active.
-    /// </summary>
-    /// <param name="player">The player.</param>
-    /// <param name="droppedItem">The dropped item.</param>
-    /// <returns><c>null</c>, if the item is not collected as a currency; otherwise, if it was collected successfully.</returns>
-    private static async ValueTask<bool?> TryCollectSymbolsAsync(Player player, DroppedItem droppedItem)
-    {
-        if (!droppedItem.Item.IsSymbolOfKundun()
-            || player.GameContext.FeaturePlugIns.GetPlugIn<KundunSymbolsPlugIn>() is not { } symbols
-            || !symbols.IsAvailable(player.GameContext.Configuration))
-        {
-            return null;
-        }
-
-        if (!CanPickup(player, droppedItem))
-        {
-            return false;
-        }
-
-        if (!droppedItem.IsPlayerAnOwner(player) && droppedItem.IsOwnerPickupPriorityActive)
-        {
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ItemDoesNotBelongToYou)).ConfigureAwait(false);
-            return false;
-        }
-
-        if (!await droppedItem.TryTakeAsync(player).ConfigureAwait(false))
-        {
-            return false;
-        }
-
-        return await symbols.TryCollectAsync(player, droppedItem.Item).ConfigureAwait(false);
     }
 
     private static async ValueTask<(bool Success, Item? StackTarget)> RejectAsync(Player player, string messageKey)

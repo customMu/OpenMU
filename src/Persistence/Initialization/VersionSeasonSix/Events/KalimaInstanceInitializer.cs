@@ -6,12 +6,12 @@ namespace MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix.Events;
 
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
-using MUnique.OpenMU.GameLogic.KundunSymbols;
+using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 
 /// <summary>
-/// The initializer for the Kalima instance (Kalima 1-7 as daily instance) and the symbol shop:
-/// the mini game definitions, the gatekeeper (Lugard) and the symbol shop (Delgado) in Lorencia.
+/// The initializer for the Kalima instance (Kalima 1-7 as daily instance) and the essence shop:
+/// the mini game definitions, the gatekeeper (Lugard) and the essence shop (Delgado) in Lorencia.
 /// </summary>
 internal class KalimaInstanceInitializer : InitializerBase
 {
@@ -21,11 +21,15 @@ internal class KalimaInstanceInitializer : InitializerBase
     internal const short GatekeeperSpawnNumber = 60;
 
     /// <summary>
-    /// The number of the spawn of the symbol shop in Lorencia.
+    /// The number of the spawn of the essence shop in Lorencia.
     /// </summary>
-    internal const short SymbolShopSpawnNumber = 61;
+    internal const short EssenceShopSpawnNumber = 61;
 
     private const byte LorenciaNumber = 0;
+
+    private const int StoreRowSize = 8;
+
+    private const int StoreSize = 120;
 
     /// <summary>
     /// The numbers of the maps Kalima 1 to 7.
@@ -47,13 +51,13 @@ internal class KalimaInstanceInitializer : InitializerBase
     {
         this.CreateMiniGameDefinitions();
         this.CreateLorenciaSpawns();
-        this.CreateSymbolShop();
+        this.CreateEssenceShop();
         RemoveSymbolDrops(this.GameConfiguration);
     }
 
     /// <summary>
-    /// Removes the regular drops of the Symbols of Kundun: they are given personally to the players
-    /// of the Kalima instance (plugin "Kalima instance") and don't drop anywhere else.
+    /// Removes the regular drops of the Symbols of Kundun: they drop in the Kalima instance only
+    /// (plugin "Kalima instance"), the Symbol +N in Kalima N.
     /// </summary>
     /// <param name="gameConfiguration">The game configuration.</param>
     internal static void RemoveSymbolDrops(GameConfiguration gameConfiguration)
@@ -125,7 +129,7 @@ internal class KalimaInstanceInitializer : InitializerBase
         }
 
         this.CreateNpcSpawn(lorencia, GatekeeperSpawnNumber, new KalimaInstanceConfiguration().GatekeeperNpcNumber, 125, 127, Direction.SouthEast);
-        this.CreateNpcSpawn(lorencia, SymbolShopSpawnNumber, new KundunSymbolsConfiguration().ShopNpcNumber, 136, 127, Direction.SouthWest);
+        this.CreateNpcSpawn(lorencia, EssenceShopSpawnNumber, new KundunEssenceConfiguration().ShopNpcNumber, 136, 127, Direction.SouthWest);
     }
 
     private void CreateNpcSpawn(GameMapDefinition map, short spawnNumber, short npcNumber, byte x, byte y, Direction direction)
@@ -150,33 +154,61 @@ internal class KalimaInstanceInitializer : InitializerBase
         map.MonsterSpawns.Add(area);
     }
 
-    private void CreateSymbolShop()
+    /// <summary>
+    /// Creates the essence shop, or adds the items of the default prices which are missing in it (e.g. the lost maps).
+    /// </summary>
+    internal void CreateEssenceShop()
     {
-        var shopNpc = this.GameConfiguration.Monsters.FirstOrDefault(m => m.Number == new KundunSymbolsConfiguration().ShopNpcNumber);
-        if (shopNpc is null || shopNpc.MerchantStore is not null)
+        var shopNpc = this.GameConfiguration.Monsters.FirstOrDefault(m => m.Number == new KundunEssenceConfiguration().ShopNpcNumber);
+        if (shopNpc is null)
         {
             return;
         }
 
-        var store = this.Context.CreateNew<ItemStorage>();
-        byte slot = 0;
-        foreach (var price in new KundunSymbolsConfiguration().Prices)
+        if (shopNpc.MerchantStore is not { } store)
         {
+            store = this.Context.CreateNew<ItemStorage>();
+            shopNpc.NpcWindow = NpcWindow.Merchant;
+            shopNpc.MerchantStore = store;
+        }
+
+        var occupiedSlots = new HashSet<int>();
+        foreach (var storeItem in store.Items)
+        {
+            var width = Math.Max((int)(storeItem.Definition?.Width ?? 1), 1);
+            var height = Math.Max((int)(storeItem.Definition?.Height ?? 1), 1);
+            for (var row = 0; row < height; row++)
+            {
+                for (var column = 0; column < width; column++)
+                {
+                    occupiedSlots.Add(storeItem.ItemSlot + (row * StoreRowSize) + column);
+                }
+            }
+        }
+
+        foreach (var price in new KundunEssenceConfiguration().Prices)
+        {
+            var level = (byte)Math.Max(0, price.Level);
             var definition = this.GameConfiguration.Items.FirstOrDefault(i => i.Group == price.Group && i.Number == price.Number);
-            if (definition is null)
+            if (definition is null
+                || store.Items.Any(i => i.Definition == definition && (price.Level < 0 || i.Level == level)))
             {
                 continue;
             }
 
+            var slot = Enumerable.Range(0, StoreSize).FirstOrDefault(s => !occupiedSlots.Contains(s), -1);
+            if (slot < 0)
+            {
+                return;
+            }
+
             var item = this.Context.CreateNew<Item>();
             item.Definition = definition;
-            item.Level = (byte)Math.Max(0, price.Level);
+            item.Level = level;
             item.Durability = 1;
-            item.ItemSlot = slot++;
+            item.ItemSlot = (byte)slot;
             store.Items.Add(item);
+            occupiedSlots.Add(slot);
         }
-
-        shopNpc.NpcWindow = NpcWindow.Merchant;
-        shopNpc.MerchantStore = store;
     }
 }

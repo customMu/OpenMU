@@ -6,9 +6,11 @@ namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 
 using System.Threading;
 using MUnique.OpenMU.AttributeSystem;
+using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.Attributes;
-using MUnique.OpenMU.GameLogic.KundunSymbols;
+using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.NPC;
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.Pathfinding;
 
 /// <summary>
@@ -20,6 +22,8 @@ using MUnique.OpenMU.Pathfinding;
 public sealed class KalimaInstanceContext : MiniGameContext
 {
     private const int PackSpawnSpread = 2;
+
+    private const byte DropSpread = 3;
 
     private static readonly int[] NoticeMinutes = [30, 10, 5, 1];
 
@@ -229,11 +233,14 @@ public sealed class KalimaInstanceContext : MiniGameContext
             isPackCleared = this._alivePackMonsters.Remove(monster) && this._alivePackMonsters.Count == 0;
         }
 
+        var position = monster.Position;
+        var killerName = e.KillerName;
         _ = Task.Run(async () =>
         {
             try
             {
-                await this.GiveSymbolsAsync(monster, isBoss).ConfigureAwait(false);
+                await this.GiveEssenceAsync(monster, isBoss).ConfigureAwait(false);
+                await this.DropItemsAsync(position, killerName, isBoss).ConfigureAwait(false);
                 if (isBoss)
                 {
                     await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceBossDefeated)).ConfigureAwait(false);
@@ -404,14 +411,14 @@ public sealed class KalimaInstanceContext : MiniGameContext
     }
 
     /// <summary>
-    /// Gives the Symbols of Kundun for a killed monster. They are personal: each living player
+    /// Gives the Kundun Essence for a killed monster. It's personal: each living player
     /// near the monster rolls its own chance; the boss gives a fixed amount to everyone in the instance.
     /// </summary>
     /// <param name="monster">The killed monster.</param>
     /// <param name="isBoss">If set to <c>true</c>, the monster is the boss.</param>
-    private async ValueTask GiveSymbolsAsync(Monster monster, bool isBoss)
+    private async ValueTask GiveEssenceAsync(Monster monster, bool isBoss)
     {
-        if (this._gameContext.FeaturePlugIns.GetPlugIn<KundunSymbolsPlugIn>() is not { } symbols)
+        if (this._gameContext.FeaturePlugIns.GetPlugIn<KundunEssencePlugIn>() is not { } essence)
         {
             return;
         }
@@ -426,14 +433,73 @@ public sealed class KalimaInstanceContext : MiniGameContext
         foreach (var player in players)
         {
             var amount = isBoss
-                ? configuration.BossSymbols * this.Tier.Level
-                : player.IsAlive && player.GetDistanceTo(monster) <= configuration.SymbolRange
-                    ? RollAmount(configuration.SymbolChancePerKill, configuration.SymbolsPerKill * this.Tier.Level)
+                ? configuration.BossEssence * this.Tier.Level
+                : player.IsAlive && player.GetDistanceTo(monster) <= configuration.EssenceRange
+                    ? RollAmount(configuration.EssenceChancePerKill, configuration.EssencePerKill * this.Tier.Level)
                     : 0;
             if (amount > 0)
             {
-                await symbols.TryAddAsync(player, amount).ConfigureAwait(false);
+                await essence.TryAddAsync(player, amount).ConfigureAwait(false);
             }
+        }
+    }
+
+    /// <summary>
+    /// Drops the Symbols of Kundun and the Lost Map of the level of this instance. A regular monster
+    /// drops a symbol by chance; the boss drops one symbol per player and by chance a lost map.
+    /// The items belong to the killer, or are distributed by the drop mode of its party.
+    /// </summary>
+    /// <param name="position">The position of the killed monster.</param>
+    /// <param name="killerName">The name of the killer.</param>
+    /// <param name="isBoss">If set to <c>true</c>, the monster is the boss.</param>
+    private async ValueTask DropItemsAsync(Point position, string killerName, bool isBoss)
+    {
+        Player? killer;
+        int playerCount;
+        lock (this._syncRoot)
+        {
+            killer = this._playersOnMap.FirstOrDefault(p => p.Name == killerName) ?? this._playersOnMap.FirstOrDefault();
+            playerCount = this._playersOnMap.Count;
+        }
+
+        if (killer is null)
+        {
+            return;
+        }
+
+        var configuration = this._configuration;
+        var symbols = isBoss
+            ? Math.Max(1, playerCount) * configuration.BossSymbolsPerPlayer
+            : RollAmount(configuration.SymbolDropChance, 1);
+        var lostMaps = isBoss ? RollAmount(configuration.BossLostMapChance, 1) : 0;
+
+        var items = this._gameContext.Configuration.Items;
+        await this.DropAsync(killer, items.FirstOrDefault(d => d is { Group: KalimaConstants.SymbolOfKundunGroup, Number: KalimaConstants.SymbolOfKundunNumber }), symbols, position).ConfigureAwait(false);
+        await this.DropAsync(killer, items.FirstOrDefault(d => d.IsLostMap()), lostMaps, position).ConfigureAwait(false);
+    }
+
+    private async ValueTask DropAsync(Player killer, ItemDefinition? definition, int count, Point position)
+    {
+        if (definition is null)
+        {
+            if (count > 0)
+            {
+                this.Logger.LogWarning("{context}: The item definition to drop is missing.", this);
+            }
+
+            return;
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            var item = new TemporaryItem
+            {
+                Definition = definition,
+                Level = (byte)this.Tier.Level,
+                Durability = 1,
+            };
+            var dropPosition = i == 0 ? position : this.Map.Terrain.GetRandomCoordinate(position, DropSpread);
+            await this.Map.AddAsync(killer.CreateDropForKiller(item, dropPosition, this.Map)).ConfigureAwait(false);
         }
     }
 

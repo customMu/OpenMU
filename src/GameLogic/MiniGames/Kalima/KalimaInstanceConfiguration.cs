@@ -71,28 +71,46 @@ public class KalimaInstanceConfiguration
     public float ExperienceMultiplier { get; set; } = 20f;
 
     /// <summary>
-    /// Gets or sets the chance per kill that a player near the killed monster gets symbols.
+    /// Gets or sets the chance per kill that a player near the killed monster gets essence.
     /// </summary>
-    [Display(Name = "Symbol chance per kill", Description = "Chance (0.05 = 5 %) per killed monster that each living player near it gets 'Symbols per kill' x Kalima level.")]
-    public float SymbolChancePerKill { get; set; } = 0.05f;
+    [Display(Name = "Essence chance per kill", Description = "Chance (0.05 = 5 %) per killed monster that each living player near it gets 'Essence per kill' x Kalima level of Kundun Essence (the currency of the essence shop).")]
+    public float EssenceChancePerKill { get; set; } = 0.05f;
 
     /// <summary>
-    /// Gets or sets the symbols per kill and Kalima level.
+    /// Gets or sets the essence per kill and Kalima level.
     /// </summary>
-    [Display(Name = "Symbols per kill", Description = "Symbols per successful roll, multiplied with the Kalima level.")]
-    public int SymbolsPerKill { get; set; } = 1;
+    [Display(Name = "Essence per kill", Description = "Kundun Essence per successful roll, multiplied with the Kalima level.")]
+    public int EssencePerKill { get; set; } = 1;
 
     /// <summary>
-    /// Gets or sets the symbols for the boss and Kalima level.
+    /// Gets or sets the essence for the boss and Kalima level.
     /// </summary>
-    [Display(Name = "Symbols for the boss", Description = "Symbols which each player in the instance gets for the Illusion of Kundun, multiplied with the Kalima level (the daily boss reward).")]
-    public int BossSymbols { get; set; } = 5;
+    [Display(Name = "Essence for the boss", Description = "Kundun Essence which each player in the instance gets for the Illusion of Kundun, multiplied with the Kalima level.")]
+    public int BossEssence { get; set; } = 5;
 
     /// <summary>
-    /// Gets or sets the range around a killed monster, in which players get symbols.
+    /// Gets or sets the range around a killed monster, in which players get essence.
     /// </summary>
-    [Display(Name = "Symbol range", Description = "Players within this distance (in tiles) of a killed monster roll for symbols.")]
-    public int SymbolRange { get; set; } = 15;
+    [Display(Name = "Essence range", Description = "Players within this distance (in tiles) of a killed monster roll for essence.")]
+    public int EssenceRange { get; set; } = 15;
+
+    /// <summary>
+    /// Gets or sets the chance that a regular monster drops a Symbol of Kundun.
+    /// </summary>
+    [Display(Name = "Symbol drop chance", Description = "Chance (0.01 = 1 %) that a regular monster of Kalima N drops a Symbol of Kundun +N. 5 symbols of the same level are combined to a Lost Map of this level.")]
+    public float SymbolDropChance { get; set; } = 0.01f;
+
+    /// <summary>
+    /// Gets or sets the number of symbols which the boss drops per player in the instance.
+    /// </summary>
+    [Display(Name = "Boss symbols per player", Description = "The Illusion of Kundun of Kalima N drops this number of Symbols of Kundun +N per player in the instance. The items are distributed by the drop mode of the party.")]
+    public int BossSymbolsPerPlayer { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets the chance that the boss drops a lost map.
+    /// </summary>
+    [Display(Name = "Boss lost map chance", Description = "Chance (0.03 = 3 %) that the Illusion of Kundun of Kalima N additionally drops a Lost Map +N, the entry fee of the chamber of Kundun.")]
+    public float BossLostMapChance { get; set; } = 0.03f;
 
     /// <summary>
     /// Gets or sets the health of the boss in relation to the health of the regular monsters.
@@ -115,7 +133,7 @@ public class KalimaInstanceConfiguration
     /// <summary>
     /// Gets or sets the numbers of the boss monsters (Illusion of Kundun 1-7).
     /// </summary>
-    [Display(Name = "Boss monster numbers", Description = "Monster numbers of the Illusion of Kundun 1-7; killing one gives 'Symbols for the boss' x Kalima level to each player in the instance.")]
+    [Display(Name = "Boss monster numbers", Description = "Monster numbers of the Illusion of Kundun 1-7; killing one gives 'Essence for the boss' x Kalima level to each player in the instance and drops the symbols.")]
     public ICollection<short> BossMonsterNumbers { get; set; } = new List<short> { 161, 181, 189, 197, 267, 275, 338 };
 
     /// <summary>

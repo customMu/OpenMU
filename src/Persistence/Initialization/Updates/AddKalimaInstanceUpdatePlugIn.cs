@@ -51,7 +51,7 @@ public class AddKalimaInstanceUpdatePlugIn : UpdatePlugInBase
     /// <inheritdoc />
     protected override async ValueTask ApplyAsync(IContext context, GameConfiguration gameConfiguration)
     {
-        this.AddStatIfNotExists(context, gameConfiguration, Stats.KundunSymbols);
+        this.AddStatIfNotExists(context, gameConfiguration, Stats.KundunEssence);
         this.AddStatIfNotExists(context, gameConfiguration, Stats.KalimaInstanceEntryDay);
         this.AddStatIfNotExists(context, gameConfiguration, Stats.KalimaInstanceEntries);
 

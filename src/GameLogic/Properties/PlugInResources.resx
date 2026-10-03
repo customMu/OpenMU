@@ -1398,16 +1398,16 @@
   <data name="KalimaInstancePlugIn_Description" xml:space="preserve">
     <value>Kalima 1-7 as a daily instance for a party or a single player: entered by talking to the gatekeeper npc (Lugard in Lorencia), one entry per day, tiers by resets, 10 packs of monsters and the Illusion of Kundun within 40 minutes, a fixed difficulty for a party of 3-4 players. The regular Kalima maps and the Lost Map gates are closed.</value>
   </data>
-  <data name="KundunSymbolsPlugIn_Name" xml:space="preserve">
-    <value>Symbols of Kundun currency</value>
+  <data name="KundunEssencePlugIn_Name" xml:space="preserve">
+    <value>Kundun Essence currency</value>
   </data>
-  <data name="KundunSymbolsPlugIn_Description" xml:space="preserve">
-    <value>Symbols of Kundun are a currency: picked up symbols are added to a counter of the character (without a stack limit) instead of the inventory, so they can't be traded. They are spent in the symbol shop (by default Delgado in Lorencia), whose prices are configured here.</value>
+  <data name="KundunEssencePlugIn_Description" xml:space="preserve">
+    <value>Kundun Essence is the currency of the Kalima instance: a counter of the character (without a stack limit), which can't be traded. It's spent in the essence shop (by default Delgado in Lorencia), whose prices are configured here.</value>
   </data>
-  <data name="SymbolsChatCommandPlugIn_Name" xml:space="preserve">
-    <value>Chat command: /symbols</value>
+  <data name="EssenceChatCommandPlugIn_Name" xml:space="preserve">
+    <value>Chat command: /essence</value>
   </data>
-  <data name="SymbolsChatCommandPlugIn_Description" xml:space="preserve">
-    <value>Shows the Symbols of Kundun (currency) of the character.</value>
+  <data name="EssenceChatCommandPlugIn_Description" xml:space="preserve">
+    <value>Shows the Kundun Essence (currency) of the character.</value>
   </data>
 </root>

@@ -5,7 +5,7 @@
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Items;
 
 using MUnique.OpenMU.GameLogic.CastleSiege;
-using MUnique.OpenMU.GameLogic.KundunSymbols;
+using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 
@@ -53,12 +53,12 @@ public class BuyNpcItemAction
             return;
         }
 
-        var symbolShop = player.GameContext.FeaturePlugIns.GetPlugIn<KundunSymbolsPlugIn>() is { } symbols && symbols.IsSymbolShop(npcDefinition)
-            ? symbols
+        var essenceShop = player.GameContext.FeaturePlugIns.GetPlugIn<KundunEssencePlugIn>() is { } essence && essence.IsEssenceShop(npcDefinition)
+            ? essence
             : null;
-        if (symbolShop is not null && symbolShop.GetConfiguration().GetPrice(storeItem) is null)
+        if (essenceShop is not null && essenceShop.GetConfiguration().GetPrice(storeItem) is null)
         {
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KundunSymbolsItemNotForSale)).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KundunEssenceItemNotForSale)).ConfigureAwait(false);
             await player.InvokeViewPlugInAsync<IBuyNpcItemFailedPlugIn>(p => p.BuyNpcItemFailedAsync()).ConfigureAwait(false);
             return;
         }
@@ -66,7 +66,7 @@ public class BuyNpcItemAction
         // Inventory Update:
         if (storeItem.IsStackable() && player.Inventory!.Items.FirstOrDefault(item => storeItem.CanCompletelyStackOn(item)) is { } targetItem)
         {
-            if (!await this.CheckMoneyAsync(player, storeItem, symbolShop).ConfigureAwait(false))
+            if (!await this.CheckMoneyAsync(player, storeItem, essenceShop).ConfigureAwait(false))
             {
                 await player.InvokeViewPlugInAsync<IBuyNpcItemFailedPlugIn>(p => p.BuyNpcItemFailedAsync()).ConfigureAwait(false);
                 return;
@@ -86,9 +86,9 @@ public class BuyNpcItemAction
                 return;
             }
 
-            if (!await this.CheckMoneyAsync(player, storeItem, symbolShop).ConfigureAwait(false))
+            if (!await this.CheckMoneyAsync(player, storeItem, essenceShop).ConfigureAwait(false))
             {
-                if (symbolShop is null)
+                if (essenceShop is null)
                 {
                     await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.NotEnoughMoney)).ConfigureAwait(false);
                 }
@@ -100,6 +100,7 @@ public class BuyNpcItemAction
             var newItem = player.PersistenceContext.CreateNew<Item>();
             newItem.AssignValues(storeItem);
             newItem.ItemSlot = (byte)toSlot;
+            essenceShop?.PrepareBoughtItem(newItem);
             await player.InvokeViewPlugInAsync<INpcItemBoughtPlugIn>(p => p.NpcItemBoughtAsync(newItem)).ConfigureAwait(false);
             await player.Inventory.AddItemAsync(newItem).ConfigureAwait(false);
             player.GameContext.PlugInManager.GetPlugInPoint<IItemBoughtFromMerchantPlugIn>()?.ItemBought(player, newItem, storeItem, player.OpenedNpc);
@@ -108,12 +109,12 @@ public class BuyNpcItemAction
         await player.InvokeViewPlugInAsync<IUpdateMoneyPlugIn>(p => p.UpdateMoneyAsync()).ConfigureAwait(false);
     }
 
-    private ValueTask<bool> CheckMoneyAsync(Player player, Item item, KundunSymbolsPlugIn? symbolShop)
+    private ValueTask<bool> CheckMoneyAsync(Player player, Item item, KundunEssencePlugIn? essenceShop)
     {
-        if (symbolShop is not null)
+        if (essenceShop is not null)
         {
-            // The symbol shop sells for Symbols of Kundun instead of zen.
-            return symbolShop.TrySpendAsync(player, symbolShop.GetConfiguration().GetPrice(item) ?? int.MaxValue);
+            // The essence shop sells for Kundun Essence instead of zen.
+            return essenceShop.TrySpendAsync(player, essenceShop.GetConfiguration().GetPrice(item) ?? int.MaxValue);
         }
 
         var price = this._priceCalculator.CalculateFinalBuyingPrice(item);

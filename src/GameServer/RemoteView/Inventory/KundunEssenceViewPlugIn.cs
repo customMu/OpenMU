@@ -1,4 +1,4 @@
-// <copyright file="KundunSymbolsViewPlugIn.cs" company="MUnique">
+// <copyright file="KundunEssenceViewPlugIn.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -12,20 +12,20 @@ using MUnique.OpenMU.Network.PlugIns;
 using MUnique.OpenMU.PlugIns;
 
 /// <summary>
-/// Sends the Symbols of Kundun currency and the prices of the symbol shop with custom packets of this server:
+/// Sends the Kundun Essence currency and the prices of the essence shop with custom packets of this server:
 /// <list type="bullet">
 ///   <item>Balance: C1 08 FB 01, followed by the balance (uint32, little endian).</item>
 ///   <item>Shop prices: C2 [length, big endian] FB 02 [count], followed by count entries of the store slot (byte) and the price (uint32, little endian). Count 0 means the opened shop sells for zen.</item>
 /// </list>
 /// </summary>
 [PlugIn]
-[Display(Name = nameof(PlugInResources.KundunSymbolsViewPlugIn_Name), Description = nameof(PlugInResources.KundunSymbolsViewPlugIn_Description), ResourceType = typeof(PlugInResources))]
+[Display(Name = nameof(PlugInResources.KundunEssenceViewPlugIn_Name), Description = nameof(PlugInResources.KundunEssenceViewPlugIn_Description), ResourceType = typeof(PlugInResources))]
 [Guid("E4A17C52-8D3B-4F96-B1E0-7C2A5D9F4B83")]
 [MinimumClient(106, 3, ClientLanguage.Invariant)]
-public class KundunSymbolsViewPlugIn : IKundunSymbolsViewPlugIn
+public class KundunEssenceViewPlugIn : IKundunEssenceViewPlugIn
 {
     /// <summary>
-    /// The head code of the custom packets of the symbols.
+    /// The head code of the custom packets of the Kalima features of this server.
     /// </summary>
     public const byte Code = 0xFB;
 
@@ -44,10 +44,10 @@ public class KundunSymbolsViewPlugIn : IKundunSymbolsViewPlugIn
     private readonly RemotePlayer _player;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="KundunSymbolsViewPlugIn"/> class.
+    /// Initializes a new instance of the <see cref="KundunEssenceViewPlugIn"/> class.
     /// </summary>
     /// <param name="player">The player.</param>
-    public KundunSymbolsViewPlugIn(RemotePlayer player) => this._player = player;
+    public KundunEssenceViewPlugIn(RemotePlayer player) => this._player = player;
 
     /// <inheritdoc />
     public async ValueTask ShowBalanceAsync(int balance)

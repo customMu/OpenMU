@@ -3906,38 +3906,38 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Symbols of Kundun currency.
+        ///   Looks up a localized string similar to Kundun Essence currency.
         /// </summary>
-        public static string KundunSymbolsPlugIn_Name {
+        public static string KundunEssencePlugIn_Name {
             get {
-                return ResourceManager.GetString("KundunSymbolsPlugIn_Name", resourceCulture);
+                return ResourceManager.GetString("KundunEssencePlugIn_Name", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Symbols of Kundun are a currency: picked up symbols are added to a counter of the character (without a stack limit) instead of the inventory, so they can't be traded. They are spent in the symbol shop (by default Delgado in Lorencia), whose prices are configured here..
+        ///   Looks up a localized string similar to Kundun Essence is the currency of the Kalima instance: a counter of the character (without a stack limit), which can't be traded. It's spent in the essence shop (by default Delgado in Lorencia), whose prices are configured here..
         /// </summary>
-        public static string KundunSymbolsPlugIn_Description {
+        public static string KundunEssencePlugIn_Description {
             get {
-                return ResourceManager.GetString("KundunSymbolsPlugIn_Description", resourceCulture);
+                return ResourceManager.GetString("KundunEssencePlugIn_Description", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Chat command: /symbols.
+        ///   Looks up a localized string similar to Chat command: /essence.
         /// </summary>
-        public static string SymbolsChatCommandPlugIn_Name {
+        public static string EssenceChatCommandPlugIn_Name {
             get {
-                return ResourceManager.GetString("SymbolsChatCommandPlugIn_Name", resourceCulture);
+                return ResourceManager.GetString("EssenceChatCommandPlugIn_Name", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Shows the Symbols of Kundun (currency) of the character..
+        ///   Looks up a localized string similar to Shows the Kundun Essence (currency) of the character..
         /// </summary>
-        public static string SymbolsChatCommandPlugIn_Description {
+        public static string EssenceChatCommandPlugIn_Description {
             get {
-                return ResourceManager.GetString("SymbolsChatCommandPlugIn_Description", resourceCulture);
+                return ResourceManager.GetString("EssenceChatCommandPlugIn_Description", resourceCulture);
             }
         }
     }

@@ -2469,10 +2469,22 @@
   <data name="CastleSiegeLifeStoneStatePlugIn_Description" xml:space="preserve">
     <value>Sends Castle Siege Life Stone creation progress to the game client.</value>
   </data>
-  <data name="KundunSymbolsViewPlugIn_Name" xml:space="preserve">
-    <value>Symbols of Kundun view (custom packets)</value>
+  <data name="KundunEssenceViewPlugIn_Name" xml:space="preserve">
+    <value>Kundun Essence view (custom packets)</value>
   </data>
-  <data name="KundunSymbolsViewPlugIn_Description" xml:space="preserve">
-    <value>Sends the Symbols of Kundun balance (C1 FB 01) and the prices of the symbol shop (C2 FB 02) to the game client of this server.</value>
+  <data name="KundunEssenceViewPlugIn_Description" xml:space="preserve">
+    <value>Sends the Kundun Essence balance (C1 FB 01) and the prices of the essence shop (C2 FB 02) to the game client of this server.</value>
+  </data>
+  <data name="PartyDropModeHandlerPlugIn_Name" xml:space="preserve">
+    <value>Party drop mode (custom packet)</value>
+  </data>
+  <data name="PartyDropModeHandlerPlugIn_Description" xml:space="preserve">
+    <value>Handles the custom packet C1 05 FB 03 [mode] of the game client of this server, with which the party master changes the drop mode of the party (free, random, in turn).</value>
+  </data>
+  <data name="PartyDropModeViewPlugIn_Name" xml:space="preserve">
+    <value>Party drop mode view (custom packet)</value>
+  </data>
+  <data name="PartyDropModeViewPlugIn_Description" xml:space="preserve">
+    <value>Sends the drop mode of the party (C1 05 FB 03 [mode]) to the game client of this server.</value>
   </data>
 </root>

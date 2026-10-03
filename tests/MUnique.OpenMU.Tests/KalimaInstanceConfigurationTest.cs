@@ -6,11 +6,12 @@ namespace MUnique.OpenMU.Tests;
 
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
-using MUnique.OpenMU.GameLogic.KundunSymbols;
+using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
+using MUnique.OpenMU.GameLogic.PlugIns;
 
 /// <summary>
-/// Tests for <see cref="KalimaInstanceConfiguration"/> and <see cref="KundunSymbolsConfiguration"/>.
+/// Tests for <see cref="KalimaInstanceConfiguration"/> and <see cref="KundunEssenceConfiguration"/>.
 /// </summary>
 [TestFixture]
 public class KalimaInstanceConfigurationTest
@@ -70,9 +71,9 @@ public class KalimaInstanceConfigurationTest
     /// The most specific price entry counts, items without a price are not for sale.
     /// </summary>
     [Test]
-    public void SymbolShopPrices()
+    public void EssenceShopPrices()
     {
-        var configuration = new KundunSymbolsConfiguration();
+        var configuration = new KundunEssenceConfiguration();
         var box = new ItemDefinition { Group = 14, Number = 11 };
         var bless = new ItemDefinition { Group = 14, Number = 13 };
         var unknown = new ItemDefinition { Group = 0, Number = 0 };
@@ -82,5 +83,37 @@ public class KalimaInstanceConfigurationTest
         Assert.That(configuration.GetPrice(new Item { Definition = box, Level = 0 }), Is.Null);
         Assert.That(configuration.GetPrice(new Item { Definition = bless }), Is.EqualTo(20));
         Assert.That(configuration.GetPrice(new Item { Definition = unknown }), Is.Null);
+    }
+
+    /// <summary>
+    /// The lost map +N costs 25 x N essence.
+    /// </summary>
+    /// <param name="level">The level of the lost map.</param>
+    [TestCase(1)]
+    [TestCase(4)]
+    [TestCase(7)]
+    public void LostMapPrices(int level)
+    {
+        var configuration = new KundunEssenceConfiguration();
+        var lostMap = new ItemDefinition { Group = 14, Number = 28 };
+        Assert.That(configuration.GetPrice(new Item { Definition = lostMap, Level = (byte)level }), Is.EqualTo(25 * level));
+    }
+
+    /// <summary>
+    /// A lost map which is bought in the essence shop is bound to the character, a dropped one is not.
+    /// </summary>
+    [Test]
+    public void BoughtLostMapIsBound()
+    {
+        var plugIn = new KundunEssencePlugIn();
+        var lostMap = new Item { Definition = new ItemDefinition { Group = 14, Number = 28 }, Level = 3 };
+        var jewel = new Item { Definition = new ItemDefinition { Group = 14, Number = 13 } };
+        Assert.That(lostMap.IsBoundToCharacter(), Is.False);
+
+        plugIn.PrepareBoughtItem(lostMap);
+        plugIn.PrepareBoughtItem(jewel);
+
+        Assert.That(lostMap.IsBoundToCharacter(), Is.True);
+        Assert.That(jewel.IsBoundToCharacter(), Is.False);
     }
 }

@@ -144,17 +144,17 @@
   <data name="KalimaInstanceOnlyThroughGatekeeper" xml:space="preserve">
     <value>В Калиму можно попасть только через Лугарда в Лоренсии.</value>
   </data>
-  <data name="KundunSymbolsCollectedFormat" xml:space="preserve">
-    <value>+{0} Символ Кундуна (всего: {1}).</value>
+  <data name="KundunEssenceCollectedFormat" xml:space="preserve">
+    <value>+{0} Эссенции Кундуна (всего: {1}).</value>
   </data>
-  <data name="KundunSymbolsBalanceFormat" xml:space="preserve">
-    <value>Символы Кундуна: {0}.</value>
+  <data name="KundunEssenceBalanceFormat" xml:space="preserve">
+    <value>Эссенция Кундуна: {0}.</value>
   </data>
-  <data name="KundunSymbolsNotEnoughFormat" xml:space="preserve">
-    <value>Нужно {0} Символов Кундуна, у вас {1}.</value>
+  <data name="KundunEssenceNotEnoughFormat" xml:space="preserve">
+    <value>Нужно {0} Эссенции Кундуна, у вас {1}.</value>
   </data>
-  <data name="KundunSymbolsItemNotForSale" xml:space="preserve">
-    <value>Этот предмет нельзя купить за Символы Кундуна.</value>
+  <data name="KundunEssenceItemNotForSale" xml:space="preserve">
+    <value>Этот предмет нельзя купить за Эссенцию Кундуна.</value>
   </data>
   <data name="KalimaInstancePackFormat" xml:space="preserve">
     <value>Пачка {0}/{1}!</value>
@@ -167,5 +167,20 @@
   </data>
   <data name="KalimaInstanceTimeOver" xml:space="preserve">
     <value>Время инстанса Калимы вышло.</value>
+  </data>
+  <data name="LostMapCannotBeDropped" xml:space="preserve">
+    <value>Lost Map нельзя выбросить. Это плата за вход в Покои Кундуна.</value>
+  </data>
+  <data name="PartyDropModeOnlyMaster" xml:space="preserve">
+    <value>Режим дропа может менять только лидер пати.</value>
+  </data>
+  <data name="PartyDropModeFreeFormat" xml:space="preserve">
+    <value>{0} выбрал режим дропа: свободный - вещи может поднять любой участник.</value>
+  </data>
+  <data name="PartyDropModeRandomFormat" xml:space="preserve">
+    <value>{0} выбрал режим дропа: случайный - каждая вещь достаётся случайному участнику рядом.</value>
+  </data>
+  <data name="PartyDropModeRoundRobinFormat" xml:space="preserve">
+    <value>{0} выбрал режим дропа: по очереди - вещи достаются участникам рядом по очереди.</value>
   </data>
 </root>

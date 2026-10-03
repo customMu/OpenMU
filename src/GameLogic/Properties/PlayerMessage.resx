@@ -834,17 +834,17 @@
   <data name="KalimaInstanceOnlyThroughGatekeeper" xml:space="preserve">
     <value>Kalima can only be entered through Lugard in Lorencia.</value>
   </data>
-  <data name="KundunSymbolsCollectedFormat" xml:space="preserve">
-    <value>+{0} Symbol of Kundun (total: {1}).</value>
+  <data name="KundunEssenceCollectedFormat" xml:space="preserve">
+    <value>+{0} Kundun Essence (total: {1}).</value>
   </data>
-  <data name="KundunSymbolsBalanceFormat" xml:space="preserve">
-    <value>Symbols of Kundun: {0}.</value>
+  <data name="KundunEssenceBalanceFormat" xml:space="preserve">
+    <value>Kundun Essence: {0}.</value>
   </data>
-  <data name="KundunSymbolsNotEnoughFormat" xml:space="preserve">
-    <value>You need {0} Symbols of Kundun, you have {1}.</value>
+  <data name="KundunEssenceNotEnoughFormat" xml:space="preserve">
+    <value>You need {0} Kundun Essence, you have {1}.</value>
   </data>
-  <data name="KundunSymbolsItemNotForSale" xml:space="preserve">
-    <value>This item can't be bought with Symbols of Kundun.</value>
+  <data name="KundunEssenceItemNotForSale" xml:space="preserve">
+    <value>This item can't be bought with Kundun Essence.</value>
   </data>
   <data name="KalimaInstancePackFormat" xml:space="preserve">
     <value>Pack {0}/{1}!</value>
@@ -857,5 +857,20 @@
   </data>
   <data name="KalimaInstanceTimeOver" xml:space="preserve">
     <value>The time of the Kalima instance is over.</value>
+  </data>
+  <data name="LostMapCannotBeDropped" xml:space="preserve">
+    <value>The Lost Map can't be dropped. It's the entry fee for the chamber of Kundun.</value>
+  </data>
+  <data name="PartyDropModeOnlyMaster" xml:space="preserve">
+    <value>Only the party master can change the drop mode.</value>
+  </data>
+  <data name="PartyDropModeFreeFormat" xml:space="preserve">
+    <value>{0} set the drop mode: free - every member can pick up the items.</value>
+  </data>
+  <data name="PartyDropModeRandomFormat" xml:space="preserve">
+    <value>{0} set the drop mode: random - each item belongs to a random member nearby.</value>
+  </data>
+  <data name="PartyDropModeRoundRobinFormat" xml:space="preserve">
+    <value>{0} set the drop mode: in turn - the items belong to the members nearby in turn.</value>
   </data>
 </root>

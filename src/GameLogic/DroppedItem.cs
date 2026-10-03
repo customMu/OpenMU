@@ -20,11 +20,24 @@ public sealed class DroppedItem : AsyncDisposable, ILocateable
     internal static readonly TimeSpan TimeUntilDropIsFree = TimeSpan.FromSeconds(10);
 
     /// <summary>
+    /// The time during which only the assigned owner may pick up an item, which was assigned to one
+    /// party member by the drop mode of the party (see <see cref="PartyDropMode"/>).
+    /// </summary>
+    internal static readonly TimeSpan TimeUntilAssignedDropIsFree = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// The maximum distance of a party member to a drop, so that the drop can be assigned to it.
+    /// </summary>
+    internal const int MaximumAssignmentDistance = 20;
+
+    /// <summary>
     /// Gets the pickup lock. Used to synchronize pickup requests from the players.
     /// </summary>
     private readonly AsyncLock _pickupLock = new();
 
     private readonly DateTime _dropTimestamp = DateTime.UtcNow;
+
+    private readonly TimeSpan _ownerPriority;
 
     /// <summary>
     /// Indicates if the item was persistent (exists on the database) when it was dropped.
@@ -61,8 +74,10 @@ public sealed class DroppedItem : AsyncDisposable, ILocateable
     /// <param name="dropper">The dropper.</param>
     /// <param name="owners">The owners.</param>
     /// <param name="wasItemPersisted">If set to <c>true</c>, the item was persisted before and exists on the database.</param>
-    public DroppedItem(Item item, Point position, GameMap map, Player? dropper, IEnumerable<object>? owners, bool wasItemPersisted = false)
+    /// <param name="ownerPriority">The time during which only the owners may pick up the item; <c>null</c> for the default time.</param>
+    public DroppedItem(Item item, Point position, GameMap map, Player? dropper, IEnumerable<object>? owners, bool wasItemPersisted = false, TimeSpan? ownerPriority = null)
     {
+        this._ownerPriority = ownerPriority ?? TimeUntilDropIsFree;
         this.Item = item;
         this.Position = position;
         this.CurrentMap = map;
@@ -91,7 +106,7 @@ public sealed class DroppedItem : AsyncDisposable, ILocateable
     /// <summary>
     /// Gets a value indicating whether the owner-pickup priority period is still active.
     /// </summary>
-    public bool IsOwnerPickupPriorityActive => DateTime.UtcNow < this._dropTimestamp.Add(TimeUntilDropIsFree);
+    public bool IsOwnerPickupPriorityActive => DateTime.UtcNow < this._dropTimestamp.Add(this._ownerPriority);
 
     /// <summary>
     /// Tries to pick the item up by the specified player.
@@ -133,35 +148,12 @@ public sealed class DroppedItem : AsyncDisposable, ILocateable
         }
 
         if (!this.IsPlayerAnOwner(player)
-            && DateTime.UtcNow < this._dropTimestamp.Add(TimeUntilDropIsFree))
+            && this.IsOwnerPickupPriorityActive)
         {
             return (false, stackTarget);
         }
 
         return (await this.TryPickUpAsync(player).ConfigureAwait(false), stackTarget);
-    }
-
-    /// <summary>
-    /// Tries to take this item from the ground without adding it to an inventory,
-    /// e.g. because it's collected as a currency.
-    /// </summary>
-    /// <param name="player">The player who takes it.</param>
-    /// <returns><c>true</c>, if the item has been taken and removed from the map.</returns>
-    public async ValueTask<bool> TryTakeAsync(Player player)
-    {
-        using (await this._pickupLock.LockAsync())
-        {
-            if (!this._availableToPick)
-            {
-                return false;
-            }
-
-            this._availableToPick = false;
-        }
-
-        player.Logger.LogDebug("Item '{0}' was taken by player '{1}' without adding it to the inventory.", this, player);
-        this.DisposeAndDelete(null);
-        return true;
     }
 
     /// <summary>

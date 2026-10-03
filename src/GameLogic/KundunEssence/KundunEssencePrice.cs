@@ -1,13 +1,13 @@
-// <copyright file="KundunSymbolPrice.cs" company="MUnique">
+// <copyright file="KundunEssencePrice.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
-namespace MUnique.OpenMU.GameLogic.KundunSymbols;
+namespace MUnique.OpenMU.GameLogic.KundunEssence;
 
 /// <summary>
-/// The price of an item in the symbol shop.
+/// The price of an item in the essence shop.
 /// </summary>
-public class KundunSymbolPrice
+public class KundunEssencePrice
 {
     /// <summary>
     /// Gets or sets the name (only for the admin panel).
@@ -33,9 +33,9 @@ public class KundunSymbolPrice
     public int Level { get; set; } = -1;
 
     /// <summary>
-    /// Gets or sets the price in symbols.
+    /// Gets or sets the price in essence.
     /// </summary>
-    [Display(Name = "Price (symbols)")]
+    [Display(Name = "Price (essence)")]
     public int Price { get; set; }
 
     /// <inheritdoc />

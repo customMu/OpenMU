@@ -2203,38 +2203,38 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to +{0} Symbol of Kundun (total: {1})..
+        ///   Looks up a localized string similar to +{0} Kundun Essence (total: {1})..
         /// </summary>
-        public static string KundunSymbolsCollectedFormat {
+        public static string KundunEssenceCollectedFormat {
             get {
-                return ResourceManager.GetString("KundunSymbolsCollectedFormat", resourceCulture);
+                return ResourceManager.GetString("KundunEssenceCollectedFormat", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Symbols of Kundun: {0}..
+        ///   Looks up a localized string similar to Kundun Essence: {0}..
         /// </summary>
-        public static string KundunSymbolsBalanceFormat {
+        public static string KundunEssenceBalanceFormat {
             get {
-                return ResourceManager.GetString("KundunSymbolsBalanceFormat", resourceCulture);
+                return ResourceManager.GetString("KundunEssenceBalanceFormat", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to You need {0} Symbols of Kundun, you have {1}..
+        ///   Looks up a localized string similar to You need {0} Kundun Essence, you have {1}..
         /// </summary>
-        public static string KundunSymbolsNotEnoughFormat {
+        public static string KundunEssenceNotEnoughFormat {
             get {
-                return ResourceManager.GetString("KundunSymbolsNotEnoughFormat", resourceCulture);
+                return ResourceManager.GetString("KundunEssenceNotEnoughFormat", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This item can't be bought with Symbols of Kundun..
+        ///   Looks up a localized string similar to This item can't be bought with Kundun Essence..
         /// </summary>
-        public static string KundunSymbolsItemNotForSale {
+        public static string KundunEssenceItemNotForSale {
             get {
-                return ResourceManager.GetString("KundunSymbolsItemNotForSale", resourceCulture);
+                return ResourceManager.GetString("KundunEssenceItemNotForSale", resourceCulture);
             }
         }
         
@@ -2280,6 +2280,51 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         public static string KalimaInstanceMemberNotInRangeFormat {
             get {
                 return ResourceManager.GetString("KalimaInstanceMemberNotInRangeFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Lost Map can't be dropped. It's the entry fee for the chamber of Kundun..
+        /// </summary>
+        public static string LostMapCannotBeDropped {
+            get {
+                return ResourceManager.GetString("LostMapCannotBeDropped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Only the party master can change the drop mode..
+        /// </summary>
+        public static string PartyDropModeOnlyMaster {
+            get {
+                return ResourceManager.GetString("PartyDropModeOnlyMaster", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} set the drop mode: free - every member can pick up the items..
+        /// </summary>
+        public static string PartyDropModeFreeFormat {
+            get {
+                return ResourceManager.GetString("PartyDropModeFreeFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} set the drop mode: random - each item belongs to a random member nearby..
+        /// </summary>
+        public static string PartyDropModeRandomFormat {
+            get {
+                return ResourceManager.GetString("PartyDropModeRandomFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} set the drop mode: in turn - the items belong to the members nearby in turn..
+        /// </summary>
+        public static string PartyDropModeRoundRobinFormat {
+            get {
+                return ResourceManager.GetString("PartyDropModeRoundRobinFormat", resourceCulture);
             }
         }
     }

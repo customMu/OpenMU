@@ -38,7 +38,8 @@ public sealed class LostMapDroppedPlugIn : IItemDropPlugIn
         if (player.GameContext.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>() is not null)
         {
             // Kalima is a daily instance now, which is entered through the gatekeeper npc only.
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KalimaInstanceOnlyThroughGatekeeper)).ConfigureAwait(false);
+            // The lost map is the entry fee for the chamber of Kundun and can't be dropped.
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.LostMapCannotBeDropped)).ConfigureAwait(false);
             return;
         }
 

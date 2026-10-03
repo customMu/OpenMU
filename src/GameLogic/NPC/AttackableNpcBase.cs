@@ -638,8 +638,7 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
                 dropCoordinates = this.CurrentMap.Terrain.GetRandomCoordinate(this.Position, MaximumDropDistance);
             }
 
-            var owners = killer.Party?.PartyList.AsEnumerable() ?? killer.GetAsEnumerable();
-            var droppedItem = new DroppedItem(item, dropCoordinates, this.CurrentMap, null, owners);
+            var droppedItem = killer.CreateDropForKiller(item, dropCoordinates, this.CurrentMap);
             await this.CurrentMap.AddAsync(droppedItem).ConfigureAwait(false);
         }
     }

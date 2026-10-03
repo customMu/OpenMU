@@ -148,9 +148,10 @@ public class Stats
     public static AttributeDefinition Resets { get; } = new(new Guid("89A891A7-F9F9-4AB5-AF36-12056E53A5F7"), "Resets", "Reset quantity of current character");
 
     /// <summary>
-    /// Gets the attribute definition of the symbols of kundun, which a character collected as a currency.
+    /// Gets the attribute definition of the Kundun Essence, the currency of the Kalima instance which a character collected.
+    /// It has the id of the former currency 'Symbols of Kundun', so that the balances are kept 1:1.
     /// </summary>
-    public static AttributeDefinition KundunSymbols { get; } = new(new Guid("C3E0A6F1-5B7D-4E2A-9F18-6D4B2C8A7E15"), "Symbols of Kundun", "The symbols of kundun which the character collected as a currency for the symbol shop.");
+    public static AttributeDefinition KundunEssence { get; } = new(new Guid("C3E0A6F1-5B7D-4E2A-9F18-6D4B2C8A7E15"), "Kundun Essence", "The Kundun Essence which the character collected in the Kalima instance, the currency of the essence shop.");
 
     /// <summary>
     /// Gets the attribute definition of the day of the last entry into the Kalima instance.

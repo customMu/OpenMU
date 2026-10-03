@@ -412,6 +412,55 @@ public class PartyTest
         return gameServer;
     }
 
+    /// <summary>
+    /// Only the party master may change the drop mode.
+    /// </summary>
+    [Test]
+    public async ValueTask DropModeOnlyByMasterAsync()
+    {
+        var party = await this.CreatePartyWithMembersAsync(2).ConfigureAwait(false);
+        var master = party.PartyList[0];
+        var member = party.PartyList[1];
+
+        Assert.That(await party.TrySetDropModeAsync(member, PartyDropMode.Random).ConfigureAwait(false), Is.False);
+        Assert.That(party.DropMode, Is.EqualTo(PartyDropMode.Free));
+        Assert.That(await party.TrySetDropModeAsync(master, PartyDropMode.RoundRobin).ConfigureAwait(false), Is.True);
+        Assert.That(party.DropMode, Is.EqualTo(PartyDropMode.RoundRobin));
+        Assert.That(await party.TrySetDropModeAsync(master, (PartyDropMode)17).ConfigureAwait(false), Is.False);
+    }
+
+    /// <summary>
+    /// In the free mode, every member owns the drop; in the round robin mode, the members near the drop get it in turn.
+    /// </summary>
+    [Test]
+    public async ValueTask DropOwnersByModeAsync()
+    {
+        var gameContext = GameContextTestHelper.CreateGameContext();
+        var party = new Party(new PartyManager(5, new NullLogger<Party>()), 5, new NullLogger<Party>());
+        var members = new List<Player>();
+        for (var i = 0; i < 3; i++)
+        {
+            var player = await PlayerTestHelper.CreatePlayerAsync(gameContext).ConfigureAwait(false);
+            await player.PlayerState.TryAdvanceToAsync(PlayerState.EnteredWorld).ConfigureAwait(false);
+            await party.AddAsync(player).ConfigureAwait(false);
+            members.Add(player);
+        }
+
+        var killer = members[0];
+        var position = killer.Position;
+        Assert.That(party.GetItemOwners(killer, position), Is.EquivalentTo(members));
+
+        await party.TrySetDropModeAsync(killer, PartyDropMode.RoundRobin).ConfigureAwait(false);
+        var owners = Enumerable.Range(0, 6).Select(_ => party.GetItemOwners(killer, position).Single()).ToList();
+        var nearMembers = members.Where(m => m == killer || (m.CurrentMap == killer.CurrentMap && m.IsAlive)).ToList();
+        Assert.That(nearMembers, Has.Count.EqualTo(3));
+        Assert.That(owners.Distinct(), Is.EquivalentTo(nearMembers));
+        Assert.That(owners.Take(nearMembers.Count), Is.Unique);
+
+        await party.TrySetDropModeAsync(killer, PartyDropMode.Random).ConfigureAwait(false);
+        Assert.That(nearMembers, Does.Contain(party.GetItemOwners(killer, position).Single()));
+    }
+
     private async ValueTask<Player> CreatePartyMemberAsync()
     {
         var result = await PlayerTestHelper.CreatePlayerAsync(GameContextTestHelper.CreateGameContext()).ConfigureAwait(false);

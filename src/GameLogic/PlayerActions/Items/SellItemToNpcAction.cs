@@ -45,7 +45,9 @@ public class SellItemToNpcAction
             return false;
         }
 
-        if (item.Definition is null || (item.Definition.IsBoundToCharacter && (item.Definition.Durability == 0 || item.Durability > 0)))
+        if (item.Definition is null
+            || (item.Definition.IsBoundToCharacter && (item.Definition.Durability == 0 || item.Durability > 0))
+            || item.IsBoundToCharacter())
         {
             await player.InvokeViewPlugInAsync<IItemSoldToNpcPlugIn>(p => p.ItemSoldToNpcAsync(false)).ConfigureAwait(false);
             return false;

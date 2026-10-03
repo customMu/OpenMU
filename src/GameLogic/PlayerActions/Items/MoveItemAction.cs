@@ -277,7 +277,7 @@ public class MoveItemAction
             return Movement.None;
         }
 
-        if (item.Definition!.IsBoundToCharacter && toStorage != fromStorage)
+        if (item.IsBoundToCharacter() && toStorage != fromStorage)
         {
             await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ItemIsBoundToInventoryOfCharacter)).ConfigureAwait(false);
             return Movement.None;

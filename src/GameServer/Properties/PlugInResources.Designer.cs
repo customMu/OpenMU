@@ -7117,20 +7117,56 @@ namespace MUnique.OpenMU.GameServer.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Symbols of Kundun view (custom packets).
+        ///   Looks up a localized string similar to Kundun Essence view (custom packets).
         /// </summary>
-        public static string KundunSymbolsViewPlugIn_Name {
+        public static string KundunEssenceViewPlugIn_Name {
             get {
-                return ResourceManager.GetString("KundunSymbolsViewPlugIn_Name", resourceCulture);
+                return ResourceManager.GetString("KundunEssenceViewPlugIn_Name", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Sends the Symbols of Kundun balance (C1 FB 01) and the prices of the symbol shop (C2 FB 02) to the game client of this server..
+        ///   Looks up a localized string similar to Sends the Kundun Essence balance (C1 FB 01) and the prices of the essence shop (C2 FB 02) to the game client of this server..
         /// </summary>
-        public static string KundunSymbolsViewPlugIn_Description {
+        public static string KundunEssenceViewPlugIn_Description {
             get {
-                return ResourceManager.GetString("KundunSymbolsViewPlugIn_Description", resourceCulture);
+                return ResourceManager.GetString("KundunEssenceViewPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Party drop mode (custom packet).
+        /// </summary>
+        public static string PartyDropModeHandlerPlugIn_Name {
+            get {
+                return ResourceManager.GetString("PartyDropModeHandlerPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Handles the custom packet C1 05 FB 03 [mode] of the game client of this server, with which the party master changes the drop mode of the party (free, random, in turn)..
+        /// </summary>
+        public static string PartyDropModeHandlerPlugIn_Description {
+            get {
+                return ResourceManager.GetString("PartyDropModeHandlerPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Party drop mode view (custom packet).
+        /// </summary>
+        public static string PartyDropModeViewPlugIn_Name {
+            get {
+                return ResourceManager.GetString("PartyDropModeViewPlugIn_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sends the drop mode of the party (C1 05 FB 03 [mode]) to the game client of this server..
+        /// </summary>
+        public static string PartyDropModeViewPlugIn_Description {
+            get {
+                return ResourceManager.GetString("PartyDropModeViewPlugIn_Description", resourceCulture);
             }
         }
     }

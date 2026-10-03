@@ -11,6 +11,7 @@ using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Party;
+using MUnique.OpenMU.Pathfinding;
 using MUnique.OpenMU.Persistence;
 using Nito.AsyncEx;
 
@@ -35,6 +36,8 @@ public sealed class Party : AsyncDisposable
     private CancellationTokenSource? _healthUpdateCts;
 
     private IPartyMember[] _partyMembers = [];
+
+    private IPartyMember? _lastRoundRobinOwner;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Party"/> class.
@@ -69,6 +72,11 @@ public sealed class Party : AsyncDisposable
     /// </summary>
     public IPartyMember? PartyMaster { get; private set; }
 
+    /// <summary>
+    /// Gets the drop mode of the party, which the party master chooses.
+    /// </summary>
+    public PartyDropMode DropMode { get; private set; }
+
     private static string MeterName => typeof(Party).FullName ?? nameof(Party);
 
     /// <summary>
@@ -97,7 +105,75 @@ public sealed class Party : AsyncDisposable
 
         await this.SendPartyListAsync().ConfigureAwait(false);
         await this.UpdateNearbyCountAsync().ConfigureAwait(false);
+        await this.SendDropModeAsync(newMember).ConfigureAwait(false);
         return true;
+    }
+
+    /// <summary>
+    /// Sets the drop mode of the party. Only the party master may change it.
+    /// </summary>
+    /// <param name="requester">The member who requests the change.</param>
+    /// <param name="mode">The new drop mode.</param>
+    /// <returns><c>true</c>, if the drop mode has been changed.</returns>
+    public async ValueTask<bool> TrySetDropModeAsync(IPartyMember requester, PartyDropMode mode)
+    {
+        if (!Enum.IsDefined(mode) || !Equals(requester, this.PartyMaster))
+        {
+            return false;
+        }
+
+        this.DropMode = mode;
+        foreach (var member in this._partyMembers)
+        {
+            await this.SendDropModeAsync(member).ConfigureAwait(false);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Gets the owners of an item which dropped for a kill of the specified member, according to the <see cref="DropMode"/>.
+    /// </summary>
+    /// <param name="killer">The killer, who is a member of this party.</param>
+    /// <param name="position">The position of the drop.</param>
+    /// <returns>The owners of the item.</returns>
+    public IReadOnlyList<IPartyMember> GetItemOwners(Player killer, Point position)
+    {
+        var mode = this.DropMode;
+        if (mode == PartyDropMode.Free)
+        {
+            return this._partyMembers;
+        }
+
+        var candidates = this._partyMembers.OfType<Player>()
+            .Where(member => member == killer || IsNearDrop(member, killer, position))
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return [killer];
+        }
+
+        if (mode == PartyDropMode.Random)
+        {
+            return [candidates[Rand.NextInt(0, candidates.Count)]];
+        }
+
+        // Round robin: the next member after the previous owner in the order of the party list, who is near the drop.
+        lock (this._writeLock)
+        {
+            var members = this._partyMembers;
+            var start = this._lastRoundRobinOwner is { } last ? Array.IndexOf(members, last) : -1;
+            for (var i = 1; i <= members.Length; i++)
+            {
+                if (members[(start + i + members.Length) % members.Length] is Player member && candidates.Contains(member))
+                {
+                    this._lastRoundRobinOwner = member;
+                    return [member];
+                }
+            }
+        }
+
+        return [killer];
     }
 
     /// <summary>
@@ -547,6 +623,27 @@ public sealed class Party : AsyncDisposable
             {
                 this._logger.LogDebug(ex, "Error updating {Stat} for {Name}", nameof(Stats.NearbyPartyMemberCount), player.Name);
             }
+        }
+    }
+
+    private static bool IsNearDrop(Player member, Player killer, Point position)
+    {
+        return member.CurrentMap == killer.CurrentMap
+               && member.IsAlive
+               && member.Attributes is { }
+               && member.GetDistanceTo(position) <= DroppedItem.MaximumAssignmentDistance;
+    }
+
+    private async ValueTask SendDropModeAsync(IPartyMember member)
+    {
+        try
+        {
+            var mode = this.DropMode;
+            await member.InvokeViewPlugInAsync<IPartyDropModeViewPlugIn>(p => p.ShowDropModeAsync(mode)).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogDebug(ex, "Error sending the drop mode to {Name}", member.Name);
         }
     }
 
