@@ -101,6 +101,18 @@ public class KalimaInstanceConfiguration
     public float BossHealthFactor { get; set; } = 50f;
 
     /// <summary>
+    /// Gets or sets the minimum growth of the strength from one tier to the next.
+    /// </summary>
+    [Display(Name = "Minimum growth per tier", Description = "Each tier is at least this much stronger than the previous one (0.05 = 5 %), also when its reference map is weaker.")]
+    public float MinimumTierGrowth { get; set; } = 0.05f;
+
+    /// <summary>
+    /// Gets or sets the maximum monster level.
+    /// </summary>
+    [Display(Name = "Maximum monster level", Description = "The monster level of a tier doesn't exceed this value. 0 = no limit.")]
+    public int MaximumMonsterLevel { get; set; } = 400;
+
+    /// <summary>
     /// Gets or sets the numbers of the boss monsters (Illusion of Kundun 1-7).
     /// </summary>
     [Display(Name = "Boss monster numbers", Description = "Monster numbers of the Illusion of Kundun 1-7; killing one gives 'Symbols for the boss' x Kalima level to each player in the instance.")]
@@ -111,7 +123,7 @@ public class KalimaInstanceConfiguration
     /// </summary>
     [MemberOfAggregate]
     [ScaffoldColumn(true)]
-    [Display(Name = "Tiers", Description = "The Kalima maps by resets. A party enters the highest tier which all of its members reached. The monsters get the average level, health, damage and defense of the tier, their differences among each other stay.")]
+    [Display(Name = "Tiers", Description = "The Kalima maps by resets. A party enters the highest tier which all of its members reached. The monsters get the strength of the reference map times the factors, their differences among each other stay. A tier is at least by the minimum growth stronger than the previous one.")]
     public ICollection<KalimaInstanceTier> Tiers { get; set; } = CreateDefaultTiers();
 
     /// <summary>
@@ -171,18 +183,18 @@ public class KalimaInstanceConfiguration
         return nextReset - localTime;
     }
 
-    // About 5 resets stronger than the maps of the reset ladder at the minimum resets of the tier,
-    // with ten times their health (a party of 3-4 well equipped players). The damage of Kalima 5-7
-    // is lower than double, because the monsters of Raklion already hit very hard.
+    // The reference maps follow the reset ladder about 5 resets above the tier: Kanturu Ruins (37),
+    // Aida (33), Karutan 2 (81), Raklion (57) and Kanturu Relics (38). The damage of the tiers which
+    // are based on Raklion is lower, because its monsters already hit very hard.
     private static List<KalimaInstanceTier> CreateDefaultTiers() =>
     [
-        new() { Level = 1, MinimumResets = 5, MonsterLevel = 100, Health = 400_000, Damage = 1200, Defense = 450 },
-        new() { Level = 2, MinimumResets = 10, MonsterLevel = 110, Health = 700_000, Damage = 1500, Defense = 500 },
-        new() { Level = 3, MinimumResets = 15, MonsterLevel = 117, Health = 900_000, Damage = 1650, Defense = 620 },
-        new() { Level = 4, MinimumResets = 22, MonsterLevel = 122, Health = 1_000_000, Damage = 1800, Defense = 680 },
-        new() { Level = 5, MinimumResets = 30, MonsterLevel = 130, Health = 1_000_000, Damage = 2800, Defense = 650 },
-        new() { Level = 6, MinimumResets = 40, MonsterLevel = 140, Health = 2_400_000, Damage = 3100, Defense = 820 },
-        new() { Level = 7, MinimumResets = 50, MonsterLevel = 145, Health = 2_600_000, Damage = 3300, Defense = 900 },
+        new() { Level = 1, MinimumResets = 5, ReferenceMapNumber = 37, LevelFactor = 1.1f, DamageFactor = 2f },
+        new() { Level = 2, MinimumResets = 10, ReferenceMapNumber = 33, LevelFactor = 1.1f, DamageFactor = 2f },
+        new() { Level = 3, MinimumResets = 15, ReferenceMapNumber = 81, LevelFactor = 1.1f, DamageFactor = 2f },
+        new() { Level = 4, MinimumResets = 22, ReferenceMapNumber = 81, LevelFactor = 1.2f, DamageFactor = 2.2f },
+        new() { Level = 5, MinimumResets = 30, ReferenceMapNumber = 57, LevelFactor = 1.1f, DamageFactor = 1.3f },
+        new() { Level = 6, MinimumResets = 40, ReferenceMapNumber = 57, LevelFactor = 1.2f, DamageFactor = 1.4f },
+        new() { Level = 7, MinimumResets = 50, ReferenceMapNumber = 38, LevelFactor = 1.2f, DamageFactor = 2f },
     ];
 
     private DateTime ToLocalTime(DateTime utcNow)

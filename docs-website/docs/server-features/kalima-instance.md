@@ -46,27 +46,30 @@ appears when the previous one is killed, the **Illusion of Kundun** after the
 last pack.
 
 The difficulty is fixed - it doesn't depend on the number of players. It's made
-for a party of 3-4 well equipped players: about the monsters of the reset ladder
-5 resets above the tier, with ten times their health. A single player can
-survive, but hardly reaches the boss in time.
+for a party of 3-4 well equipped players. The strength of each tier comes from a
+**reference map** of the reset ladder, as it's stored in the database (so changed
+monster levels and health are taken over): the median of its regular monsters
+times the factors of the tier.
 
-| Kalima | Resets | Monster level | Health | Damage | Defense | Boss health |
+| Kalima | Resets | Reference map | Level | Health | Damage | Defense |
 |---|---|---|---|---|---|---|
-| 1 | 5 | 100 | 400 000 | 1 200 | 450 | 20 M |
-| 2 | 10 | 110 | 700 000 | 1 500 | 500 | 35 M |
-| 3 | 15 | 117 | 900 000 | 1 650 | 620 | 45 M |
-| 4 | 22 | 122 | 1 000 000 | 1 800 | 680 | 50 M |
-| 5 | 30 | 130 | 1 000 000 | 2 800 | 650 | 50 M |
-| 6 | 40 | 140 | 2 400 000 | 3 100 | 820 | 120 M |
-| 7 | 50 | 145 | 2 600 000 | 3 300 | 900 | 130 M |
+| 1 | 5 | Kanturu Ruins (37) | ×1.1 | ×10 | ×2 | ×1.1 |
+| 2 | 10 | Aida (33) | ×1.1 | ×10 | ×2 | ×1.1 |
+| 3 | 15 | Karutan 2 (81) | ×1.1 | ×10 | ×2 | ×1.1 |
+| 4 | 22 | Karutan 2 (81) | ×1.2 | ×10 | ×2.2 | ×1.1 |
+| 5 | 30 | Raklion (57) | ×1.1 | ×10 | ×1.3 | ×1.1 |
+| 6 | 40 | Raklion (57) | ×1.2 | ×10 | ×1.4 | ×1.1 |
+| 7 | 50 | Kanturu Relics (38) | ×1.2 | ×10 | ×2 | ×1.1 |
 
-The values are the averages of the regular monsters; the differences between
-the monster types of the map stay. The boss has 50 times the health of a
-regular monster. The level counts for the experience and the attack and
-defense rates. The damage of Kalima 5-7 is lower than double of the reference
-maps, because the monsters of Raklion already hit very hard; the defense is not
-multiplied, because it's subtracted from the damage and would make weaker
-players useless.
+Each tier is at least 5 % stronger than the previous one (also when its reference
+map is weaker), and the monster level is limited to 400. The values are the
+averages of the regular monsters; the differences between the monster types of
+the map stay. The boss has 50 times the health of a regular monster. The level
+counts for the experience, the attack and defense rates and the drops by monster
+level (items by rank, jewels, money). The damage of the Raklion based tiers is
+lower, because the monsters of Raklion already hit very hard; the defense is
+hardly multiplied, because it's subtracted from the damage and would make
+weaker players useless.
 
 The experience is multiplied by 20, money drops like on a regular map, and the
 penalty by resets doesn't apply in the instance.
@@ -84,11 +87,10 @@ penalty by resets doesn't apply in the instance.
 | Boss | 5 | 20 | 35 |
 | Per day | ~9 | ~36 | ~63 |
 
-The total health of a run shows the damage which is needed: at Kalima 1 about
-52 M (80 × 400 000 + 20 M), at Kalima 7 about 340 M. For 30 minutes of fighting
-this is about 29 000 damage per second for the party at Kalima 1, and about
-190 000 at Kalima 7. The values of the tiers are a starting point and should be
-adjusted to the real damage of the characters of the server.
+The total health of a run shows the damage which is needed: 80 regular monsters
+plus the boss (50 of them) are 130 times the health of a regular monster. The
+factors of the tiers are a starting point and should be adjusted to the real
+damage of the characters of the server.
 
 ## For admins
 
@@ -103,8 +105,9 @@ adjusted to the real damage of the characters of the server.
    active by default. Their configuration (Admin panel → Plugins):
    - Kalima instance: gatekeeper npc, entries per day, daily reset hour, time
      zone, duration, packs, monsters per pack, experience multiplier, symbol
-     chance and amounts, boss health factor, tiers (minimum resets, monster
-     level, health, damage, defense, drop multiplier per Kalima level).
+     chance and amounts, boss health factor, minimum growth per tier, maximum
+     monster level, tiers (minimum resets, reference map, level, health, damage
+     and defense factors, drop multiplier per Kalima level).
    - Symbols of Kundun: symbol shop npc and the prices (by item group, number and
      level). The items of the shop are edited at the merchant store of the npc.
 3. The playing time is the duration of the plugin configuration; the game

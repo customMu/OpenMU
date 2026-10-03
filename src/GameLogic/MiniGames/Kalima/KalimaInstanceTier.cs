@@ -22,28 +22,34 @@ public class KalimaInstanceTier
     public int MinimumResets { get; set; }
 
     /// <summary>
-    /// Gets or sets the average level of the monsters.
+    /// Gets or sets the number of the reference map, whose monsters define the strength of the tier.
     /// </summary>
-    [Display(Name = "Monster level", Description = "Average level of the monsters, which counts for the experience and the attack and defense rates.")]
-    public int MonsterLevel { get; set; }
+    [Display(Name = "Reference map", Description = "Number of the map of the reset ladder whose monsters define the strength (the median of its monsters, as stored in the database).")]
+    public short ReferenceMapNumber { get; set; }
 
     /// <summary>
-    /// Gets or sets the average health of the monsters.
+    /// Gets or sets the factor of the monster level relative to the reference map.
     /// </summary>
-    [Display(Name = "Health", Description = "Average maximum health of the regular monsters.")]
-    public int Health { get; set; }
+    [Display(Name = "Level factor", Description = "Monster level = level of the reference map x this factor (1.1 = a bit stronger).")]
+    public float LevelFactor { get; set; } = 1.1f;
 
     /// <summary>
-    /// Gets or sets the average maximum damage of the monsters.
+    /// Gets or sets the factor of the health relative to the reference map.
     /// </summary>
-    [Display(Name = "Damage", Description = "Average maximum base damage of the monsters.")]
-    public int Damage { get; set; }
+    [Display(Name = "Health factor")]
+    public float HealthFactor { get; set; } = 10f;
 
     /// <summary>
-    /// Gets or sets the average defense of the monsters.
+    /// Gets or sets the factor of the damage relative to the reference map.
     /// </summary>
-    [Display(Name = "Defense", Description = "Average defense of the monsters.")]
-    public int Defense { get; set; }
+    [Display(Name = "Damage factor")]
+    public float DamageFactor { get; set; } = 2f;
+
+    /// <summary>
+    /// Gets or sets the factor of the defense relative to the reference map.
+    /// </summary>
+    [Display(Name = "Defense factor", Description = "The defense is subtracted from the damage, so a high factor makes weaker players useless.")]
+    public float DefenseFactor { get; set; } = 1.1f;
 
     /// <summary>
     /// Gets or sets the item drop multiplier.

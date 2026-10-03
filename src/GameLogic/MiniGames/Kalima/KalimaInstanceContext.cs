@@ -59,6 +59,7 @@ public sealed class KalimaInstanceContext : MiniGameContext
         this._gameContext = gameContext;
         this._mapInitializer = mapInitializer;
         this.Tier = configuration.GetTier(definition.GameLevel) ?? new KalimaInstanceTier { Level = definition.GameLevel };
+        this.Strength = KalimaStrengthCalculator.Calculate(gameContext.Configuration, configuration).GetValueOrDefault(this.Tier.Level);
         this._endsAt = DateTime.UtcNow + configuration.Duration;
 
         var monsterSpawns = this.Map.Definition.MonsterSpawns
@@ -77,6 +78,11 @@ public sealed class KalimaInstanceContext : MiniGameContext
     /// Gets the tier of this instance.
     /// </summary>
     public KalimaInstanceTier Tier { get; }
+
+    /// <summary>
+    /// Gets the strength of the regular monsters, if the reference map of the tier has monsters.
+    /// </summary>
+    public KalimaStrength? Strength { get; }
 
     /// <summary>
     /// Gets the remaining time until the instance closes.
@@ -254,15 +260,10 @@ public sealed class KalimaInstanceContext : MiniGameContext
 
     private static float GetAverage(IReadOnlyCollection<MonsterSpawnArea> spawns, AttributeDefinition attribute)
     {
-        if (spawns.Count == 0)
-        {
-            return 0;
-        }
-
-        return spawns.Average(area => area.MonsterDefinition!.Attributes.FirstOrDefault(a => Equals(a.AttributeDefinition, attribute))?.Value ?? 0);
+        return spawns.Count == 0 ? 0 : spawns.Average(area => KalimaStrengthCalculator.GetValue(area.MonsterDefinition!, attribute));
     }
 
-    private static float GetRatio(int target, float average) => target > 0 && average > 0 ? target / average : 1.0f;
+    private static float GetRatio(float target, float average) => target > 0 && average > 0 ? target / average : 1.0f;
 
     private static int RollAmount(float chance, int amount) => chance > 0 && Rand.NextRandomBool((double)Math.Min(chance, 1f)) ? amount : 0;
 
@@ -275,19 +276,23 @@ public sealed class KalimaInstanceContext : MiniGameContext
     /// <param name="regularSpawns">The spawns of the regular monsters.</param>
     private void CalculateStrength(IReadOnlyCollection<MonsterSpawnArea> regularSpawns)
     {
-        var tier = this.Tier;
+        if (this.Strength is not { } strength)
+        {
+            this.Logger.LogWarning("{context}: The reference map of the tier has no monsters, the monsters keep their strength.", this);
+            return;
+        }
+
         var averageHealth = GetAverage(regularSpawns, Stats.MaximumHealth);
         var averageLevel = GetAverage(regularSpawns, Stats.Level);
 
-        this._healthMultiplier.Value = GetRatio(tier.Health, averageHealth);
-        this._damageMultiplier.Value = GetRatio(tier.Damage, GetAverage(regularSpawns, Stats.MaximumPhysBaseDmg));
-        this._defenseMultiplier.Value = GetRatio(tier.Defense, GetAverage(regularSpawns, Stats.DefenseBase));
-        this._rateMultiplier.Value = GetRatio(tier.MonsterLevel, averageLevel);
-        this._levelIncrease.Value = tier.MonsterLevel > 0 && averageLevel > 0 ? tier.MonsterLevel - averageLevel : 0;
+        this._healthMultiplier.Value = GetRatio(strength.Health, averageHealth);
+        this._damageMultiplier.Value = GetRatio(strength.Damage, GetAverage(regularSpawns, Stats.MaximumPhysBaseDmg));
+        this._defenseMultiplier.Value = GetRatio(strength.Defense, GetAverage(regularSpawns, Stats.DefenseBase));
+        this._rateMultiplier.Value = GetRatio(strength.Level, averageLevel);
+        this._levelIncrease.Value = strength.Level > 0 && averageLevel > 0 ? strength.Level - averageLevel : 0;
 
-        var bossHealth = this._bossSpawn?.MonsterDefinition?.Attributes.FirstOrDefault(a => Equals(a.AttributeDefinition, Stats.MaximumHealth))?.Value ?? 0;
-        var regularHealth = tier.Health > 0 ? tier.Health : averageHealth;
-        this._bossHealthMultiplier.Value = bossHealth > 0 ? this._configuration.BossHealthFactor * regularHealth / bossHealth : 1.0f;
+        var bossHealth = this._bossSpawn?.MonsterDefinition is { } boss ? KalimaStrengthCalculator.GetValue(boss, Stats.MaximumHealth) : 0;
+        this._bossHealthMultiplier.Value = bossHealth > 0 ? this._configuration.BossHealthFactor * strength.Health / bossHealth : 1.0f;
     }
 
     private void ApplyStrength(Monster monster)

@@ -81,10 +81,25 @@ public class KalimaInstanceContextTest
             var regular = all.Take(all.Count - 1).ToList();
 
             Assert.That(configuration.BossMonsterNumbers, Does.Contain(boss.Definition.Number));
+            var strength = instance.Strength!;
+            var reference = KalimaStrengthCalculator.GetReferenceStrength(gameConfiguration, tier.ReferenceMapNumber)!;
+            Assert.That(strength.Health, Is.EqualTo(reference.Health * tier.HealthFactor).Within(1), "the first tier only depends on its reference map");
+            Assert.That(strength.Level, Is.EqualTo(reference.Level * tier.LevelFactor).Within(0.01));
             var averageHealth = regular.Average(m => m.Attributes[Stats.MaximumHealth]);
-            Assert.That(averageHealth, Is.EqualTo(tier.Health).Within(tier.Health * 0.5), "the packs have about the health of the tier");
-            Assert.That(boss.Attributes[Stats.MaximumHealth], Is.EqualTo(tier.Health * configuration.BossHealthFactor).Within(1000));
-            Assert.That(regular.Average(m => m.Attributes[Stats.Level]), Is.EqualTo(tier.MonsterLevel).Within(tier.MonsterLevel * 0.3));
+            Assert.That(averageHealth, Is.EqualTo(strength.Health).Within(strength.Health * 0.5), "the packs have about the health of the tier");
+            Assert.That(boss.Attributes[Stats.MaximumHealth], Is.EqualTo(strength.Health * configuration.BossHealthFactor).Within(strength.Health * 0.01));
+            Assert.That(regular.Average(m => m.Attributes[Stats.Level]), Is.EqualTo(strength.Level).Within(strength.Level * 0.3));
+
+            var allTiers = KalimaStrengthCalculator.Calculate(gameConfiguration, configuration);
+            Assert.That(allTiers.Keys, Is.EquivalentTo(new[] { 1, 2, 3, 4, 5, 6, 7 }));
+            for (var level = 2; level <= 7; level++)
+            {
+                Assert.That(allTiers[level].Level, Is.GreaterThanOrEqualTo(allTiers[level - 1].Level * 1.05f).Within(0.01f));
+                Assert.That(allTiers[level].Health, Is.GreaterThanOrEqualTo(allTiers[level - 1].Health * 1.05f).Within(1f));
+                TestContext.Out.WriteLine($"Kalima {level - 1}: {allTiers[level - 1]}");
+            }
+
+            TestContext.Out.WriteLine($"Kalima 7: {allTiers[7]}");
         }
         finally
         {
