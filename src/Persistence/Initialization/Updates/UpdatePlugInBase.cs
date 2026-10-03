@@ -60,7 +60,7 @@ public abstract class UpdatePlugInBase : IConfigurationUpdatePlugIn
     /// <returns><c>true</c> if the attribute was added; otherwise, <c>false</c>.</returns>
     protected bool AddStatIfNotExists(IContext context, GameConfiguration gameConfiguration, AttributeDefinition attribute)
     {
-        if (gameConfiguration.Attributes.Contains(attribute))
+        if (gameConfiguration.Attributes.Any(a => a.Id == attribute.Id))
         {
             return false;
         }

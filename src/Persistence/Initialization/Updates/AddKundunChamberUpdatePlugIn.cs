@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.Persistence.Initialization.Updates;
 
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
@@ -77,7 +78,7 @@ public class AddKundunChamberUpdatePlugIn : UpdatePlugInBase
     private static void UpdateTierResets(GameConfiguration gameConfiguration)
     {
         var plugInConfiguration = gameConfiguration.PlugInConfigurations.FirstOrDefault(c => c.TypeId == typeof(KalimaInstancePlugIn).GUID);
-        if (plugInConfiguration?.GetConfiguration<KalimaInstanceConfiguration>(null) is not { } configuration)
+        if (plugInConfiguration?.GetConfiguration<KalimaInstanceConfiguration>(NoReferencesHandler.Instance) is not { } configuration)
         {
             return;
         }
@@ -94,7 +95,38 @@ public class AddKundunChamberUpdatePlugIn : UpdatePlugInBase
 
         if (changed)
         {
-            plugInConfiguration.SetConfiguration(configuration, null);
+            plugInConfiguration.SetConfiguration(configuration, NoReferencesHandler.Instance);
+        }
+    }
+
+    /// <summary>
+    /// Reads and writes plug-in configurations in the format of the admin panel (empty <c>$id</c> and <c>$values</c>),
+    /// for configurations which don't reference objects of the database.
+    /// </summary>
+    private sealed class NoReferencesHandler : ReferenceHandler
+    {
+        /// <summary>
+        /// Gets the instance.
+        /// </summary>
+        public static NoReferencesHandler Instance { get; } = new();
+
+        /// <inheritdoc />
+        public override ReferenceResolver CreateResolver() => new Resolver();
+
+        private sealed class Resolver : ReferenceResolver
+        {
+            public override void AddReference(string referenceId, object value)
+            {
+                // The ids are empty, there is nothing to resolve later.
+            }
+
+            public override string GetReference(object value, out bool alreadyExists)
+            {
+                alreadyExists = false;
+                return string.Empty;
+            }
+
+            public override object ResolveReference(string referenceId) => throw new KeyNotFoundException($"Reference with id '{referenceId}' not found.");
         }
     }
 }
