@@ -45,20 +45,25 @@ public class KalimaInstanceConfigurationTest
     }
 
     /// <summary>
-    /// The highest tier which was reached by the resets is entered.
+    /// The tiers have strict reset ranges: 5-9, 10-14, 15-21, 22-29, 30-37, 38-44 and 45+.
     /// </summary>
-    [TestCase(0, null)]
-    [TestCase(4, null)]
-    [TestCase(5, 1)]
-    [TestCase(14, 2)]
-    [TestCase(22, 4)]
-    [TestCase(49, 6)]
-    [TestCase(50, 7)]
-    [TestCase(200, 7)]
-    public void HighestTier(int resets, int? expectedLevel)
+    [TestCase(0, null, null)]
+    [TestCase(4, null, null)]
+    [TestCase(5, 1, "5-9")]
+    [TestCase(9, 1, "5-9")]
+    [TestCase(10, 2, "10-14")]
+    [TestCase(21, 3, "15-21")]
+    [TestCase(22, 4, "22-29")]
+    [TestCase(37, 5, "30-37")]
+    [TestCase(44, 6, "38-44")]
+    [TestCase(45, 7, "45+")]
+    [TestCase(200, 7, "45+")]
+    public void TierByResets(int resets, int? expectedLevel, string? expectedRange)
     {
         var configuration = new KalimaInstanceConfiguration();
-        Assert.That(configuration.GetHighestTier(resets)?.Level, Is.EqualTo(expectedLevel));
+        var tier = configuration.GetTierByResets(resets);
+        Assert.That(tier?.Level, Is.EqualTo(expectedLevel));
+        Assert.That(tier is null ? null : configuration.GetResetRangeText(tier), Is.EqualTo(expectedRange));
     }
 
     /// <summary>

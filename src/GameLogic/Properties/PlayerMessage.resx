@@ -822,6 +822,9 @@
   <data name="KalimaInstanceRequiresResetsFormat" xml:space="preserve">
     <value>You need {0} resets to enter Kalima {1}.</value>
   </data>
+  <data name="KalimaInstanceMemberNotInRangeFormat" xml:space="preserve">
+    <value>{0} doesn't meet the conditions: Kalima {1} is for {2} resets, {0} has {3}.</value>
+  </data>
   <data name="KalimaInstanceDailyLimitFormat" xml:space="preserve">
     <value>You already used your Kalima entry for today. New entries at {0}:00 (in {1} h {2} min).</value>
   </data>

@@ -123,7 +123,7 @@ public class KalimaInstanceConfiguration
     /// </summary>
     [MemberOfAggregate]
     [ScaffoldColumn(true)]
-    [Display(Name = "Tiers", Description = "The Kalima maps by resets. A party enters the highest tier which all of its members reached. The monsters get the strength of the reference map times the factors, their differences among each other stay. A tier is at least by the minimum growth stronger than the previous one.")]
+    [Display(Name = "Tiers", Description = "The Kalima maps by resets. Each tier is for the resets from its minimum up to the minimum of the next tier minus one (strict ranges, the last tier is open); all members of a party have to be in the range of the same tier. The monsters get the strength of the reference map times the factors, their differences among each other stay. A tier is at least by the minimum growth stronger than the previous one.")]
     public ICollection<KalimaInstanceTier> Tiers { get; set; } = CreateDefaultTiers();
 
     /// <summary>
@@ -137,15 +137,42 @@ public class KalimaInstanceConfiguration
     }
 
     /// <summary>
-    /// Gets the highest tier which is available for the specified reset count.
+    /// Gets the tier whose reset range contains the specified reset count. The ranges are strict:
+    /// a tier reaches from its minimum resets up to the minimum resets of the next tier minus one,
+    /// the last tier is open.
     /// </summary>
     /// <param name="resets">The reset count.</param>
-    /// <returns>The highest available tier, or <c>null</c>, if no tier is available yet.</returns>
-    public KalimaInstanceTier? GetHighestTier(int resets)
+    /// <returns>The tier, or <c>null</c>, if the reset count is below the first tier.</returns>
+    public KalimaInstanceTier? GetTierByResets(int resets)
     {
         return this.Tiers
             .Where(t => t.MinimumResets <= resets)
             .MaxBy(t => t.MinimumResets);
+    }
+
+    /// <summary>
+    /// Gets the maximum reset count of the tier, which is one less than the minimum resets of the next tier.
+    /// </summary>
+    /// <param name="tier">The tier.</param>
+    /// <returns>The maximum reset count, or <c>null</c>, if the tier is the last one.</returns>
+    public int? GetMaximumResets(KalimaInstanceTier tier)
+    {
+        var next = this.Tiers
+            .Where(t => t.MinimumResets > tier.MinimumResets)
+            .MinBy(t => t.MinimumResets);
+        return next is null ? null : next.MinimumResets - 1;
+    }
+
+    /// <summary>
+    /// Gets the reset range of the tier as text, e.g. "5-9" or "45+".
+    /// </summary>
+    /// <param name="tier">The tier.</param>
+    /// <returns>The reset range as text.</returns>
+    public string GetResetRangeText(KalimaInstanceTier tier)
+    {
+        return this.GetMaximumResets(tier) is { } maximum
+            ? $"{tier.MinimumResets}-{maximum}"
+            : $"{tier.MinimumResets}+";
     }
 
     /// <summary>
@@ -193,8 +220,8 @@ public class KalimaInstanceConfiguration
         new() { Level = 3, MinimumResets = 15, ReferenceMapNumber = 81, LevelFactor = 1.1f, DamageFactor = 2f },
         new() { Level = 4, MinimumResets = 22, ReferenceMapNumber = 81, LevelFactor = 1.2f, DamageFactor = 2.2f },
         new() { Level = 5, MinimumResets = 30, ReferenceMapNumber = 57, LevelFactor = 1.1f, DamageFactor = 1.3f },
-        new() { Level = 6, MinimumResets = 40, ReferenceMapNumber = 57, LevelFactor = 1.2f, DamageFactor = 1.4f },
-        new() { Level = 7, MinimumResets = 50, ReferenceMapNumber = 38, LevelFactor = 1.2f, DamageFactor = 2f },
+        new() { Level = 6, MinimumResets = 38, ReferenceMapNumber = 57, LevelFactor = 1.2f, DamageFactor = 1.4f },
+        new() { Level = 7, MinimumResets = 45, ReferenceMapNumber = 38, LevelFactor = 1.2f, DamageFactor = 2f },
     ];
 
     private DateTime ToLocalTime(DateTime utcNow)

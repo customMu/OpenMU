@@ -26,7 +26,7 @@ public class KalimaInstanceEnterAction
 
     /// <summary>
     /// Tries to enter the Kalima instance. An already running instance of the party is entered,
-    /// otherwise a new one is created for the highest tier which all party members reached.
+    /// otherwise a new one is created for the tier whose reset range contains the resets of the player; all party members have to be in this range.
     /// </summary>
     /// <param name="player">The player.</param>
     public async ValueTask TryEnterAsync(Player player)
@@ -59,9 +59,9 @@ public class KalimaInstanceEnterAction
             return;
         }
 
-        if (GetResets(player) < instance.Tier.MinimumResets)
+        if (!this.IsInRange(player, instance.Tier))
         {
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KalimaInstanceRequiresResetsFormat), instance.Tier.MinimumResets, instance.Tier.Level).ConfigureAwait(false);
+            await this.ShowNotInRangeAsync(player, player, instance.Tier).ConfigureAwait(false);
             return;
         }
 
@@ -75,13 +75,22 @@ public class KalimaInstanceEnterAction
 
     private async ValueTask EnterNewInstanceAsync(Player player)
     {
-        // The tier is limited by the weakest member, so that every member can join.
-        var resets = player.Party?.PartyList.OfType<Player>().Where(p => p.GameContext == player.GameContext).Select(GetResets).DefaultIfEmpty(GetResets(player)).Min()
-                     ?? GetResets(player);
-        var tier = this._configuration.GetHighestTier(resets);
+        var tier = this._configuration.GetTierByResets(GetResets(player));
         if (tier is null)
         {
             await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KalimaInstanceRequiresResetsFormat), this._configuration.GetMinimumResets(), 1).ConfigureAwait(false);
+            return;
+        }
+
+        // The ranges are strict: every member of the party has to be in the range of the same tier.
+        var membersNotInRange = player.Party?.PartyList.OfType<Player>().Where(member => !this.IsInRange(member, tier)).ToList() ?? [];
+        if (membersNotInRange.Count > 0)
+        {
+            foreach (var member in membersNotInRange)
+            {
+                await this.ShowNotInRangeAsync(player, member, tier).ConfigureAwait(false);
+            }
+
             return;
         }
 
@@ -106,6 +115,21 @@ public class KalimaInstanceEnterAction
         }
 
         await this.EnterAsync(player, instance, !instance.IsRegistered(player)).ConfigureAwait(false);
+    }
+
+    private bool IsInRange(Player player, KalimaInstanceTier tier)
+    {
+        return this._configuration.GetTierByResets(GetResets(player)) == tier;
+    }
+
+    private ValueTask ShowNotInRangeAsync(Player receiver, Player member, KalimaInstanceTier tier)
+    {
+        return receiver.ShowLocalizedBlueMessageAsync(
+            nameof(PlayerMessage.KalimaInstanceMemberNotInRangeFormat),
+            member.Name,
+            tier.Level,
+            this._configuration.GetResetRangeText(tier),
+            GetResets(member));
     }
 
     private async ValueTask<bool> CheckDailyEntriesAsync(Player player)

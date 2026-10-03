@@ -2273,5 +2273,14 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("KalimaInstanceTimeOver", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} doesn't meet the conditions: Kalima {1} is for {2} resets, {0} has {3}..
+        /// </summary>
+        public static string KalimaInstanceMemberNotInRangeFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstanceMemberNotInRangeFormat", resourceCulture);
+            }
+        }
     }
 }

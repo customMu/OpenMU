@@ -132,6 +132,9 @@
   <data name="KalimaInstanceRequiresResetsFormat" xml:space="preserve">
     <value>Для входа в Калиму {1} нужно {0} ресетов.</value>
   </data>
+  <data name="KalimaInstanceMemberNotInRangeFormat" xml:space="preserve">
+    <value>{0} не подходит по условиям: Калима {1} — для {2} ресетов, у {0} {3}.</value>
+  </data>
   <data name="KalimaInstanceDailyLimitFormat" xml:space="preserve">
     <value>Сегодняшний вход в Калиму уже использован. Новый вход в {0}:00 (через {1} ч {2} мин).</value>
   </data>
