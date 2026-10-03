@@ -45,6 +45,18 @@ public class KalimaInstanceTier
     [Display(Name = "Drop multiplier")]
     public float DropMultiplier { get; set; } = 1.0f;
 
+    /// <summary>
+    /// Gets or sets the chance per killed monster that each player in the instance gets a Symbol of Kundun, for a single player.
+    /// </summary>
+    [Display(Name = "Symbol chance per kill", Description = "Chance (0.1 = 10 %) per killed monster that each player in the instance gets a Symbol of Kundun. Values above 1 give several symbols.")]
+    public float SymbolChancePerKill { get; set; }
+
+    /// <summary>
+    /// Gets or sets the symbols which each player in the instance gets for killing the Illusion of Kundun.
+    /// </summary>
+    [Display(Name = "Symbols for the boss", Description = "Symbols of Kundun which each player in the instance gets when the Illusion of Kundun is killed (once per instance, it doesn't respawn within an hour).")]
+    public int BossSymbols { get; set; }
+
     /// <inheritdoc />
     public override string ToString() => $"Kalima {this.Level}: {this.MinimumResets} resets";
 }

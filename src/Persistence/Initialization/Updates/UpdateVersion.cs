@@ -584,4 +584,9 @@ public enum UpdateVersion
     /// The version of the <see cref="AddKalimaInstanceUpdatePlugIn"/>.
     /// </summary>
     AddKalimaInstance = 115,
+
+    /// <summary>
+    /// The version of the <see cref="KundunSymbolsOnlyInKalimaUpdatePlugIn"/>.
+    /// </summary>
+    KundunSymbolsOnlyInKalima = 116,
 }

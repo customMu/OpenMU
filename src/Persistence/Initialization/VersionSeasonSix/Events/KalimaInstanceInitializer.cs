@@ -48,6 +48,33 @@ internal class KalimaInstanceInitializer : InitializerBase
         this.CreateMiniGameDefinitions();
         this.CreateLorenciaSpawns();
         this.CreateSymbolShop();
+        RemoveSymbolDrops(this.GameConfiguration);
+    }
+
+    /// <summary>
+    /// Removes the regular drops of the Symbols of Kundun: they are given personally to the players
+    /// of the Kalima instance (plugin "Kalima instance") and don't drop anywhere else.
+    /// </summary>
+    /// <param name="gameConfiguration">The game configuration.</param>
+    internal static void RemoveSymbolDrops(GameConfiguration gameConfiguration)
+    {
+        static bool IsSymbolDrop(DropItemGroup group) => group.PossibleItems.Any(item => item.Group == 14 && item.Number == 29);
+
+        foreach (var map in gameConfiguration.Maps)
+        {
+            foreach (var group in map.DropItemGroups.Where(IsSymbolDrop).ToList())
+            {
+                map.DropItemGroups.Remove(group);
+            }
+        }
+
+        foreach (var monster in gameConfiguration.Monsters)
+        {
+            foreach (var group in monster.DropItemGroups.Where(IsSymbolDrop).ToList())
+            {
+                monster.DropItemGroups.Remove(group);
+            }
+        }
     }
 
     private void CreateMiniGameDefinitions()

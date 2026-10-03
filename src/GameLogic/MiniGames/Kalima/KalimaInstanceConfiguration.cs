@@ -71,6 +71,18 @@ public class KalimaInstanceConfiguration
     public float DropPerPlayer { get; set; } = 2.1f;
 
     /// <summary>
+    /// Gets or sets the bonus on the symbol chance per additional player.
+    /// </summary>
+    [Display(Name = "Symbol bonus per player", Description = "The symbols are personal: every player in the instance rolls for each kill. The chance grows by this value for each additional player: chance = base * (1 + value * (players - 1)), so 0.1 means +40 % for each member of a full party.")]
+    public float SymbolBonusPerPlayer { get; set; } = 0.1f;
+
+    /// <summary>
+    /// Gets or sets the numbers of the boss monsters (Illusion of Kundun 1-7).
+    /// </summary>
+    [Display(Name = "Boss monster numbers", Description = "Monster numbers of the Illusion of Kundun 1-7; killing one gives 'Symbols for the boss' to each player in the instance.")]
+    public ICollection<short> BossMonsterNumbers { get; set; } = new List<short> { 161, 181, 189, 197, 267, 275, 338 };
+
+    /// <summary>
     /// Gets or sets the tiers of the instance.
     /// </summary>
     [MemberOfAggregate]
@@ -88,6 +100,18 @@ public class KalimaInstanceConfiguration
     {
         var players = Math.Clamp(playerCount, 1, Math.Max(1, this.MaximumScaledPlayers));
         return Math.Max(0.01f, 1 + ((perPlayer - 1) * (players - 1)));
+    }
+
+    /// <summary>
+    /// Gets the chance per kill that a player gets a Symbol of Kundun.
+    /// </summary>
+    /// <param name="tier">The tier.</param>
+    /// <param name="playerCount">The player count.</param>
+    /// <returns>The chance; values above 1 give several symbols.</returns>
+    public float GetSymbolChance(KalimaInstanceTier tier, int playerCount)
+    {
+        var players = Math.Clamp(playerCount, 1, Math.Max(1, this.MaximumScaledPlayers));
+        return Math.Max(0, tier.SymbolChancePerKill * (1 + (this.SymbolBonusPerPlayer * (players - 1))));
     }
 
     /// <summary>
@@ -149,13 +173,13 @@ public class KalimaInstanceConfiguration
 
     private static List<KalimaInstanceTier> CreateDefaultTiers() =>
     [
-        new() { Level = 1, MinimumResets = 5, HealthMultiplier = 6.0f, DefenseMultiplier = 3.0f, DamageMultiplier = 3.0f, DropMultiplier = 1.5f },
-        new() { Level = 2, MinimumResets = 10, HealthMultiplier = 5.0f, DefenseMultiplier = 2.5f, DamageMultiplier = 2.5f, DropMultiplier = 1.5f },
-        new() { Level = 3, MinimumResets = 15, HealthMultiplier = 4.0f, DefenseMultiplier = 2.2f, DamageMultiplier = 2.2f, DropMultiplier = 1.5f },
-        new() { Level = 4, MinimumResets = 22, HealthMultiplier = 3.5f, DefenseMultiplier = 2.0f, DamageMultiplier = 2.0f, DropMultiplier = 1.5f },
-        new() { Level = 5, MinimumResets = 30, HealthMultiplier = 3.0f, DefenseMultiplier = 1.8f, DamageMultiplier = 1.8f, DropMultiplier = 1.5f },
-        new() { Level = 6, MinimumResets = 40, HealthMultiplier = 3.0f, DefenseMultiplier = 1.6f, DamageMultiplier = 1.6f, DropMultiplier = 1.5f },
-        new() { Level = 7, MinimumResets = 50, HealthMultiplier = 3.0f, DefenseMultiplier = 1.5f, DamageMultiplier = 1.5f, DropMultiplier = 1.5f },
+        new() { Level = 1, MinimumResets = 5, HealthMultiplier = 6.0f, DefenseMultiplier = 3.0f, DamageMultiplier = 3.0f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.06f, BossSymbols = 2 },
+        new() { Level = 2, MinimumResets = 10, HealthMultiplier = 5.0f, DefenseMultiplier = 2.5f, DamageMultiplier = 2.5f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.07f, BossSymbols = 4 },
+        new() { Level = 3, MinimumResets = 15, HealthMultiplier = 4.0f, DefenseMultiplier = 2.2f, DamageMultiplier = 2.2f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.08f, BossSymbols = 6 },
+        new() { Level = 4, MinimumResets = 22, HealthMultiplier = 3.5f, DefenseMultiplier = 2.0f, DamageMultiplier = 2.0f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.09f, BossSymbols = 8 },
+        new() { Level = 5, MinimumResets = 30, HealthMultiplier = 3.0f, DefenseMultiplier = 1.8f, DamageMultiplier = 1.8f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.1f, BossSymbols = 10 },
+        new() { Level = 6, MinimumResets = 40, HealthMultiplier = 3.0f, DefenseMultiplier = 1.6f, DamageMultiplier = 1.6f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.11f, BossSymbols = 12 },
+        new() { Level = 7, MinimumResets = 50, HealthMultiplier = 3.0f, DefenseMultiplier = 1.5f, DamageMultiplier = 1.5f, DropMultiplier = 1.5f, SymbolChancePerKill = 0.12f, BossSymbols = 15 },
     ];
 
     private DateTime ToLocalTime(DateTime utcNow)

@@ -30,8 +30,12 @@ Symbols of Kundun are a **currency** which is spent in the symbol shop.
   again to go back.
 - The monsters are much stronger than on a regular map, and they get stronger
   with each player in the instance - but the drop grows faster than the monsters.
-- **Symbols of Kundun** aren't items anymore. A picked up symbol goes into a
-  counter of the character (no stack limit), so it can't be traded or sold.
+- **Symbols of Kundun** only come from the Kalima instance and are personal: for
+  every killed monster each player in the instance rolls its own chance, and the
+  Illusion of Kundun (once per instance, it doesn't respawn within an hour) gives
+  a fixed amount to everyone. They go into a counter of the character (no stack
+  limit), so they can't be traded or sold. The regular monsters respawn after
+  10 seconds.
   `/symbols` shows the balance; the client shows it when the mouse is over the
   zen in the inventory.
 - **Delgado** in Lorencia sells for symbols instead of zen.
@@ -66,13 +70,28 @@ resets doesn't apply in the instance.
 When a player enters or leaves, the multipliers are updated at once; the health
 of the living monsters is adapted, so their health bar keeps its percentage.
 
+## Symbols per run
+
+| Kalima | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|
+| Chance per kill | 6 % | 7 % | 8 % | 9 % | 10 % | 11 % | 12 % |
+| Boss | 2 | 4 | 6 | 8 | 10 | 12 | 15 |
+
+The chance of each player grows by 10 % per additional player
+(`chance = base * (1 + 0.1 * (players - 1))`, +40 % in a full party). As the
+monster health grows with the players, a party kills about as fast as a single
+player of the same strength, so every member gets about 1.4 times the symbols
+of a solo run - and players who only follow without damage slow the party down.
+
 ## For admins
 
 1. Apply the data update **"Add Kalima instance"** (Admin panel → Updates). It
    adds the mini game definitions "Kalima Instance 1-7", the attributes of the
    daily entries and of the symbol balance, Lugard and Delgado in Lorencia,
-   the merchant store of Delgado, and removes the warps into Kalima from the
-   warp list.
+   the merchant store of Delgado, removes the warps into Kalima from the
+   warp list and the regular drops of the symbols. The update "Symbols of Kundun
+   only in Kalima" removes the regular symbol drops for a server which already
+   applied the first one.
 2. The plugins **"Kalima instance"** and **"Symbols of Kundun currency"** are
    active by default. Their configuration (Admin panel → Plugins):
    - Kalima instance: gatekeeper npc, entries per day, daily reset hour, time

@@ -80,6 +80,20 @@ public class KalimaInstanceConfigurationTest
     }
 
     /// <summary>
+    /// The symbols are personal; the chance of each player grows with the party size.
+    /// </summary>
+    [TestCase(1, 0.12f)]
+    [TestCase(2, 0.132f)]
+    [TestCase(5, 0.168f)]
+    [TestCase(10, 0.168f)]
+    public void SymbolChance(int players, float expected)
+    {
+        var configuration = new KalimaInstanceConfiguration();
+        var tier = configuration.GetTier(7)!;
+        Assert.That(configuration.GetSymbolChance(tier, players), Is.EqualTo(expected).Within(0.0001f));
+    }
+
+    /// <summary>
     /// The most specific price entry counts, items without a price are not for sale.
     /// </summary>
     [Test]

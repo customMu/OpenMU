@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using System.Threading;
 using MUnique.OpenMU.AttributeSystem;
 using MUnique.OpenMU.GameLogic.Attributes;
+using MUnique.OpenMU.GameLogic.KundunSymbols;
 using MUnique.OpenMU.GameLogic.NPC;
 
 /// <summary>
@@ -21,6 +22,7 @@ public sealed class KalimaInstanceContext : MiniGameContext
     private static readonly int[] NoticeMinutes = [30, 10, 5, 1];
 
     private readonly KalimaInstanceConfiguration _configuration;
+    private readonly IGameContext _gameContext;
     private readonly SimpleElement _healthMultiplier = new(1.0f, AggregateType.Multiplicate);
     private readonly SimpleElement _defenseMultiplier = new(1.0f, AggregateType.Multiplicate);
     private readonly SimpleElement _damageMultiplier = new(1.0f, AggregateType.Multiplicate);
@@ -44,6 +46,7 @@ public sealed class KalimaInstanceContext : MiniGameContext
         : base(key, definition, gameContext, mapInitializer)
     {
         this._configuration = configuration;
+        this._gameContext = gameContext;
         this.Tier = configuration.GetTier(definition.GameLevel) ?? new KalimaInstanceTier { Level = definition.GameLevel };
 
         // The base class waits for the entering players and a countdown, before the game duration starts.
@@ -174,6 +177,65 @@ public sealed class KalimaInstanceContext : MiniGameContext
             default:
                 // nothing to do
                 break;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnMonsterDied(object? sender, DeathInformation e)
+    {
+        base.OnMonsterDied(sender, e);
+        if (sender is Monster { SummonedBy: null } monster)
+        {
+            _ = Task.Run(() => this.GiveSymbolsAsync(monster.Definition.Number));
+        }
+    }
+
+    private static int RollAmount(float chance)
+    {
+        var amount = (int)Math.Floor(chance);
+        var fraction = chance - amount;
+        if (fraction > 0 && Rand.NextRandomBool((double)fraction))
+        {
+            amount++;
+        }
+
+        return amount;
+    }
+
+    /// <summary>
+    /// Gives the Symbols of Kundun for a killed monster. They are personal: every player in
+    /// the instance gets its own, so nobody has to race for the drop.
+    /// </summary>
+    /// <param name="monsterNumber">The number of the killed monster.</param>
+    private async Task GiveSymbolsAsync(short monsterNumber)
+    {
+        try
+        {
+            if (this._gameContext.FeaturePlugIns.GetPlugIn<KundunSymbolsPlugIn>() is not { } symbols)
+            {
+                return;
+            }
+
+            List<Player> players;
+            lock (this._syncRoot)
+            {
+                players = this._playersOnMap.ToList();
+            }
+
+            var isBoss = this._configuration.BossMonsterNumbers.Contains(monsterNumber);
+            var chance = this._configuration.GetSymbolChance(this.Tier, players.Count);
+            foreach (var player in players)
+            {
+                var amount = isBoss ? this.Tier.BossSymbols : RollAmount(chance);
+                if (amount > 0)
+                {
+                    await symbols.TryAddAsync(player, amount).ConfigureAwait(false);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "{context}: Unexpected error when giving the symbols of kundun.", this);
         }
     }
 
