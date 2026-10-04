@@ -55,6 +55,16 @@ internal class PartyDropModeHandlerPlugIn : IPacketHandlerPlugIn
             return;
         }
 
+        if (packet.Length >= 4 && packet.Span[3] == RemoteView.Quest.KillQuestViewPlugIn.ClaimRequestSubCode)
+        {
+            if (player.GameContext.FeaturePlugIns.GetPlugIn<GameLogic.PlugIns.KillQuests.KillQuestsPlugIn>() is { } quests)
+            {
+                await quests.ClaimRewardAsync(player).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
         if (packet.Length < 5 || packet.Span[3] != PartyDropModeViewPlugIn.DropModeSubCode)
         {
             return;

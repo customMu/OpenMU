@@ -939,4 +939,25 @@
   <data name="ResetEventDailyLimitFormat" xml:space="preserve">
     <value>You already entered this event {0} times today. New entries at {1}:00.</value>
   </data>
+  <data name="KillQuestProgressFormat" xml:space="preserve">
+    <value>Quest: {0} {1}/{2}</value>
+  </data>
+  <data name="KillQuestCurrentFormat" xml:space="preserve">
+    <value>Quest {0}/{1}: kill {2} x {3} ({4} done). Reward: {5}</value>
+  </data>
+  <data name="KillQuestItemRewardFormat" xml:space="preserve">
+    <value>Quest {0} completed: you got {1}.</value>
+  </data>
+  <data name="KillQuestPointsRewardFormat" xml:space="preserve">
+    <value>Quest {0} completed: +{1} stat points ({2} from quests, kept after resets).</value>
+  </data>
+  <data name="KillQuestAllDoneFormat" xml:space="preserve">
+    <value>All kill quests are completed ({0} stat points from quests).</value>
+  </data>
+  <data name="KillQuestRewardWaitingFormat" xml:space="preserve">
+    <value>Quest {0} completed, but the inventory is full: free space and take the reward in the quest window (T).</value>
+  </data>
+  <data name="KillQuestRewardReminderFormat" xml:space="preserve">
+    <value>The reward of the quest {0} is waiting: free space and press T.</value>
+  </data>
 </root>

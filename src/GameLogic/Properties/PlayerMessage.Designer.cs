@@ -2525,5 +2525,68 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("KundunChamberEntryUsedFormat", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Quest: {0} {1}/{2}.
+        /// </summary>
+        public static string KillQuestProgressFormat {
+            get {
+                return ResourceManager.GetString("KillQuestProgressFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Quest {0}/{1}: kill {2} x {3} ({4} done). Reward: {5}.
+        /// </summary>
+        public static string KillQuestCurrentFormat {
+            get {
+                return ResourceManager.GetString("KillQuestCurrentFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Quest {0} completed: you got {1}..
+        /// </summary>
+        public static string KillQuestItemRewardFormat {
+            get {
+                return ResourceManager.GetString("KillQuestItemRewardFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Quest {0} completed: +{1} stat points ({2} from quests, kept after resets)..
+        /// </summary>
+        public static string KillQuestPointsRewardFormat {
+            get {
+                return ResourceManager.GetString("KillQuestPointsRewardFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to All kill quests are completed ({0} stat points from quests)..
+        /// </summary>
+        public static string KillQuestAllDoneFormat {
+            get {
+                return ResourceManager.GetString("KillQuestAllDoneFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Quest {0} completed, but the inventory is full: free space and take the reward in the quest window (T)..
+        /// </summary>
+        public static string KillQuestRewardWaitingFormat {
+            get {
+                return ResourceManager.GetString("KillQuestRewardWaitingFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The reward of the quest {0} is waiting: free space and press T..
+        /// </summary>
+        public static string KillQuestRewardReminderFormat {
+            get {
+                return ResourceManager.GetString("KillQuestRewardReminderFormat", resourceCulture);
+            }
+        }
     }
 }

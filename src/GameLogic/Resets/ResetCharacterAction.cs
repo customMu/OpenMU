@@ -192,7 +192,8 @@ public class ResetCharacterAction
 
         if (configuration.ReplacePointsPerReset)
         {
-            this._player.SelectedCharacter!.LevelUpPoints = resetProgression.TotalPointsAfterReset;
+            // The stat points of the kill quests are not points of the resets: they stay.
+            this._player.SelectedCharacter!.LevelUpPoints = resetProgression.TotalPointsAfterReset + PlugIns.KillQuests.KillQuestsPlugIn.GetQuestPoints(this._player);
         }
         else
         {

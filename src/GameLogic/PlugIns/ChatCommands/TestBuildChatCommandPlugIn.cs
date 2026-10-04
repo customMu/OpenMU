@@ -177,7 +177,8 @@ public class TestBuildChatCommandPlugIn : ChatCommandPlugInBase<TestBuildChatCom
 
         var startLevel = resets > 0 ? configuration?.LevelAfterReset ?? 10 : 1;
         var levelPoints = Math.Max(0, level - startLevel) * (long)attributes[Stats.PointsPerLevelUp];
-        return resetPoints + levelPoints;
+        // plus the stat points of the kill quests, which a reset keeps
+        return resetPoints + levelPoints + KillQuests.KillQuestsPlugIn.GetQuestPoints(player);
     }
 
     /// <summary>

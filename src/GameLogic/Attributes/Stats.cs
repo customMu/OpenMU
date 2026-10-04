@@ -194,6 +194,26 @@ public class Stats
     public static AttributeDefinition KundunChamberEntries { get; } = new(new Guid("5C27A9E3-8B41-4D6F-A3C8-0E9F2B7D4A16"), "Kundun chamber entries", "The number of entries into the chamber of Kundun in the week of the last entry.");
 
     /// <summary>
+    /// Gets the attribute definition of the current step (0-based) of the kill quests of a character.
+    /// </summary>
+    public static AttributeDefinition KillQuestStep { get; } = new(new Guid("B7E3A1C9-5D2F-4E86-9A40-1F8C6D3B2E57"), "Kill quest step", "The number of completed kill quests of the character, which is the index of its current quest.");
+
+    /// <summary>
+    /// Gets the attribute definition of the kills of the current kill quest of a character.
+    /// </summary>
+    public static AttributeDefinition KillQuestKills { get; } = new(new Guid("4C9F2E6A-8B13-4D75-B2E9-7A5D1C3F8E04"), "Kill quest kills", "The number of kills of the current kill quest of the character.");
+
+    /// <summary>
+    /// Gets the attribute definition of the stat points of the completed kill quests, which a reset keeps.
+    /// </summary>
+    public static AttributeDefinition KillQuestPoints { get; } = new(new Guid("D2A8F5B3-1E7C-4936-8D04-C6B9E2A7F318"), "Kill quest points", "The stat points of the completed kill quests of the character; a reset keeps them.");
+
+    /// <summary>
+    /// Gets the attribute definition of the flag that the current kill quest is completed, but its reward waits for space in the inventory.
+    /// </summary>
+    public static AttributeDefinition KillQuestRewardWaiting { get; } = new(new Guid("7E4B2C95-A8D1-4F36-9C07-E5A3B1D8F264"), "Kill quest reward waiting", "1 when the current kill quest is completed, but its reward waits for space in the inventory (quest window, key T).");
+
+    /// <summary>
     /// Gets the attribute definition of the last day of the chamber pass of a character, which gives more weekly entries into the chamber of Kundun.
     /// </summary>
     public static AttributeDefinition KundunChamberPassUntilDay { get; } = new(new Guid("E7A35C18-2D9B-4F60-8C14-B3F6A0D9E527"), "Kundun chamber pass until day", "The last day (number of days since 2000-01-01, UTC) on which the chamber pass of the character is active. It gives more weekly entries into the chamber of Kundun. Set e.g. by the website.");
