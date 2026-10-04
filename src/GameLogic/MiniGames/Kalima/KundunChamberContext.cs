@@ -591,9 +591,11 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
                 await this.DropRewardsAsync(killer, position).ConfigureAwait(false);
             }
 
+            // The party leader: the party master when in the chamber, else the killer.
+            var leader = players.Select(p => p.Party?.PartyMaster).OfType<Player>().FirstOrDefault(players.Contains) ?? killer;
             await this.SaveRankingAsync(players
                 .Where(p => p.SelectedCharacter is not null)
-                .Select(p => (1, p.SelectedCharacter!, seconds))).ConfigureAwait(false);
+                .Select(p => (EncodeRankingMember(p == leader, p), p.SelectedCharacter!, seconds))).ConfigureAwait(false);
 
             this.FinishAfter(this._configuration.CloseAfterVictory);
         }
@@ -601,5 +603,17 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
         {
             this.Logger.LogError(ex, "{context}: Unexpected error after Kundun died.", this);
         }
+    }
+
+    /// <summary>
+    /// The "rank" of a member in the ranking of the chamber (all members share the kill): the party leader, the class
+    /// and the resets at the time of the kill, which the website shows. Rank % 10: 1 = party leader, 2 = member;
+    /// (Rank / 10) % 100 = class number; Rank / 1000 = resets.
+    /// </summary>
+    private static int EncodeRankingMember(bool isLeader, Player player)
+    {
+        var classNumber = Math.Clamp((int)(player.SelectedCharacter?.CharacterClass?.Number ?? 0), 0, 99);
+        var resets = Math.Clamp((int)(player.Attributes?[Stats.Resets] ?? 0), 0, 999_999);
+        return (resets * 1000) + (classNumber * 10) + (isLeader ? 1 : 2);
     }
 }
