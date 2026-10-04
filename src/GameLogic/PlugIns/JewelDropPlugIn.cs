@@ -36,7 +36,10 @@ public class JewelDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConfigur
         }
 
         var monsterLevel = (int)args.Monster[Stats.Level];
-        var multiplier = GetTierMultiplier(configuration, monsterLevel)
+        var tier = GetTier(configuration, monsterLevel);
+        var fixedChancePercent = tier?.FixedChancePercent ?? 0f;
+        var tierMultiplier = configuration.Tiers.Count == 0 ? 1f : fixedChancePercent > 0 ? 1f : tier?.Multiplier ?? 0f;
+        var multiplier = tierMultiplier
                          * GetMapMultiplier(configuration, args.Map.Definition.Number)
                          * GetMonsterMultiplier(configuration, args.Monster.Number);
         if (multiplier <= 0)
@@ -53,7 +56,7 @@ public class JewelDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConfigur
                 continue;
             }
 
-            var chance = jewel.ChancePercent * multiplier / 100.0;
+            var chance = (fixedChancePercent > 0 ? fixedChancePercent : jewel.ChancePercent) * multiplier / 100.0;
             if (Rand.NextDouble() >= chance)
             {
                 continue;
@@ -83,13 +86,8 @@ public class JewelDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConfigur
         return ValueTask.CompletedTask;
     }
 
-    private static float GetTierMultiplier(JewelDropConfiguration configuration, int monsterLevel)
+    private static JewelDropConfiguration.JewelDropTier? GetTier(JewelDropConfiguration configuration, int monsterLevel)
     {
-        if (configuration.Tiers.Count == 0)
-        {
-            return 1f;
-        }
-
         JewelDropConfiguration.JewelDropTier? result = null;
         foreach (var tier in configuration.Tiers)
         {
@@ -100,7 +98,7 @@ public class JewelDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConfigur
             }
         }
 
-        return result?.Multiplier ?? 0f;
+        return result;
     }
 
     private static float GetMapMultiplier(JewelDropConfiguration configuration, short mapNumber)

@@ -130,6 +130,12 @@ public class JewelDropConfiguration
         /// </summary>
         [Display(Name = "Multiplier")]
         public float Multiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// Gets or sets the chance in percent for every jewel instead of its own chance × <see cref="Multiplier"/>; 0 = not used.
+        /// </summary>
+        [Display(Name = "Fixed chance (%)", Description = "When above 0: every jewel which can drop from the monster has exactly this chance (the jewel chance and the tier multiplier are not used; map and monster multipliers still apply). 0 = jewel chance × tier multiplier.")]
+        public float FixedChancePercent { get; set; }
     }
 
     /// <summary>
