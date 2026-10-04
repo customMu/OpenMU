@@ -558,6 +558,12 @@
   <data name="ItemIsBoundToInventoryOfCharacter" xml:space="preserve">
     <value>This item is bound to the inventory of this character.</value>
   </data>
+  <data name="ItemIsBoundToAccount" xml:space="preserve">
+    <value>This item is bound to your account: only through the vault to your other characters.</value>
+  </data>
+  <data name="ItemRequiresResets" xml:space="preserve">
+    <value>You need {0} resets to use this item.</value>
+  </data>
   <data name="NotEnoughMoneyToSendLetter" xml:space="preserve">
     <value>Not enough Zen to send a letter.</value>
   </data>

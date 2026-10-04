@@ -31,6 +31,14 @@ public abstract class RecoverConsumeHandlerPlugIn : BaseConsumeHandlerPlugIn, IS
     /// <inheritdoc/>
     public override async ValueTask<bool> ConsumeItemAsync(Player player, Item item, Item? targetItem, FruitUsage fruitUsage)
     {
+        // The potions of the later steps of the reset ladder: requirement "Resets" of the item definition.
+        var requiredResets = item.Definition?.Requirements.FirstOrDefault(r => r.Attribute == Stats.Resets)?.MinimumValue ?? 0;
+        if (requiredResets > 0 && (player.Attributes?[Stats.Resets] ?? 0) < requiredResets)
+        {
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ItemRequiresResets), requiredResets).ConfigureAwait(false);
+            return false;
+        }
+
         if (await base.ConsumeItemAsync(player, item, targetItem, fruitUsage).ConfigureAwait(false))
         {
             await this.RecoverAsync(player, item).ConfigureAwait(false);

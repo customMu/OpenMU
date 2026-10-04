@@ -58,4 +58,9 @@ public enum VaultResultCode
     /// No game server runs in this process.
     /// </summary>
     Unavailable,
+
+    /// <summary>
+    /// The item is bound to the account and can't leave the game.
+    /// </summary>
+    BoundToAccount,
 }

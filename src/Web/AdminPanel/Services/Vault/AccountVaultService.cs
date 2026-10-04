@@ -9,6 +9,7 @@ using MUnique.OpenMU.DataModel;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Entities;
 using MUnique.OpenMU.GameLogic;
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.Interfaces;
 using MUnique.OpenMU.Persistence;
 
@@ -120,6 +121,12 @@ public sealed class AccountVaultService
             if (item?.Definition is null)
             {
                 return VaultResult<VaultItem>.Fail(VaultResultCode.NotFound);
+            }
+
+            if (this._gameServers.Values.OfType<GameServer.GameServer>().FirstOrDefault() is { } gameServer
+                && AccountBoundItemsPlugIn.IsAccountBound(gameServer.Context, item))
+            {
+                return VaultResult<VaultItem>.Fail(VaultResultCode.BoundToAccount);
             }
 
             var description = VaultItemMapper.Describe(item);

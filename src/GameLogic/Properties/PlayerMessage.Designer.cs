@@ -824,6 +824,24 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("ItemIsBoundToInventoryOfCharacter", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to This item is bound to your account: only through the vault to your other characters..
+        /// </summary>
+        public static string ItemIsBoundToAccount {
+            get {
+                return ResourceManager.GetString("ItemIsBoundToAccount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to You need {0} resets to use this item..
+        /// </summary>
+        public static string ItemRequiresResets {
+            get {
+                return ResourceManager.GetString("ItemRequiresResets", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Level cannot be greater than {0}..
