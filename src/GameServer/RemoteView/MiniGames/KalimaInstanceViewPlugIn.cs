@@ -18,7 +18,7 @@ using MUnique.OpenMU.PlugIns;
 /// <c>[resets u16 LE] [tier level] [entries left] [entries per day] [seconds until reset u32 LE] [can re-enter]
 /// [tier count] tier count × {[level] [minimum resets u16 LE] [maximum resets u16 LE, 0xFFFF = open]}</c>.
 /// The client answers with <c>C1 04 FB 05</c> to enter.
-/// Inside the instance, the spots with living monsters (custom packet <c>C1 [size] FB 06 [count] count × {[x] [y]}</c>).
+/// Inside the instance, the spots with living monsters (custom packet <c>C1 [size] FB 07 [count] count × {[x] [y]}</c>).
 /// </summary>
 [PlugIn]
 [Display(Name = "Kalima instance view", Description = "Shows the entry dialog of the Kalima instance on the custom client.")]
@@ -37,9 +37,9 @@ public class KalimaInstanceViewPlugIn : IKalimaInstanceViewPlugIn
     public const byte EnterRequestSubCode = 0x05;
 
     /// <summary>
-    /// The sub code of the spots with living monsters.
+    /// The sub code of the spots with living monsters (0x06 is taken by the monster spots of the map, <see cref="World.MinimapSpotsViewPlugIn"/>).
     /// </summary>
-    public const byte SpotsSubCode = 0x06;
+    public const byte SpotsSubCode = 0x07;
 
     /// <summary>
     /// The maximum number of spots which fit into a C1 packet.
