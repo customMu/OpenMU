@@ -1,4 +1,4 @@
-// <copyright file="KillQuestsConfiguration.cs" company="MUnique">
+﻿// <copyright file="KillQuestsConfiguration.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -40,41 +40,65 @@ public class KillQuestsConfiguration
 
     private static List<KillQuest> CreateDefaultQuests() =>
     [
-        new() { MonsterNumber = 3, MonsterName = "Spider", Kills = 25, GearStep = 1 },
-        new() { MonsterNumber = 3, MonsterName = "Spider", Kills = 75, GearStep = 2 },
-        new() { MonsterNumber = 2, MonsterName = "Budge Dragon", Kills = 50, GearStep = 3 },
-        new() { MonsterNumber = 2, MonsterName = "Budge Dragon", Kills = 100, GearStep = 4 },
-        new() { MonsterNumber = 1, MonsterName = "Hound", Kills = 100, GearStep = 5 },
-        new() { MonsterNumber = 1, MonsterName = "Hound", Kills = 200, GearStep = 6 },
+        new() { MonsterNumber = 3, MonsterName = "Spider", Kills = 25, GearStep = 1, Variants = StartVariants((26, "Goblin"), (418, "Strange Rabbit")) },
+        new() { MonsterNumber = 3, MonsterName = "Spider", Kills = 75, GearStep = 2, Variants = StartVariants((26, "Goblin"), (418, "Strange Rabbit")) },
+        new() { MonsterNumber = 2, MonsterName = "Budge Dragon", Kills = 50, GearStep = 3, Variants = StartVariants((26, "Goblin"), (418, "Strange Rabbit")) },
+        new() { MonsterNumber = 2, MonsterName = "Budge Dragon", Kills = 100, GearStep = 4, Variants = StartVariants((26, "Goblin"), (418, "Strange Rabbit")) },
+        new() { MonsterNumber = 1, MonsterName = "Hound", Kills = 100, GearStep = 5, Variants = StartVariants((28, "Beetle Monster"), (419, "Polluted Butterfly")) },
+        new() { MonsterNumber = 1, MonsterName = "Hound", Kills = 200, GearStep = 6, Variants = StartVariants((28, "Beetle Monster"), (419, "Polluted Butterfly")) },
     ];
+
+    /// <summary>
+    /// The variants of a starter quest for the classes which don't start in Lorencia: the elf (Noria) and the summoner (Elvenland).
+    /// </summary>
+    private static List<KillQuestVariant> StartVariants((short Number, string Name) noria, (short Number, string Name) elvenland) =>
+    [
+        new() { HomeMapNumber = 3, MonsterNumber = noria.Number, MonsterName = noria.Name },
+        new() { HomeMapNumber = 51, MonsterNumber = elvenland.Number, MonsterName = elvenland.Name },
+    ];
+
+    /// <summary>
+    /// The zen for a gear piece which the class can't wear (helm of the Magic Gladiator, gloves of the Rage Fighter).
+    /// </summary>
+    private const int MissingPieceMoney = 5000;
 
     private static List<KillQuestGearItem> CreateDefaultGear()
     {
         var gear = new List<KillQuestGearItem>();
 
-        void Set(int classNumber, short setNumber, (byte Group, short Number) weapon, bool helm = true, bool gloves = true)
+        void Set(int classNumber, short setNumber, bool helm = true, bool gloves = true)
         {
-            // gloves, boots, helm, pants, armor, weapon; a class without helm or gloves gets a Jewel of Bless instead
-            (int Step, byte Group, short Number)[] pieces =
+            // gloves, boots, helm, pants, armor, weapon; a class without helm or gloves gets zen instead
+            (int Step, byte Group, short Number, bool Has)[] pieces =
             [
-                (1, gloves ? (byte)10 : (byte)14, gloves ? setNumber : (short)13),
-                (2, 11, setNumber),
-                (3, helm ? (byte)7 : (byte)14, helm ? setNumber : (short)13),
-                (4, 9, setNumber),
-                (5, 8, setNumber),
-                (6, weapon.Group, weapon.Number),
+                (1, 10, setNumber, gloves),
+                (2, 11, setNumber, true),
+                (3, 7, setNumber, helm),
+                (4, 9, setNumber, true),
+                (5, 8, setNumber, true),
             ];
-            gear.AddRange(pieces.Select(p => new KillQuestGearItem { ClassNumber = classNumber, Step = p.Step, ItemGroup = p.Group, ItemNumber = p.Number }));
+            gear.AddRange(pieces.Select(p => new KillQuestGearItem { ClassNumber = classNumber, Step = p.Step, ItemGroup = p.Group, ItemNumber = p.Number, Money = p.Has ? 0 : MissingPieceMoney }));
         }
 
-        Set(0, 2, (5, 0));               // Dark Wizard: Pad, Skull Staff
-        Set(4, 5, (0, 1));               // Dark Knight: Leather, Short Sword
-        Set(8, 10, (4, 0));              // Fairy Elf: Vine, Short Bow (+ Arrows)
+        void Weapon(int classNumber, byte group, short number)
+            => gear.Add(new KillQuestGearItem { ClassNumber = classNumber, Step = 6, ItemGroup = group, ItemNumber = number, Skill = true, Luck = true });
+
+        Set(0, 2);                 // Dark Wizard: Pad
+        Set(4, 5);                 // Dark Knight: Leather
+        Set(8, 10);                // Fairy Elf: Vine
+        Set(12, 5, helm: false);   // Magic Gladiator: Leather without helm
+        Set(16, 5);                // Dark Lord: Leather
+        Set(20, 39);               // Summoner: Mistery
+        Set(24, 5, gloves: false); // Rage Fighter: Leather without gloves
+
+        // the weapon: a Short Sword (+luck; it has no skill) for all but the elf: a Short Bow (+skill, +luck) with arrows
+        foreach (var classNumber in new[] { 0, 4, 12, 16, 20, 24 })
+        {
+            Weapon(classNumber, 0, 1);
+        }
+
+        Weapon(8, 4, 0);
         gear.Add(new KillQuestGearItem { ClassNumber = 8, Step = 6, ItemGroup = 4, ItemNumber = 15 });
-        Set(12, 2, (0, 1), helm: false); // Magic Gladiator: Pad without helm, Short Sword
-        Set(16, 5, (0, 1));              // Dark Lord: Leather, Short Sword
-        Set(20, 39, (5, 0));             // Summoner: Mistery, Skull Staff
-        Set(24, 5, (2, 0), gloves: false); // Rage Fighter: Leather without gloves, Mace
         return gear;
     }
 }
@@ -113,8 +137,42 @@ public class KillQuest
     [Display(Name = "Stat points", Description = "Free stat points of the reward. They are kept by resets: a reset adds all stat points of the completed quests to the points of the resets.")]
     public int StatPoints { get; set; }
 
+    /// <summary>
+    /// Gets or sets the variants of the quest for characters whose class starts on another map than Lorencia.
+    /// </summary>
+    [MemberOfAggregate]
+    [Display(Name = "Variants by home map", Description = "Another monster for the characters whose class starts on the map (home map number: 3 Noria, 51 Elvenland). The monster of the quest counts for them too.")]
+    public ICollection<KillQuestVariant> Variants { get; set; } = new List<KillQuestVariant>();
+
     /// <inheritdoc />
     public override string ToString() => $"{this.Kills} x {this.MonsterName} ({this.MonsterNumber})";
+}
+
+/// <summary>
+/// A variant of a quest for the characters whose class starts on another map: another monster of that map.
+/// </summary>
+public class KillQuestVariant
+{
+    /// <summary>
+    /// Gets or sets the number of the home map of the character class (3 Noria, 51 Elvenland).
+    /// </summary>
+    [Display(Name = "Home map number")]
+    public short HomeMapNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of the monster definition.
+    /// </summary>
+    [Display(Name = "Monster number")]
+    public short MonsterNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the monster, as shown to the player.
+    /// </summary>
+    [Display(Name = "Monster name")]
+    public string MonsterName { get; set; } = string.Empty;
+
+    /// <inheritdoc />
+    public override string ToString() => $"map {this.HomeMapNumber}: {this.MonsterName} ({this.MonsterNumber})";
 }
 
 /// <summary>
@@ -145,6 +203,21 @@ public class KillQuestGearItem
     [Display(Name = "Item number")]
     public short ItemNumber { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the item comes with its skill (only items which have a skill).
+    /// </summary>
+    public bool Skill { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the item comes with luck (only items which can have luck).
+    /// </summary>
+    public bool Luck { get; set; }
+
+    /// <summary>
+    /// Gets or sets the zen given instead of an item (for a class without this piece, e.g. no helm); 0 = the item.
+    /// </summary>
+    public int Money { get; set; }
+
     /// <inheritdoc />
-    public override string ToString() => $"class {this.ClassNumber}, step {this.Step}: {this.ItemGroup}/{this.ItemNumber}";
+    public override string ToString() => $"class {this.ClassNumber}, step {this.Step}: {this.ItemGroup}/{this.ItemNumber}{(this.Skill ? " +skill" : string.Empty)}{(this.Luck ? " +luck" : string.Empty)}{(this.Money > 0 ? $" ({this.Money} zen instead)" : string.Empty)}";
 }

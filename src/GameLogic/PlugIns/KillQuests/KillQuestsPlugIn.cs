@@ -1,4 +1,4 @@
-// <copyright file="KillQuestsPlugIn.cs" company="MUnique">
+﻿// <copyright file="KillQuestsPlugIn.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -12,6 +12,7 @@ using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns.ChatCommands;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Character;
+using MUnique.OpenMU.GameLogic.Views.Inventory;
 using MUnique.OpenMU.Pathfinding;
 using MUnique.OpenMU.PlugIns;
 
@@ -88,12 +89,12 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
         var quest = quests[step];
         if (IsRewardWaiting(player))
         {
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestRewardReminderFormat), quest.MonsterName).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestRewardReminderFormat), MonsterNameFor(player, quest)).ConfigureAwait(false);
             return;
         }
 
         var kills = (int)player.GetStoredStatValue(Stats.KillQuestKills);
-        await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestCurrentFormat), step + 1, quests.Count, quest.Kills, quest.MonsterName, kills, this.DescribeReward(player, quest)).ConfigureAwait(false);
+        await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestCurrentFormat), step + 1, quests.Count, quest.Kills, MonsterNameFor(player, quest), kills, this.DescribeReward(player, quest)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -118,12 +119,25 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
     private static bool IsRewardWaiting(Player player) => player.GetStoredStatValue(Stats.KillQuestRewardWaiting) > 0;
 
     /// <summary>
-    /// Determines whether the killed monster counts for the quest: the monster of the quest, or another definition with
-    /// the same name and level (the normal and the elite monsters of Vulcanus).
+    /// Gets the variant of the quest for the home map of the class of the player (elf: Noria, summoner: Elvenland).
     /// </summary>
-    private static bool Counts(KillQuest quest, MonsterDefinition killed, GameConfiguration configuration)
+    private static KillQuestVariant? GetVariant(Player player, KillQuest quest)
+        => player.SelectedCharacter?.CharacterClass?.HomeMap is { } homeMap
+            ? quest.Variants.FirstOrDefault(v => v.HomeMapNumber == homeMap.Number)
+            : null;
+
+    /// <summary>
+    /// Gets the monster name of the quest as shown to the player: the one of the variant of the home map, if any.
+    /// </summary>
+    private static string MonsterNameFor(Player player, KillQuest quest) => GetVariant(player, quest)?.MonsterName ?? quest.MonsterName;
+
+    /// <summary>
+    /// Determines whether the killed monster counts for the quest: the monster of the quest or of its variant for the
+    /// home map of the player, or another definition with the same name and level (the normal and the elite monsters of Vulcanus).
+    /// </summary>
+    private static bool Counts(Player player, KillQuest quest, MonsterDefinition killed, GameConfiguration configuration)
     {
-        if (killed.Number == quest.MonsterNumber)
+        if (killed.Number == quest.MonsterNumber || killed.Number == GetVariant(player, quest)?.MonsterNumber)
         {
             return true;
         }
@@ -155,7 +169,7 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
         lock (player)
         {
             step = (int)player.GetStoredStatValue(Stats.KillQuestStep);
-            if (step >= quests.Count || !Counts(quests[step], monster, player.GameContext.Configuration))
+            if (step >= quests.Count || !Counts(player, quests[step], monster, player.GameContext.Configuration))
             {
                 return;
             }
@@ -173,7 +187,7 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
             var every = Math.Max(1, (int)Math.Round(quest.Kills * Math.Clamp(configuration.ProgressMessageShare, 0.01f, 1f)));
             if (kills % every == 0 || quest.Kills - kills <= 5)
             {
-                await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestProgressFormat), quest.MonsterName, kills, quest.Kills).ConfigureAwait(false);
+                await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestProgressFormat), MonsterNameFor(player, quest), kills, quest.Kills).ConfigureAwait(false);
             }
 
             await this.SendStateAsync(player).ConfigureAwait(false);
@@ -190,21 +204,26 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
     private async ValueTask TryHandInAsync(Player player, int step, KillQuest quest, KillQuestsConfiguration configuration)
     {
         var items = this.GetRewardItems(player, quest, configuration);
+        var money = this.GetRewardMoney(player, quest, configuration);
         if (items.Count > 0 && !HasSpace(player, items))
         {
             player.TrySetStoredStatValue(Stats.KillQuestRewardWaiting, 1);
             this._lastReminders.GetValue(player, _ => new StrongBox<DateTime>(DateTime.MinValue)).Value = DateTime.UtcNow; // the next reminder in ReminderInterval
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestRewardWaitingFormat), quest.MonsterName).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestRewardWaitingFormat), MonsterNameFor(player, quest)).ConfigureAwait(false);
             await this.SendStateAsync(player).ConfigureAwait(false);
             return;
         }
 
-        foreach (var definition in items)
+        foreach (var (gear, definition) in items)
         {
-            var item = new TemporaryItem { Definition = definition };
-            item.Durability = item.GetMaximumDurabilityOfOnePiece();
-            await GiveItemAsync(player, item).ConfigureAwait(false);
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestItemRewardFormat), quest.MonsterName, definition.Name.ValueInNeutralLanguage).ConfigureAwait(false);
+            await GiveItemAsync(player, CreateItem(gear, definition)).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestItemRewardFormat), MonsterNameFor(player, quest), Describe(gear, definition)).ConfigureAwait(false);
+        }
+
+        if (money > 0 && player.TryAddMoney(money))
+        {
+            await player.InvokeViewPlugInAsync<IUpdateMoneyPlugIn>(p => p.UpdateMoneyAsync()).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestItemRewardFormat), MonsterNameFor(player, quest), DescribeMoney(money)).ConfigureAwait(false);
         }
 
         if (quest.StatPoints > 0 && player.SelectedCharacter is { } character)
@@ -212,7 +231,7 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
             player.TrySetStoredStatValue(Stats.KillQuestPoints, GetQuestPoints(player) + quest.StatPoints);
             character.LevelUpPoints += quest.StatPoints;
             await player.InvokeViewPlugInAsync<IUpdateLevelPlugIn>(p => p.UpdateLevelAsync()).ConfigureAwait(false);
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestPointsRewardFormat), quest.MonsterName, quest.StatPoints, GetQuestPoints(player)).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestPointsRewardFormat), MonsterNameFor(player, quest), quest.StatPoints, GetQuestPoints(player)).ConfigureAwait(false);
         }
 
         lock (player)
@@ -239,7 +258,7 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
         var step = (int)player.GetStoredStatValue(Stats.KillQuestStep);
         if (step < quests.Count)
         {
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestRewardReminderFormat), quests[step].MonsterName).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestRewardReminderFormat), MonsterNameFor(player, quests[step])).ConfigureAwait(false);
         }
     }
 
@@ -248,13 +267,13 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
         var quests = this.GetConfiguration().Quests.ToList();
         var step = (int)player.GetStoredStatValue(Stats.KillQuestStep);
         var state = step < quests.Count
-            ? new KillQuestState(step + 1, quests.Count, quests[step].MonsterName, (int)player.GetStoredStatValue(Stats.KillQuestKills), quests[step].Kills,
+            ? new KillQuestState(step + 1, quests.Count, MonsterNameFor(player, quests[step]), (int)player.GetStoredStatValue(Stats.KillQuestKills), quests[step].Kills,
                 quests[step].StatPoints, this.DescribeItems(player, quests[step]), IsRewardWaiting(player), GetQuestPoints(player))
             : new KillQuestState(quests.Count + 1, quests.Count, string.Empty, 0, 0, 0, string.Empty, false, GetQuestPoints(player));
         await player.InvokeViewPlugInAsync<IKillQuestViewPlugIn>(p => p.ShowKillQuestAsync(state)).ConfigureAwait(false);
     }
 
-    private List<ItemDefinition> GetRewardItems(Player player, KillQuest quest, KillQuestsConfiguration configuration)
+    private List<(KillQuestGearItem Gear, ItemDefinition Definition)> GetRewardItems(Player player, KillQuest quest, KillQuestsConfiguration configuration)
     {
         if (quest.GearStep <= 0 || player.SelectedCharacter?.CharacterClass is not { } characterClass)
         {
@@ -263,14 +282,64 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
 
         var baseClass = characterClass.Number & ~3;
         return configuration.Gear
-            .Where(g => g.ClassNumber == baseClass && g.Step == quest.GearStep)
-            .Select(g => player.GameContext.Configuration.Items.FirstOrDefault(d => d.Group == g.ItemGroup && d.Number == g.ItemNumber))
-            .Where(d => d is not null)
-            .Select(d => d!)
+            .Where(g => g.ClassNumber == baseClass && g.Step == quest.GearStep && g.Money <= 0)
+            .Select(g => (Gear: g, Definition: player.GameContext.Configuration.Items.FirstOrDefault(d => d.Group == g.ItemGroup && d.Number == g.ItemNumber)))
+            .Where(p => p.Definition is not null)
+            .Select(p => (p.Gear, p.Definition!))
             .ToList();
     }
 
-    private static bool HasSpace(Player player, IReadOnlyList<ItemDefinition> items)
+    private int GetRewardMoney(Player player, KillQuest quest, KillQuestsConfiguration configuration)
+    {
+        if (quest.GearStep <= 0 || player.SelectedCharacter?.CharacterClass is not { } characterClass)
+        {
+            return 0;
+        }
+
+        var baseClass = characterClass.Number & ~3;
+        return configuration.Gear.Where(g => g.ClassNumber == baseClass && g.Step == quest.GearStep).Sum(g => Math.Max(0, g.Money));
+    }
+
+    private static string DescribeMoney(int money) => $"{money:N0} Zen";
+
+    private static Item CreateItem(KillQuestGearItem gear, ItemDefinition definition)
+    {
+        var item = new TemporaryItem { Definition = definition };
+        if (gear.Luck && FindLuck(definition) is { } luck)
+        {
+            item.ItemOptions.Add(new ItemOptionLink { ItemOption = luck });
+        }
+
+        item.HasSkill = gear.Skill && item.CanHaveSkill();
+        item.Durability = item.GetMaximumDurabilityOfOnePiece();
+        return item;
+    }
+
+    private static IncreasableItemOption? FindLuck(ItemDefinition definition)
+        => definition.PossibleItemOptions
+            .SelectMany(o => o.PossibleOptions)
+            .FirstOrDefault(o => object.Equals(o.OptionType, ItemOptionTypes.Luck));
+
+    /// <summary>
+    /// The name of the reward item with what it really comes with: "Short Bow +Skill +Luck".
+    /// </summary>
+    private static string Describe(KillQuestGearItem gear, ItemDefinition definition)
+    {
+        var text = definition.Name.ValueInNeutralLanguage;
+        if (gear.Skill && definition.Skill is not null)
+        {
+            text += " +Skill";
+        }
+
+        if (gear.Luck && FindLuck(definition) is not null)
+        {
+            text += " +Luck";
+        }
+
+        return text;
+    }
+
+    private static bool HasSpace(Player player, IReadOnlyList<(KillQuestGearItem Gear, ItemDefinition Definition)> items)
     {
         // each item on its own free place: the reward is one item, or the bow with the arrows
         if (player.Inventory is not { } inventory)
@@ -278,11 +347,20 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
             return false;
         }
 
-        return items.All(d => inventory.CheckInvSpace(new TemporaryItem { Definition = d }) is not null);
+        return items.All(p => inventory.CheckInvSpace(new TemporaryItem { Definition = p.Definition }) is not null);
     }
 
     private string DescribeItems(Player player, KillQuest quest)
-        => string.Join(", ", this.GetRewardItems(player, quest, this.GetConfiguration()).Select(d => d.Name.ValueInNeutralLanguage));
+    {
+        var configuration = this.GetConfiguration();
+        var parts = this.GetRewardItems(player, quest, configuration).Select(p => Describe(p.Gear, p.Definition)).ToList();
+        if (this.GetRewardMoney(player, quest, configuration) is > 0 and var money)
+        {
+            parts.Add(DescribeMoney(money));
+        }
+
+        return string.Join(", ", parts);
+    }
 
     private string DescribeReward(Player player, KillQuest quest)
     {
