@@ -360,6 +360,34 @@ public abstract class KalimaRunContextBase : MiniGameContext
     }
 
     /// <summary>
+    /// Gets the time after which a completed run (its boss is dead) closes when nobody is inside anymore.
+    /// </summary>
+    protected virtual TimeSpan CloseWhenCompletedAndEmptyAfter => TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Gets a value indicating whether the run is completed, e.g. its boss is dead.
+    /// </summary>
+    protected bool IsCompleted { get; private set; }
+
+    /// <summary>
+    /// Marks the run as completed: it closes <see cref="CloseWhenCompletedAndEmptyAfter"/> after the last player left.
+    /// </summary>
+    protected void MarkCompleted()
+    {
+        bool isEmpty;
+        lock (this.SyncRoot)
+        {
+            this.IsCompleted = true;
+            isEmpty = this._playersOnMap.Count == 0;
+        }
+
+        if (isEmpty)
+        {
+            this.StartEmptyCheck();
+        }
+    }
+
+    /// <summary>
     /// Finishes the run after the specified delay, e.g. to give the players time to pick up the drop.
     /// </summary>
     /// <param name="delay">The delay.</param>
@@ -394,7 +422,8 @@ public abstract class KalimaRunContextBase : MiniGameContext
         {
             try
             {
-                await Task.Delay(this._closeWhenEmptyAfter, this.GameEndedToken).ConfigureAwait(false);
+                var delay = this.IsCompleted ? this.CloseWhenCompletedAndEmptyAfter : this._closeWhenEmptyAfter;
+                await Task.Delay(delay, this.GameEndedToken).ConfigureAwait(false);
                 lock (this.SyncRoot)
                 {
                     if (version != this._emptyCheckVersion || this._playersOnMap.Count > 0)

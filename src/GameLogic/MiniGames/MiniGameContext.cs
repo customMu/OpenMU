@@ -799,6 +799,20 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
             this.Logger.LogDebug("{context}: Stopping the game...", this);
             await this.StopAsync().ConfigureAwait(false);
 
+            bool isEmpty;
+            using (await this._enterLock.ReaderLockAsync().ConfigureAwait(false))
+            {
+                isEmpty = this._enteredPlayers.Count == 0;
+            }
+
+            if (isEmpty)
+            {
+                // Nobody has to be given time to leave.
+                this.Logger.LogDebug("{context}: Shutting down the empty event", this);
+                await this.ShutdownGameAsync().ConfigureAwait(false);
+                return;
+            }
+
             this.Logger.LogDebug("{context}: Waiting for the exit duration of {exitDuration}", this, exitDuration);
             await Task.Delay(exitDuration, default(CancellationToken)).ConfigureAwait(false);
             await this.ShowCountdownMessageAsync().ConfigureAwait(false);

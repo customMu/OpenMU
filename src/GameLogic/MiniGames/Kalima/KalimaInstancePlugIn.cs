@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns;
+using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.PlugIns;
 
 /// <summary>
@@ -22,6 +23,11 @@ public class KalimaInstancePlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, IPla
     /// Gets or sets the configuration.
     /// </summary>
     public KalimaInstanceConfiguration? Configuration { get; set; }
+
+    /// <summary>
+    /// The distance to the gatekeeper within which the entry dialog can be confirmed.
+    /// </summary>
+    private const int GatekeeperRange = 10;
 
     /// <inheritdoc />
     public object CreateDefaultConfig() => new KalimaInstanceConfiguration();
@@ -61,6 +67,31 @@ public class KalimaInstancePlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, IPla
         eventArgs.LeavesDialogOpen = true;
         player.OpenedNpc = null;
         await player.PlayerState.TryAdvanceToAsync(PlayerState.EnteredWorld).ConfigureAwait(false);
+
+        var action = new KalimaInstanceEnterAction(configuration);
+        if (player.ViewPlugIns.GetPlugIn<IKalimaInstanceViewPlugIn>() is { } view)
+        {
+            // The client shows the tiers and the entries left; it enters with a request (see EnterFromDialogAsync).
+            await view.ShowEntryDialogAsync(await action.GetInfoAsync(player).ConfigureAwait(false)).ConfigureAwait(false);
+            return;
+        }
+
+        await action.TryEnterAsync(player).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Enters the instance after the player confirmed the entry dialog. The player has to be near the gatekeeper.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The task.</returns>
+    public async ValueTask EnterFromDialogAsync(Player player)
+    {
+        var configuration = this.GetConfiguration();
+        if (player.CurrentMap is not { } map
+            || !map.GetNpcsInRange(player.Position, GatekeeperRange).Any(npc => npc.Definition.Number == configuration.GatekeeperNpcNumber))
+        {
+            return;
+        }
 
         await new KalimaInstanceEnterAction(configuration).TryEnterAsync(player).ConfigureAwait(false);
     }

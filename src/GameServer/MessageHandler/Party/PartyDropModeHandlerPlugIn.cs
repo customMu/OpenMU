@@ -6,7 +6,9 @@ namespace MUnique.OpenMU.GameServer.MessageHandler.Party;
 
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.GameLogic;
+using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using MUnique.OpenMU.GameLogic.PlayerActions.Party;
+using MUnique.OpenMU.GameServer.RemoteView.MiniGames;
 using MUnique.OpenMU.GameServer.RemoteView.Party;
 using MUnique.OpenMU.PlugIns;
 
@@ -32,6 +34,17 @@ internal class PartyDropModeHandlerPlugIn : IPacketHandlerPlugIn
     /// <inheritdoc/>
     public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
     {
+        // All custom packets of the head code 0xFB come here, as there is one handler per head code.
+        if (packet.Length >= 4 && packet.Span[3] == KalimaInstanceViewPlugIn.EnterRequestSubCode)
+        {
+            if (player.GameContext.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>() is { } kalima)
+            {
+                await kalima.EnterFromDialogAsync(player).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
         if (packet.Length < 5 || packet.Span[3] != PartyDropModeViewPlugIn.DropModeSubCode)
         {
             return;

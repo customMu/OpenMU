@@ -92,6 +92,11 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         }
 
         var isBoss = this.IsIllusionOfKundun(monster.Definition);
+        if (isBoss)
+        {
+            this.MarkCompleted();
+        }
+
         bool isPackCleared;
         lock (this.SyncRoot)
         {

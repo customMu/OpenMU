@@ -249,7 +249,22 @@ public sealed class Monster : AttackableNpcBase, IAttackable, IAttacker, ISuppor
     }
 
     /// <summary>
-    /// Moves this instance randomly.
+    /// The fields around its spawn area in which a leashed monster walks around without a target.
+    /// </summary>
+    private const int LeashMargin = 3;
+
+    /// <summary>
+    /// The fields around its spawn area up to which a leashed monster chases a target; about one screen.
+    /// </summary>
+    private const int ChaseMargin = 10;
+
+    /// <summary>
+    /// The largest width and height (minus one) of a spawn area whose monsters are leashed to it, e.g. the spots of 3x3 or 5x5 fields.
+    /// </summary>
+    private const int MaximumLeashedAreaSize = 8;
+
+    /// <summary>
+    /// Moves this instance randomly, around its spawn area if it is a small one.
     /// </summary>
     internal async ValueTask RandomMoveAsync()
     {
@@ -263,14 +278,57 @@ public sealed class Monster : AttackableNpcBase, IAttackable, IAttacker, ISuppor
 
         var newX = this.Position.X + moveByX;
         var newY = this.Position.Y + moveByY;
+        if (this.GetLeash() is { } leash)
+        {
+            if (!leash.Contains(this.Position.X, this.Position.Y))
+            {
+                // Back from a chase (or pushed away): return into the spot instead of wandering on.
+                newX = Rand.NextInt(leash.X1, leash.X2 + 1);
+                newY = Rand.NextInt(leash.Y1, leash.Y2 + 1);
+            }
+            else
+            {
+                newX = Math.Clamp(newX, leash.X1, leash.X2);
+                newY = Math.Clamp(newY, leash.Y1, leash.Y2);
+            }
+        }
+
         byte randx = (byte)Math.Min(0xFF, Math.Max(0, newX));
         byte randy = (byte)Math.Min(0xFF, Math.Max(0, newY));
 
         var target = new Point(randx, randy);
-        if (this._intelligence.CanWalkOn(target))
+        if (target != this.Position && this._intelligence.CanWalkOn(target))
         {
             await this.WalkToAsync(target).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Determines whether the monster may chase a target to this position: always, unless it belongs to a small
+    /// spawn area (a spot) and the position is more than <see cref="ChaseMargin"/> fields away from it.
+    /// </summary>
+    /// <param name="position">The position.</param>
+    /// <returns><c>true</c> if the monster may walk there.</returns>
+    internal bool MayChaseTo(Point position) => this.GetLeash(ChaseMargin) is not { } leash || leash.Contains(position.X, position.Y);
+
+    /// <summary>
+    /// Gets the square in which a monster of a small spawn area (a spot) walks around without a target:
+    /// its spawn area plus <see cref="LeashMargin"/> fields. Monsters of large spawn areas aren't leashed.
+    /// </summary>
+    /// <returns>The square, or <c>null</c>.</returns>
+    private (int X1, int Y1, int X2, int Y2, Func<int, int, bool> Contains)? GetLeash(int margin = LeashMargin)
+    {
+        var area = this.SpawnArea;
+        if (area.X2 - area.X1 > MaximumLeashedAreaSize || area.Y2 - area.Y1 > MaximumLeashedAreaSize)
+        {
+            return null;
+        }
+
+        var x1 = Math.Max(0, area.X1 - margin);
+        var y1 = Math.Max(0, area.Y1 - margin);
+        var x2 = Math.Min(0xFF, area.X2 + margin);
+        var y2 = Math.Min(0xFF, area.Y2 + margin);
+        return (x1, y1, x2, y2, (x, y) => x >= x1 && x <= x2 && y >= y1 && y <= y2);
     }
 
     /// <inheritdoc/>

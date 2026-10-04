@@ -251,7 +251,12 @@ public class BasicMonsterIntelligence : INpcIntelligence, IDisposable
         if (this.CurrentTarget.IsInRange(this.Monster.Position, this.Monster.Definition.ViewRange + 1))
         {
             var walkTarget = this.Monster.CurrentMap!.Terrain.GetRandomCoordinate(this.CurrentTarget.Position, this.Monster.Definition.AttackRange);
-            if (await this.Monster.WalkToAsync(walkTarget).ConfigureAwait(false))
+            if (!this.Monster.MayChaseTo(walkTarget))
+            {
+                // The target ran too far from the spot: give up and go back.
+                this.CurrentTarget = null;
+            }
+            else if (await this.Monster.WalkToAsync(walkTarget).ConfigureAwait(false))
             {
                 return;
             }

@@ -48,6 +48,36 @@ public class KalimaInstanceEnterAction
         await this.EnterNewInstanceAsync(player).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Gets what the gatekeeper shows to the player: the tiers by resets, the tier of the player and the entries left today.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The information.</returns>
+    public async ValueTask<KalimaInstanceInfo> GetInfoAsync(Player player)
+    {
+        var resets = GetResets(player);
+        var tier = this._configuration.GetTierByResets(resets);
+        var tiers = this._configuration.Tiers
+            .OrderBy(t => t.MinimumResets)
+            .Select(t => ((byte)t.Level, t.MinimumResets, this._configuration.GetMaximumResets(t)))
+            .ToList();
+        var today = this._configuration.GetDayNumber(DateTime.UtcNow);
+        var usedEntries = (int)player.GetStoredStatValue(Stats.KalimaInstanceEntryDay) == today
+            ? (int)player.GetStoredStatValue(Stats.KalimaInstanceEntries)
+            : 0;
+        var owner = player.Party?.PartyMaster?.Name ?? player.Name;
+        var instance = await player.GameContext.FindMiniGameAsync(MiniGameType.KalimaInstance, owner).ConfigureAwait(false) as KalimaInstanceContext;
+        var canReenter = instance is { IsAcceptingPlayers: true } && instance.IsRegistered(player);
+        return new KalimaInstanceInfo(
+            tiers,
+            resets,
+            (byte)(tier?.Level ?? 0),
+            Math.Max(0, this._configuration.EntriesPerDay - usedEntries),
+            this._configuration.EntriesPerDay,
+            this._configuration.GetTimeUntilNextReset(DateTime.UtcNow),
+            canReenter);
+    }
+
     private static int GetResets(Player player) => (int)(player.Attributes?[Stats.Resets] ?? 0);
 
     private async ValueTask EnterExistingInstanceAsync(Player player, KalimaInstanceContext instance)
