@@ -67,7 +67,8 @@ public sealed class AccountVaultService
         {
             var vault = access.Account.Vault;
             var items = vault?.Items.Where(i => i.Definition is not null).OrderBy(i => i.ItemSlot).Select(VaultItemMapper.Describe).ToList() ?? [];
-            var view = new VaultView(vault?.Money ?? 0, access.Configuration.MaximumVaultMoney, access.Player is not null, items);
+            var rows = access.Account.IsVaultExtended ? InventoryConstants.WarehouseRows * 2 : InventoryConstants.WarehouseRows;
+            var view = new VaultView(vault?.Money ?? 0, access.Configuration.MaximumVaultMoney, access.Player is not null, items, rows);
             return ValueTask.FromResult(VaultResult<VaultView>.Success(view));
         });
     }
@@ -104,12 +105,14 @@ public sealed class AccountVaultService
     }
 
     /// <summary>
-    /// Takes an item out of the vault and out of the game.
+    /// Takes an item out of the vault and out of the game, or a part of a stack.
     /// </summary>
     /// <param name="accountName">The login name of the account.</param>
     /// <param name="itemId">The id of the item.</param>
-    /// <returns>The taken item with the data to create it again.</returns>
-    public ValueTask<VaultResult<VaultItem>> TakeItemAsync(string accountName, Guid itemId)
+    /// <param name="amount">The number of pieces to take from a stack; <c>null</c> takes the whole item.
+    /// The rest of the stack stays in the vault.</param>
+    /// <returns>The taken item (with <see cref="VaultItem.Count"/> = the taken pieces) with the data to create it again.</returns>
+    public ValueTask<VaultResult<VaultItem>> TakeItemAsync(string accountName, Guid itemId, int? amount = null)
     {
         return this.RunAsync(accountName, true, async access =>
         {
@@ -120,11 +123,100 @@ public sealed class AccountVaultService
             }
 
             var description = VaultItemMapper.Describe(item);
+            if (amount is { } pieces && pieces != description.Count)
+            {
+                if (pieces < 1 || description.MaximumStack <= 1)
+                {
+                    return VaultResult<VaultItem>.Fail(VaultResultCode.InvalidItem);
+                }
+
+                if (pieces > description.Count)
+                {
+                    return VaultResult<VaultItem>.Fail(VaultResultCode.NotEnoughItems);
+                }
+
+                item.Durability -= pieces;
+                var taken = description with { Count = pieces, Data = description.Data with { Durability = pieces } };
+                await access.NotifyAsync($"Website: {pieces} x {description.Name} were taken from your vault.").ConfigureAwait(false);
+                this._logger.LogInformation("Website took {Amount} of {Item} ({ItemId}) from the vault of account {Account}, {Rest} left: {Data}", pieces, description.Name, itemId, accountName, item.Durability, taken.Data);
+                return VaultResult<VaultItem>.Success(taken);
+            }
+
             await access.CreateStorage().RemoveItemAsync(item).ConfigureAwait(false);
             await access.Context.DeleteAsync(item).ConfigureAwait(false);
             await access.NotifyAsync($"Website: {description.Name} was taken from your vault.").ConfigureAwait(false);
             this._logger.LogInformation("Website took item {Item} ({ItemId}) from the vault of account {Account}: {Data}", description.Name, itemId, accountName, description.Data);
             return VaultResult<VaultItem>.Success(description);
+        });
+    }
+
+    /// <summary>
+    /// Puts pieces of a stackable item (e.g. jewels) into the vault: first onto the existing plain stacks
+    /// of the item, then into new stacks in free places. Either all pieces are put into the vault, or none.
+    /// </summary>
+    /// <param name="accountName">The login name of the account.</param>
+    /// <param name="request">The item and the number of pieces.</param>
+    /// <returns>The filled up and created stacks.</returns>
+    public ValueTask<VaultResult<VaultStackResult>> PutStackAsync(string accountName, VaultStackRequest request)
+    {
+        return this.RunAsync(accountName, true, async access =>
+        {
+            var definition = access.Configuration.Items.FirstOrDefault(d => d.Group == request.Group && d.Number == request.Number);
+            var maximumStack = definition is null ? 1 : VaultItemMapper.GetMaximumStack(definition);
+            if (definition is null || maximumStack <= 1 || request.Count < 1)
+            {
+                return VaultResult<VaultStackResult>.Fail(VaultResultCode.InvalidItem);
+            }
+
+            var vault = access.GetOrCreateVault();
+            var storage = access.CreateStorage();
+            var rest = request.Count;
+            var filled = new List<(Item Item, double Durability)>();
+            var created = new List<Item>();
+            foreach (var stack in vault.Items.Where(i => i.Definition?.GetId() == definition.GetId() && VaultItemMapper.IsPlainStack(i) && i.Durability < maximumStack).OrderBy(i => i.ItemSlot))
+            {
+                var pieces = Math.Min(rest, maximumStack - (int)stack.Durability);
+                filled.Add((stack, stack.Durability));
+                stack.Durability += pieces;
+                rest -= pieces;
+                if (rest == 0)
+                {
+                    break;
+                }
+            }
+
+            while (rest > 0)
+            {
+                var stack = access.Context.CreateNew<Item>();
+                stack.Definition = definition;
+                stack.Durability = Math.Min(rest, maximumStack);
+                if (!await storage.AddItemAsync(stack).ConfigureAwait(false))
+                {
+                    // Not enough space for all pieces: undo everything.
+                    await access.Context.DeleteAsync(stack).ConfigureAwait(false);
+                    foreach (var item in created)
+                    {
+                        await storage.RemoveItemAsync(item).ConfigureAwait(false);
+                        await access.Context.DeleteAsync(item).ConfigureAwait(false);
+                    }
+
+                    foreach (var (item, durability) in filled)
+                    {
+                        item.Durability = durability;
+                    }
+
+                    return VaultResult<VaultStackResult>.Fail(VaultResultCode.NoSpace);
+                }
+
+                created.Add(stack);
+                rest -= (int)stack.Durability;
+            }
+
+            var items = filled.Select(f => f.Item).Concat(created).Select(VaultItemMapper.Describe).ToList();
+            var name = definition.GetNameForLevel(0).ToString();
+            await access.NotifyAsync($"Website: {request.Count} x {name} were put into your vault.").ConfigureAwait(false);
+            this._logger.LogInformation("Website put {Amount} of {Item} into the vault of account {Account}, {Filled} stacks filled up, {Created} created.", request.Count, name, accountName, filled.Count, created.Count);
+            return VaultResult<VaultStackResult>.Success(new VaultStackResult(request.Count, items));
         });
     }
 

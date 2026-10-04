@@ -20,7 +20,7 @@ using MUnique.OpenMU.Web.AdminPanel.Services.Vault;
 /// The API is called with an API key and not from a browser form, so it doesn't use antiforgery tokens.
 /// Errors are returned as <c>{ "error": "&lt;VaultResultCode&gt;" }</c>: 404 for <c>NotFound</c>,
 /// 409 for <c>Busy</c> and <c>VaultOpen</c> (try again later), 422 for <c>NotEnoughMoney</c>,
-/// <c>MoneyLimitExceeded</c> and <c>NoSpace</c>, 400 for <c>InvalidItem</c> and 503 for <c>Unavailable</c>.
+/// <c>MoneyLimitExceeded</c>, <c>NotEnoughItems</c> and <c>NoSpace</c>, 400 for <c>InvalidItem</c> and 503 for <c>Unavailable</c>.
 /// </remarks>
 [ApiController]
 [RequireAntiforgeryToken(false)]
@@ -79,10 +79,11 @@ public class AccountVaultController : Controller
     /// </summary>
     /// <param name="accountName">The login name of the account.</param>
     /// <param name="itemId">The id of the item.</param>
+    /// <param name="amount">The number of pieces to take from a stack (e.g. jewels); without it, the whole item is taken.</param>
     /// <returns>The taken item, including the data to put it into a vault again.</returns>
     [HttpPost("items/{itemId:guid}/take")]
-    public async Task<IActionResult> TakeItemAsync(string accountName, Guid itemId)
-        => this.ToResponse(await this._vaultService.TakeItemAsync(accountName, itemId).ConfigureAwait(false));
+    public async Task<IActionResult> TakeItemAsync(string accountName, Guid itemId, [FromQuery] int? amount = null)
+        => this.ToResponse(await this._vaultService.TakeItemAsync(accountName, itemId, amount).ConfigureAwait(false));
 
     /// <summary>
     /// Creates an item in a free place of the vault.
@@ -93,6 +94,17 @@ public class AccountVaultController : Controller
     [HttpPost("items")]
     public async Task<IActionResult> PutItemAsync(string accountName, [FromBody] VaultItemData data)
         => this.ToResponse(await this._vaultService.PutItemAsync(accountName, data).ConfigureAwait(false));
+
+    /// <summary>
+    /// Puts pieces of a stackable item (e.g. jewels) into the vault, onto the existing stacks first,
+    /// then into new stacks. Either all pieces are put into the vault, or none (<c>NoSpace</c>).
+    /// </summary>
+    /// <param name="accountName">The login name of the account.</param>
+    /// <param name="request">The item group and number and the number of pieces.</param>
+    /// <returns>The filled up and created stacks.</returns>
+    [HttpPost("stacks")]
+    public async Task<IActionResult> PutStackAsync(string accountName, [FromBody] VaultStackRequest request)
+        => this.ToResponse(await this._vaultService.PutStackAsync(accountName, request).ConfigureAwait(false));
 
     private IActionResult ToResponse<T>(VaultResult<T> result)
         => result.IsSuccess ? this.Ok(result.Value) : this.ToError(result.Code);

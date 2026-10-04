@@ -182,6 +182,7 @@ A key has the same [roles](#roles) as a user, and defaults to **Viewer**:
 | `POST /api/accounts/{account}/vault/money` | Operator |
 | `POST /api/accounts/{account}/vault/items/{item}/take` | Operator |
 | `POST /api/accounts/{account}/vault/items` | Operator |
+| `POST /api/accounts/{account}/vault/stacks` | Operator |
 
 So a status page gets a Viewer key and can only read, while an application which
 announces something in the game needs an Operator key. The role is chosen when
@@ -209,16 +210,24 @@ is made on the account in memory of the game server and saved right away, and th
 player gets a message. Only the vault window must be closed in the game. While the
 player is offline, the account is blocked from logging in for the moment of the change.
 
-* `GET` returns the zen and the items with name, options, picture file name (of
-  `src/Web/ItemEditor/wwwroot/img/items`) and the data to create the item again.
+* `GET` returns the zen, the number of `rows` of 8 slots (15, or 30 for an extended
+  vault) and the items with slot, size in slots, name, options, picture file name (of
+  `src/Web/ItemEditor/wwwroot/img/items`), the data to create the item again, and for
+  stackable items (e.g. jewels) the pieces in the stack (`count`) and the largest
+  stack (`maximumStack`, 1 for other items).
 * `POST .../money` with `{ "amount": 1000 }` puts zen into the vault, a negative
   amount takes it out.
 * `POST .../items/{item}/take` removes the item from the vault and from the game
-  and returns it with its data.
-* `POST .../items` with that data creates the item in a free place of the vault.
+  and returns it with its data. With `?amount=5` it takes only 5 pieces of a stack;
+  the rest stays in the vault.
+* `POST .../items` with that data creates the item in a free place of the vault. A
+  stack must hold between 1 piece and the largest stack.
+* `POST .../stacks` with `{ "group": 14, "number": 13, "count": 300 }` puts pieces of a
+  stackable item into the vault: onto the existing stacks first (without level and
+  options), then into new stacks. Either all pieces fit, or nothing is changed (`NoSpace`).
 
 Errors are `{ "error": "..." }` with `404` (`NotFound`), `409` (`Busy`, `VaultOpen`:
-try again later), `422` (`NotEnoughMoney`, `MoneyLimitExceeded`, `NoSpace`), `400`
+try again later), `422` (`NotEnoughMoney`, `MoneyLimitExceeded`, `NotEnoughItems`, `NoSpace`), `400`
 (`InvalidItem`) or `503` (`Unavailable`: no game server in this process).
 
 ## Keeping the sessions alive across restarts

@@ -20,6 +20,15 @@ namespace MUnique.OpenMU.Web.AdminPanel.Services.Vault;
 /// the pictures are in <c>src/Web/ItemEditor/wwwroot/img/items</c>.</param>
 /// <param name="Options">The descriptions of the options, e.g. "Luck" or "Excellent damage rate +10%".</param>
 /// <param name="Data">The data to create the item again.</param>
+/// <param name="Count">The number of pieces: the size of the stack for a stackable item (e.g. jewels), otherwise 1.</param>
+/// <param name="MaximumStack">The largest stack of this item; 1 when it isn't stackable.</param>
+/// <param name="Level">The item level (+0 to +15).</param>
+/// <param name="HasLuck">Whether the item has luck.</param>
+/// <param name="HasSkill">Whether the item has its skill.</param>
+/// <param name="ExcellentCount">The number of excellent options.</param>
+/// <param name="Kind">The kind: Weapon, Shield, Helm, Armor, Pants, Gloves, Boots, Wings, Pet, Pendant, Ring or Other.</param>
+/// <param name="Details">The white lines of the tooltip of the game: damage or defense, attack speed, durability and requirements.</param>
+/// <param name="Classes">The base classes which can wear the item: DW, DK, ELF, MG, DL, SUM, RF; empty when it isn't wearable by class.</param>
 public sealed record VaultItem(
     Guid Id,
     byte Slot,
@@ -32,4 +41,13 @@ public sealed record VaultItem(
     bool IsAncient,
     string Image,
     IReadOnlyList<string> Options,
-    VaultItemData Data);
+    VaultItemData Data,
+    int Count,
+    int MaximumStack,
+    byte Level,
+    bool HasLuck,
+    bool HasSkill,
+    int ExcellentCount,
+    string Kind,
+    IReadOnlyList<string> Classes,
+    IReadOnlyList<string> Details);

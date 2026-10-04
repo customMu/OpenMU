@@ -50,6 +50,11 @@ public enum VaultResultCode
     InvalidItem,
 
     /// <summary>
+    /// The stack has fewer pieces than requested.
+    /// </summary>
+    NotEnoughItems,
+
+    /// <summary>
     /// No game server runs in this process.
     /// </summary>
     Unavailable,

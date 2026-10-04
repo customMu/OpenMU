@@ -11,4 +11,5 @@ namespace MUnique.OpenMU.Web.AdminPanel.Services.Vault;
 /// <param name="MaximumMoney">The maximum zen the vault can hold.</param>
 /// <param name="IsOnline">Whether the account is in the game right now.</param>
 /// <param name="Items">The items.</param>
-public sealed record VaultView(int Money, int MaximumMoney, bool IsOnline, IReadOnlyList<VaultItem> Items);
+/// <param name="Rows">The number of rows of 8 slots: 15, or 30 for an extended vault.</param>
+public sealed record VaultView(int Money, int MaximumMoney, bool IsOnline, IReadOnlyList<VaultItem> Items, int Rows);

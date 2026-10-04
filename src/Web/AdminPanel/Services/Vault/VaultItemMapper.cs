@@ -18,6 +18,8 @@ internal static class VaultItemMapper
     /// <summary>
     /// The item level, whose glow the item picture shows, by item level; like in the item editor.
     /// </summary>
+    private static readonly string[] BaseClasses = ["DW", "DK", "ELF", "MG", "DL", "SUM", "RF"];
+
     private static readonly int[] PictureLevels = [0, 0, 0, 3, 3, 5, 5, 7, 7, 9, 9, 11, 11, 13, 13, 15, 15];
 
     /// <summary>
@@ -52,9 +54,90 @@ internal static class VaultItemMapper
             isExcellent,
             ancientSet is not null,
             GetPictureFileName(item, isExcellent, ancientSet is not null),
-            DescribeOptions(item),
-            ToData(item));
+            VaultOptionText.Describe(item),
+            ToData(item),
+            item.IsStackable() ? (int)item.Durability : 1,
+            GetMaximumStack(definition),
+            item.Level,
+            item.ItemOptions.Any(o => o.ItemOption?.OptionType == ItemOptionTypes.Luck),
+            item.HasSkill,
+            item.ItemOptions.Count(o => o.ItemOption?.OptionType == ItemOptionTypes.Excellent),
+            GetKind(definition),
+            GetClasses(definition),
+            VaultItemDetails.Describe(item));
     }
+
+    /// <summary>
+    /// Gets the kind of items of a definition for a website filter.
+    /// </summary>
+    /// <param name="definition">The item definition.</param>
+    /// <returns>The kind.</returns>
+    public static string GetKind(ItemDefinition definition)
+    {
+        var slots = definition.ItemSlot?.ItemSlots ?? [];
+        return definition.Group switch
+        {
+            <= 5 when slots.Count > 0 => "Weapon",
+            6 => "Shield",
+            7 => "Helm",
+            8 => "Armor",
+            9 => "Pants",
+            10 => "Gloves",
+            11 => "Boots",
+            _ when slots.Contains(InventoryConstants.WingsSlot) => "Wings",
+            _ when slots.Contains(InventoryConstants.PetSlot) => "Pet",
+            _ when slots.Contains(InventoryConstants.PendantSlot) => "Pendant",
+            _ when slots.Contains(InventoryConstants.Ring1Slot) || slots.Contains(InventoryConstants.Ring2Slot) => "Ring",
+            _ => "Other",
+        };
+    }
+
+    /// <summary>
+    /// Gets the base classes which can wear items of a definition, e.g. "DW" for Dark Wizard, Soul Master and Grand Master.
+    /// </summary>
+    /// <param name="definition">The item definition.</param>
+    /// <returns>The base classes.</returns>
+    public static IReadOnlyList<string> GetClasses(ItemDefinition definition)
+    {
+        return definition.QualifiedCharacters
+            .Select(c => (c.Number / 4) switch
+            {
+                0 => "DW",
+                1 => "DK",
+                2 => "ELF",
+                3 => "MG",
+                4 => "DL",
+                5 => "SUM",
+                6 => "RF",
+                _ => null,
+            })
+            .OfType<string>()
+            .Distinct()
+            .OrderBy(c => Array.IndexOf(BaseClasses, c))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Gets the largest stack of items of the definition; 1 when they aren't stackable.
+    /// </summary>
+    /// <param name="definition">The item definition.</param>
+    /// <returns>The largest stack.</returns>
+    public static int GetMaximumStack(ItemDefinition definition)
+        => definition.ItemSlot is null && definition.Durability > 1 ? definition.Durability : 1;
+
+    /// <summary>
+    /// Determines whether the item is a plain piece of a stackable item, which can be stacked with
+    /// other pieces of the same definition: no level, options or sockets.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns><c>true</c> if the item is a plain stack.</returns>
+    public static bool IsPlainStack(Item item)
+        => item.Definition is { } definition
+           && GetMaximumStack(definition) > 1
+           && item.Level == 0
+           && item.ItemOptions.Count == 0
+           && item.ItemSetGroups.Count == 0
+           && item.SocketCount == 0;
 
     /// <summary>
     /// Creates a new item from the data.
@@ -75,6 +158,13 @@ internal static class VaultItemMapper
         var setItems = configuration.ItemSetGroups.SelectMany(g => g.Items).ToDictionary(i => i.GetId());
         if (data.Options.Any(o => !options.ContainsKey(o.OptionId)) || data.SetItemIds.Any(id => !setItems.ContainsKey(id)))
         {
+            return null;
+        }
+
+        var maximumStack = GetMaximumStack(definition);
+        if (maximumStack > 1 && (data.Durability < 1 || data.Durability > maximumStack || data.Durability % 1 != 0))
+        {
+            // A stack of a stackable item must hold between one piece and the largest stack.
             return null;
         }
 
@@ -131,42 +221,6 @@ internal static class VaultItemMapper
                 .Select(o => new VaultItemOptionData(o.ItemOption!.GetId(), o.Level, o.Index))
                 .ToList(),
             item.ItemSetGroups.Select(s => s.GetId()).ToList());
-    }
-
-    private static List<string> DescribeOptions(Item item)
-    {
-        var result = new List<string>();
-        if (item.HasSkill)
-        {
-            result.Add("Skill");
-        }
-
-        if (item.ItemOptions.Any(o => o.ItemOption?.OptionType == ItemOptionTypes.Luck))
-        {
-            result.Add("Luck");
-        }
-
-        foreach (var option in item.ItemOptions
-                     .Where(o => o.ItemOption is not null && o.ItemOption.OptionType != ItemOptionTypes.Luck)
-                     .OrderBy(o => o.ItemOption!.OptionType == ItemOptionTypes.Option ? 0 : 1)
-                     .ThenBy(o => o.Index))
-        {
-            var itemOption = option.ItemOption!;
-            var level = itemOption.LevelType == LevelType.ItemLevel ? item.Level : option.Level;
-            var powerUp = itemOption.LevelDependentOptions.FirstOrDefault(o => o.Level == level)?.PowerUpDefinition
-                          ?? itemOption.PowerUpDefinition;
-            if (powerUp is not null)
-            {
-                result.Add("+" + powerUp);
-            }
-        }
-
-        if (item.SocketCount > 0)
-        {
-            result.Add($"Sockets: {item.SocketCount}");
-        }
-
-        return result;
     }
 
     private static Dictionary<Guid, IncreasableItemOption> GetAllOptions(GameConfiguration configuration)
