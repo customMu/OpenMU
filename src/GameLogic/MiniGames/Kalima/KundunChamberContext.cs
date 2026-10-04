@@ -191,17 +191,20 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
     }
 
     /// <inheritdoc />
-    protected override ValueTask OnPlayerEnteredAsync(Player player)
+    protected override async ValueTask OnPlayerEnteredAsync(Player player)
     {
+        // The spots of a Kalima instance belong to the instance only.
+        await ShowSpotsAsync(player, []).ConfigureAwait(false);
+
         var kundun = this._kundun;
         var healthPercent = kundun is { } k && k.Attributes[Stats.MaximumHealth] > 0
             ? (int)Math.Ceiling(k.Health * 100.0 / k.Attributes[Stats.MaximumHealth])
             : 100;
-        return player.ShowLocalizedBlueMessageAsync(
+        await player.ShowLocalizedBlueMessageAsync(
             nameof(PlayerMessage.KundunChamberStatusFormat),
             this.Tier.Level,
             healthPercent,
-            (int)Math.Ceiling(this.TimeLeft.TotalMinutes));
+            (int)Math.Ceiling(this.TimeLeft.TotalMinutes)).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

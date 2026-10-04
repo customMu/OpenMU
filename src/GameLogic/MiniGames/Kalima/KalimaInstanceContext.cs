@@ -7,7 +7,6 @@ namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns;
-using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.Pathfinding;
 
 /// <summary>
@@ -162,14 +161,6 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         return entrance is null
             ? default
             : new Point((byte)((entrance.X1 + entrance.X2) / 2), (byte)((entrance.Y1 + entrance.Y2) / 2));
-    }
-
-    private static async ValueTask ShowSpotsAsync(Player player, IReadOnlyList<Point> spots)
-    {
-        if (player.ViewPlugIns.GetPlugIn<IKalimaInstanceViewPlugIn>() is { } view)
-        {
-            await view.ShowSpotsAsync(spots).ConfigureAwait(false);
-        }
     }
 
     /// <summary>
