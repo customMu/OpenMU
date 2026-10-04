@@ -167,6 +167,13 @@ public abstract class BaseInvasionPlugIn<TConfiguration> : PeriodicTaskBasePlugI
         this.SelectDisplayMap(state);
     }
 
+    /// <summary>
+    /// Gets the living monsters of the running invasion, e.g. for a status page.
+    /// </summary>
+    /// <param name="gameContext">The game context.</param>
+    /// <returns>The living monsters.</returns>
+    public IReadOnlyList<Monster> GetAliveMonsters(IGameContext gameContext) => this.GetStateByGameContext(gameContext).AliveMonsters;
+
     /// <inheritdoc />
     protected override InvasionGameServerState CreateState(IGameContext gameContext)
         => new(gameContext);

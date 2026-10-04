@@ -104,5 +104,38 @@ public class KalimaPackPlannerTest
         }
     }
 
-    private static MonsterSpawnArea CreateSpawn(byte x, byte y) => new() { X1 = x, X2 = x, Y1 = y, Y2 = y };
+    /// <summary>
+    /// Tests that the midway monsters (Aegis, next to the boss on the map) ambush the players along the way:
+    /// after the 6th and 7th of 8 way packs, so there are still 10 packs and none of them at the end.
+    /// </summary>
+    [Test]
+    public void MidwayMonstersAmbushAlongTheWay()
+    {
+        var walkMap = new bool[256, 256];
+        for (var x = 0; x < 256; x++)
+        {
+            walkMap[x, 10] = true;
+        }
+
+        var regular = new MonsterDefinition { Number = 1 };
+        var aegis = new MonsterDefinition { Number = 2 };
+        var spawns = Enumerable.Range(1, 8).Select(i => CreateSpawn((byte)(i * 10), 10, regular))
+            .Append(CreateSpawn(95, 10, aegis))
+            .Append(CreateSpawn(98, 10, aegis))
+            .ToList();
+
+        var packs = KalimaPackPlanner.PlanPacks(spawns, new Point(0, 10), walkMap, 10, s => s.MonsterDefinition == aegis, 0.6, 0.8);
+
+        Assert.That(packs, Has.Count.EqualTo(10));
+        Assert.That(
+            packs.Select(p => p.Single().MonsterDefinition == aegis),
+            Is.EqualTo(new[] { false, false, false, false, false, false, true, false, true, false }));
+
+        // The ambush is at the spot of the pack before it, the last pack is a regular one at the end of the way.
+        Assert.That(packs[6].Single().X1, Is.EqualTo(packs[5].Single().X1));
+        Assert.That(packs[8].Single().X1, Is.EqualTo(packs[7].Single().X1));
+        Assert.That(packs[^1].Single().X1, Is.EqualTo(80));
+    }
+
+    private static MonsterSpawnArea CreateSpawn(byte x, byte y, MonsterDefinition? monster = null) => new() { X1 = x, X2 = x, Y1 = y, Y2 = y, MonsterDefinition = monster };
 }

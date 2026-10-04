@@ -2131,7 +2131,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Kalima {0}: pack {1}/{2}, the instance closes in {3} minutes..
+        ///   Looks up a localized string similar to Kalima {0}: packs killed {1}/{2}, the instance closes in {3} minutes..
         /// </summary>
         public static string KalimaInstanceStatusFormat {
             get {
@@ -2239,7 +2239,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Pack {0}/{1}!.
+        ///   Looks up a localized string similar to Horde {0}/{1} has fallen! The next one is coming - even more dangerous....
         /// </summary>
         public static string KalimaInstancePackFormat {
             get {
@@ -2248,7 +2248,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The Illusion of Kundun appeared!.
+        ///   Looks up a localized string similar to The ground trembles... The Illusion of Kundun rises from the darkness!.
         /// </summary>
         public static string KalimaInstanceBossAppeared {
             get {
@@ -2257,7 +2257,25 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The Illusion of Kundun is defeated!.
+        ///   Looks up a localized string similar to The gates of Kalima {0} are open... The first horde is waiting for you!.
+        /// </summary>
+        public static string KalimaInstanceStartedFormat {
+            get {
+                return ResourceManager.GetString("KalimaInstanceStartedFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The last horde has fallen... Something ancient is waking up!.
+        /// </summary>
+        public static string KalimaInstanceLastPack {
+            get {
+                return ResourceManager.GetString("KalimaInstanceLastPack", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The Illusion of Kundun is banished! Kalima is cleansed!.
         /// </summary>
         public static string KalimaInstanceBossDefeated {
             get {
@@ -2347,7 +2365,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Kundun has awakened!.
+        ///   Looks up a localized string similar to Kundun, the lord of Kalima, has awakened! Stand and fight!.
         /// </summary>
         public static string KundunChamberKundunAppeared {
             get {
@@ -2365,7 +2383,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} %: Kundun calls {1} Illusion(s) and is protected until they are destroyed!.
+        ///   Looks up a localized string similar to Kundun is invulnerable! Destroy his puppets - {1} Illusion(s) - to break the shield!.
         /// </summary>
         public static string KundunChamberPhaseFormat {
             get {
@@ -2374,7 +2392,43 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The Illusions are destroyed after {0} s. Kundun healed {1} %, defense +{2} %, damage +{3} %..
+        ///   Looks up a localized string similar to The shield is broken! But the Illusions managed to restore {0} % of Kundun's health..
+        /// </summary>
+        public static string KundunChamberPhaseEndedHealFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberPhaseEndedHealFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The shield is broken! But the Illusions restored {0} % of Kundun's health and empowered him: defense +{1} %, damage +{2} %..
+        /// </summary>
+        public static string KundunChamberPhaseEndedStrongerFormat {
+            get {
+                return ResourceManager.GetString("KundunChamberPhaseEndedStrongerFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You need at least {0} resets for this event..
+        /// </summary>
+        public static string ResetEventRequiresResetsFormat {
+            get {
+                return ResourceManager.GetString("ResetEventRequiresResetsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You already entered this event {0} times today. New entries at {1}:00..
+        /// </summary>
+        public static string ResetEventDailyLimitFormat {
+            get {
+                return ResourceManager.GetString("ResetEventDailyLimitFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The shield is broken! You were faster than the Illusions - Kundun gained nothing..
         /// </summary>
         public static string KundunChamberPhaseEndedFormat {
             get {
@@ -2383,7 +2437,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Kundun {0} is defeated! Time: {1} min {2} s..
+        ///   Looks up a localized string similar to Kundun {0} has fallen! Glory to the heroes! Time: {1} min {2} s..
         /// </summary>
         public static string KundunChamberVictoryFormat {
             get {

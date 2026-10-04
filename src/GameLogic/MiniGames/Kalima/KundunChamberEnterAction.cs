@@ -54,6 +54,33 @@ public class KundunChamberEnterAction
         await this.EnterNewChamberAsync(player).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Gets the information for the entry dialog of the keeper.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The information.</returns>
+    public async ValueTask<KundunChamberInfo> GetInfoAsync(Player player)
+    {
+        var resets = GetResets(player);
+        var tier = this._kalimaConfiguration.GetTierByResets(resets);
+        var tiers = this._kalimaConfiguration.Tiers
+            .OrderBy(t => t.MinimumResets)
+            .Select(t => ((byte)t.Level, t.MinimumResets, this._kalimaConfiguration.GetMaximumResets(t)))
+            .ToList();
+        var owner = player.Party?.PartyMaster?.Name ?? player.Name;
+        var chamber = await player.GameContext.FindMiniGameAsync(MiniGameType.KundunChamber, owner).ConfigureAwait(false) as KundunChamberContext;
+        var canReenter = chamber is { IsAcceptingPlayers: true } && chamber.IsRegistered(player);
+        return new KundunChamberInfo(
+            tiers,
+            resets,
+            (byte)(tier?.Level ?? 0),
+            Math.Max(0, this.GetEntriesPerWeek(player) - this.GetUsedEntries(player)),
+            this.GetEntriesPerWeek(player),
+            this._configuration.GetTimeUntilNextReset(DateTime.UtcNow),
+            canReenter,
+            tier is not null && FindLostMap(player, tier.Level) is not null);
+    }
+
     private static int GetResets(Player player) => (int)(player.Attributes?[Stats.Resets] ?? 0);
 
     private static Item? FindLostMap(Player player, int level)

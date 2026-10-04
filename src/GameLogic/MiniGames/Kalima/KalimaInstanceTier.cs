@@ -57,6 +57,66 @@ public class KalimaInstanceTier
     [Display(Name = "Drop multiplier", Description = "Item drop multiplier, 1.5 means one roll and a 50 % chance for a second one.")]
     public float DropMultiplier { get; set; } = 1.0f;
 
+    /// <summary>
+    /// Gets or sets the chance per killed monster for a jewel, in percent.
+    /// </summary>
+    [Display(Name = "Jewel chance (%)", Description = "Chance per killed monster (not the boss) for one jewel; its kind by the weights below.")]
+    public float JewelChancePercent { get; set; } = 2f;
+
+    /// <summary>
+    /// Gets or sets the weight of the Jewel of Chaos.
+    /// </summary>
+    [Display(Name = "Weight: Jewel of Chaos")]
+    public int ChaosWeight { get; set; } = 40;
+
+    /// <summary>
+    /// Gets or sets the weight of the Jewel of Bless.
+    /// </summary>
+    [Display(Name = "Weight: Jewel of Bless")]
+    public int BlessWeight { get; set; } = 35;
+
+    /// <summary>
+    /// Gets or sets the weight of the Jewel of Soul.
+    /// </summary>
+    [Display(Name = "Weight: Jewel of Soul")]
+    public int SoulWeight { get; set; } = 20;
+
+    /// <summary>
+    /// Gets or sets the weight of the Jewel of Life.
+    /// </summary>
+    [Display(Name = "Weight: Jewel of Life")]
+    public int LifeWeight { get; set; } = 5;
+
+    /// <summary>
+    /// Gets or sets the weight of the Jewel of Creation.
+    /// </summary>
+    [Display(Name = "Weight: Jewel of Creation")]
+    public int CreationWeight { get; set; }
+
+    /// <summary>
+    /// Gets or sets the weight of the Jewel of Guardian.
+    /// </summary>
+    [Display(Name = "Weight: Jewel of Guardian")]
+    public int GuardianWeight { get; set; }
+
+    /// <summary>
+    /// Gets or sets the lowest rank of the dropped items.
+    /// </summary>
+    [Display(Name = "Item rank from", Description = "The monsters drop the items of these ranks (plugin 'Item drop by rank'), with the chance of the plugin x the item chance multiplier.")]
+    public int MinimumItemRank { get; set; } = 3;
+
+    /// <summary>
+    /// Gets or sets the highest rank of the dropped items.
+    /// </summary>
+    [Display(Name = "Item rank to")]
+    public int MaximumItemRank { get; set; } = 4;
+
+    /// <summary>
+    /// Gets or sets the level of the items which the monsters drop.
+    /// </summary>
+    [Display(Name = "Item level", Description = "Level of the items which the monsters drop (e.g. +1 in Kalima 5). The weapons of the boss and of Kundun have their own levels.")]
+    public int ItemLevel { get; set; }
+
     /// <inheritdoc />
     public override string ToString() => $"Kalima {this.Level}: {this.MinimumResets} resets";
 }

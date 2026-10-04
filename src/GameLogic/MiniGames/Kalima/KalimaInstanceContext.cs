@@ -4,6 +4,8 @@
 
 namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 
+using MUnique.OpenMU.AttributeSystem;
+using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns;
@@ -29,8 +31,12 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
 
     private readonly IReadOnlyList<IReadOnlyList<MonsterSpawnArea>> _packs;
 
+    private readonly List<SimpleElement> _packMultipliers = new();
+
     private int _currentPack = -1;
+    private int _clearedPacks;
     private bool _bossSpawned;
+    private bool _bossDefeated;
     private Point? _bossSpot;
 
     /// <summary>
@@ -45,7 +51,23 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         : base(key, definition, gameContext, mapInitializer, configuration, configuration.Duration, configuration.CloseWhenEmptyAfter)
     {
         this._configuration = configuration;
-        this._packs = KalimaPackPlanner.PlanPacks(this.RegularSpawns.ToList(), GetEntrancePoint(definition), this.Map.Terrain.WalkMap, configuration.PackCount);
+        var midwayNames = (configuration.MidwayMonsters ?? string.Empty).Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        this._packs = KalimaPackPlanner.PlanPacks(
+            this.RegularSpawns.ToList(),
+            GetEntrancePoint(definition),
+            this.Map.Terrain.WalkMap,
+            configuration.PackCount,
+            area => midwayNames.Any(name => area.MonsterDefinition?.Designation.ValueInNeutralLanguage.StartsWith(name, StringComparison.OrdinalIgnoreCase) == true),
+            configuration.MidwayFrom,
+            configuration.MidwayTo);
+
+        // The strength grows from pack to pack; the middle pack has the strength of the tier.
+        var growth = configuration.PackStrengthGrowth > 0 ? configuration.PackStrengthGrowth : 1f;
+        var middle = (this._packs.Count - 1) / 2.0;
+        for (var pack = 0; pack < this._packs.Count; pack++)
+        {
+            this._packMultipliers.Add(new SimpleElement((float)Math.Pow(growth, pack - middle), AggregateType.Multiplicate));
+        }
     }
 
     /// <summary>
@@ -55,6 +77,36 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
 
     /// <inheritdoc />
     public override double ItemDropMultiplier => this.Tier.DropMultiplier;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The monsters of the instance drop by the tier: a jewel by chance, money (monster level x 10 x Kalima level)
+    /// and the items of the ranks of the tier with a multiplied chance. The boss has its own drops (see <see cref="OnMonsterDied"/>).
+    /// </remarks>
+    public override MiniGameMonsterDrops? GetMonsterDrops(AttackableNpcBase monster, Player killer)
+    {
+        if (monster is Monster { SummonedBy: not null } || this.IsIllusionOfKundun(monster.Definition))
+        {
+            return MiniGameMonsterDrops.None;
+        }
+
+        var items = new List<Item>(2);
+        var definitions = this.GameContext.Configuration.Items;
+        if (KalimaDrops.RollJewel(this.Tier, definitions) is { } jewel)
+        {
+            items.Add(jewel);
+        }
+
+        if (KalimaDrops.RollRankItem(this.Tier, this.GameContext, this._configuration.ItemChanceMultiplier) is { } item)
+        {
+            items.Add(item);
+        }
+
+        var money = Rand.NextRandomBool(Math.Clamp(this._configuration.MoneyChance, 0, 1))
+            ? (uint)Math.Max(0, monster.Attributes[Stats.Level] * this._configuration.MoneyPerMonsterLevel * this.Tier.Level)
+            : 0u;
+        return new MiniGameMonsterDrops(items, money);
+    }
 
     /// <inheritdoc />
     protected override string ClosesInMinutesMessageKey => nameof(PlayerMessage.KalimaInstanceClosesInMinutesFormat);
@@ -74,7 +126,8 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         }
         else
         {
-            this.Scaling.ApplyRegular(monster);
+            var pack = this._currentPack;
+            this.Scaling.ApplyRegular(monster, pack >= 0 && pack < this._packMultipliers.Count ? this._packMultipliers[pack] : null);
         }
     }
 
@@ -84,10 +137,11 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         await player.ShowLocalizedBlueMessageAsync(
             nameof(PlayerMessage.KalimaInstanceStatusFormat),
             this.Tier.Level,
-            Math.Min(this._currentPack + 1, this._packs.Count),
+            this._clearedPacks,
             this._packs.Count,
             (int)Math.Ceiling(this.TimeLeft.TotalMinutes)).ConfigureAwait(false);
         await ShowSpotsAsync(player, this.GetSpots()).ConfigureAwait(false);
+        await this.ShowProgressAsync(player).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -98,6 +152,7 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         {
             // The other Kalima maps (e.g. the chamber of Kundun) use the same minimap.
             await ShowSpotsAsync(player, []).ConfigureAwait(false);
+            await ShowProgressAsync(player, 0, 0, 0).ConfigureAwait(false);
         }
     }
 
@@ -120,9 +175,15 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         lock (this.SyncRoot)
         {
             isPackCleared = this._alivePackMonsters.Remove(monster) && this._alivePackMonsters.Count == 0;
+            if (isPackCleared)
+            {
+                this._clearedPacks = Math.Min(this._clearedPacks + 1, this._packs.Count);
+            }
+
             if (isBoss)
             {
                 this._bossSpot = null;
+                this._bossDefeated = true;
             }
         }
 
@@ -141,7 +202,21 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
 
                 if (isPackCleared)
                 {
+                    if (this._clearedPacks >= this._packs.Count)
+                    {
+                        await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceLastPack)).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstancePackFormat), this._clearedPacks, this._packs.Count).ConfigureAwait(false);
+                    }
+
                     await this.SpawnNextPackAsync().ConfigureAwait(false);
+                }
+
+                if (isPackCleared || isBoss)
+                {
+                    await this.ShowProgressToAllAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -153,14 +228,6 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
                 this.Logger.LogError(ex, "{context}: Unexpected error after a monster died.", this);
             }
         });
-    }
-
-    private static Point GetEntrancePoint(MiniGameDefinition definition)
-    {
-        var entrance = definition.Entrance;
-        return entrance is null
-            ? default
-            : new Point((byte)((entrance.X1 + entrance.X2) / 2), (byte)((entrance.Y1 + entrance.Y2) / 2));
     }
 
     /// <summary>
@@ -189,7 +256,11 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
 
             if (await this.SpawnPackAsync(this._packs[packIndex]).ConfigureAwait(false) > 0)
             {
-                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstancePackFormat), packIndex + 1, this._packs.Count).ConfigureAwait(false);
+                if (packIndex == 0)
+                {
+                    await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceStartedFormat), this.Tier.Level).ConfigureAwait(false);
+                }
+
                 await this.ShowSpotsToAllAsync().ConfigureAwait(false);
                 return;
             }
@@ -253,6 +324,7 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
 
         await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceBossAppeared)).ConfigureAwait(false);
         await this.ShowSpotsToAllAsync().ConfigureAwait(false);
+        await this.ShowProgressToAllAsync().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -274,6 +346,27 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
             }
 
             return [];
+        }
+    }
+
+    private ValueTask ShowProgressAsync(Player player)
+    {
+        int cleared;
+        byte bossState;
+        lock (this.SyncRoot)
+        {
+            cleared = this._clearedPacks;
+            bossState = this._bossDefeated ? (byte)2 : this._bossSpawned ? (byte)1 : (byte)0;
+        }
+
+        return ShowProgressAsync(player, cleared, this._packs.Count, bossState);
+    }
+
+    private async ValueTask ShowProgressToAllAsync()
+    {
+        foreach (var player in this.GetPlayersOnMap())
+        {
+            await this.ShowProgressAsync(player).ConfigureAwait(false);
         }
     }
 
@@ -344,5 +437,21 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         var level = (byte)this.Tier.Level;
         await this.DropAsync(killer, items.FirstOrDefault(d => d is { Group: KalimaConstants.SymbolOfKundunGroup, Number: KalimaConstants.SymbolOfKundunNumber }), level, symbols, position).ConfigureAwait(false);
         await this.DropAsync(killer, items.FirstOrDefault(d => d.IsLostMap()), level, lostMaps, position).ConfigureAwait(false);
+
+        if (!isBoss)
+        {
+            return;
+        }
+
+        // the boss: one Box of Kundun of the ranks of the tier for the party, and by chance a weapon of these ranks
+        if (configuration.BossBoxOfKundun)
+        {
+            await this.DropItemAsync(killer, KalimaDrops.CreateBoxOfKundun(this.Tier, items), position).ConfigureAwait(false);
+        }
+
+        if (Rand.NextRandomBool(Math.Clamp(configuration.BossWeaponChance, 0, 1)))
+        {
+            await this.DropItemAsync(killer, KalimaDrops.CreateWeapon(this.Tier, this.GameContext, 1, configuration.BossWeaponLevelWeights, false), position).ConfigureAwait(false);
+        }
     }
 }

@@ -119,6 +119,15 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
     public virtual double ItemDropMultiplier => 1.0;
 
     /// <summary>
+    /// Gets the drops of a killed monster of this game, if the game replaces the regular drops (the drop groups,
+    /// the money and the additional item drop plugins) by its own.
+    /// </summary>
+    /// <param name="monster">The killed monster.</param>
+    /// <param name="killer">The killer.</param>
+    /// <returns>The drops, or <c>null</c> for the regular drops.</returns>
+    public virtual MiniGameMonsterDrops? GetMonsterDrops(AttackableNpcBase monster, Player killer) => null;
+
+    /// <summary>
     /// Gets a value indicating whether the experience and drop penalty by resets is ignored in this game,
     /// e.g. because its monsters are scaled to the strength of the players.
     /// </summary>
@@ -404,6 +413,10 @@ public class MiniGameContext : AsyncDisposable, IEventStateProvider
         if (args.Object is Monster monster)
         {
             monster.Died += this.OnMonsterDied;
+            if (monster.SummonedBy is null && this._gameContext.FeaturePlugIns.GetPlugIn<ResetEvents.ResetEventsPlugIn>() is { } resetEvents)
+            {
+                resetEvents.ApplyStrength(this.Definition, monster, this._gameContext.Configuration);
+            }
         }
 
         if (args.Object is Destructible destructible)

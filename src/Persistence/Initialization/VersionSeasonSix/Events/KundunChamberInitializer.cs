@@ -20,14 +20,14 @@ internal class KundunChamberInitializer : InitializerBase
     internal const short KeeperSpawnNumber = 62;
 
     /// <summary>
-    /// The position of the keeper in Lorencia, between Lugard and Delgado.
+    /// The position of the keeper in Lorencia, in front of Delgado (the essence shop), to the right; Lugard to the left.
     /// </summary>
-    internal const byte KeeperX = 130;
+    internal const byte KeeperX = 138;
 
     /// <summary>
-    /// The position of the keeper in Lorencia, between Lugard and Delgado.
+    /// The position of the keeper in Lorencia, in front of Delgado (the essence shop), to the right; Lugard to the left.
     /// </summary>
-    internal const byte KeeperY = 127;
+    internal const byte KeeperY = 125;
 
     private const byte LorenciaNumber = 0;
 
@@ -149,7 +149,7 @@ internal class KundunChamberInitializer : InitializerBase
         area.GameMap = lorencia;
         area.MonsterDefinition = npc;
         area.Quantity = 1;
-        area.Direction = Direction.South;
+        area.Direction = Direction.SouthWest;
         area.SpawnTrigger = SpawnTrigger.Automatic;
         area.X1 = KeeperX;
         area.X2 = KeeperX;

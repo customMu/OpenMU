@@ -88,6 +88,53 @@ public class ItemDropByRankPlugIn : IAdditionalItemDropPlugIn, ISupportCustomCon
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>
+    /// Gets the items of the ranks with their chance per kill (without the levels of the monsters), e.g. for the Kalima instance.
+    /// </summary>
+    /// <param name="definitions">The item definitions of the game configuration.</param>
+    /// <param name="logger">The logger.</param>
+    /// <returns>The items with their rank and their chance per kill.</returns>
+    public IReadOnlyList<(ItemDefinition Definition, int Rank, double Chance)> GetRankItems(IEnumerable<ItemDefinition> definitions, ILogger logger)
+    {
+        var configuration = this.Configuration ??= (ItemDropByRankConfiguration)this.CreateDefaultConfig();
+        var cache = this._cache;
+        if (cache is null || !ReferenceEquals(cache.Configuration, configuration))
+        {
+            cache = new CandidateCache(configuration, definitions, logger);
+            this._cache = cache;
+        }
+
+        return cache.All.Select(c => (c.Definition, c.Rank, c.Chance)).ToList();
+    }
+
+    /// <summary>
+    /// Creates a dropped item: full durability, the luck option and the skill if the item has them.
+    /// </summary>
+    /// <param name="definition">The item definition.</param>
+    /// <param name="level">The item level.</param>
+    /// <param name="luck">If set to <c>true</c>, the item gets the luck option.</param>
+    /// <param name="skill">If set to <c>true</c>, the item gets its skill.</param>
+    /// <returns>The item.</returns>
+    public static Item CreateItem(ItemDefinition definition, byte level, bool luck, bool skill)
+    {
+        var item = new TemporaryItem { Definition = definition, Level = level };
+        if (luck
+            && definition.PossibleItemOptions
+                .SelectMany(o => o.PossibleOptions)
+                .FirstOrDefault(o => object.Equals(o.OptionType, ItemOptionTypes.Luck)) is { } luckOption)
+        {
+            item.ItemOptions.Add(new ItemOptionLink { ItemOption = luckOption });
+        }
+
+        if (skill && item.CanHaveSkill())
+        {
+            item.HasSkill = true;
+        }
+
+        item.Durability = item.GetMaximumDurabilityOfOnePiece();
+        return item;
+    }
+
     private static void LogDrop(AdditionalItemDropArgs args, Candidate candidate, int monsterLevel)
     {
         var characterName = args.Killer.SelectedCharacter?.Name ?? string.Empty;
@@ -169,6 +216,8 @@ public class ItemDropByRankPlugIn : IAdditionalItemDropPlugIn, ISupportCustomCon
         }
 
         public ItemDropByRankConfiguration Configuration { get; }
+
+        public IReadOnlyList<Candidate> All => this._all;
 
         public LevelCandidates GetCandidates(int monsterLevel)
         {

@@ -60,6 +60,42 @@ public class PeriodicTaskConfiguration
     }
 
     /// <summary>
+    /// Gets the next start of the task by the timetable, in the local time of the server.
+    /// </summary>
+    /// <param name="nowLocal">The current local time of the server.</param>
+    /// <returns>The next start, or <c>null</c> if the timetable is empty.</returns>
+    public virtual DateTime? GetNextStartLocal(DateTime nowLocal)
+    {
+        if (this.Timetable.Count == 0)
+        {
+            return null;
+        }
+
+        for (var day = 0; day <= 7; day++)
+        {
+            var date = nowLocal.Date.AddDays(day);
+            var next = this.Timetable
+                .Select(time => date.Add(time.ToTimeSpan()))
+                .Where(start => start > nowLocal && this.IsStartDay(start))
+                .Order()
+                .FirstOrDefault();
+            if (next != default)
+            {
+                return next;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Determines whether the task may start on the day of the time; every day by default.
+    /// </summary>
+    /// <param name="localTime">The local time.</param>
+    /// <returns><c>true</c>, if the task may start on this day.</returns>
+    protected virtual bool IsStartDay(DateTime localTime) => true;
+
+    /// <summary>
     /// Check if current time is OK for starting an invasion.
     /// </summary>
     /// <param name="serverTimeZone">

@@ -50,8 +50,12 @@ public static class KalimaStrengthCalculator
                 strength = strength with { Level = Math.Min(strength.Level, configuration.MaximumMonsterLevel) };
             }
 
-            result[tier.Level] = strength;
             previous = strength;
+            result[tier.Level] = strength with
+            {
+                Health = strength.Health * (configuration.GlobalHealthFactor > 0 ? configuration.GlobalHealthFactor : 1f),
+                Damage = strength.Damage * (configuration.GlobalDamageFactor > 0 ? configuration.GlobalDamageFactor : 1f),
+            };
         }
 
         return result;

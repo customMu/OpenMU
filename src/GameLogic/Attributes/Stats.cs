@@ -164,6 +164,26 @@ public class Stats
     public static AttributeDefinition KalimaInstanceEntries { get; } = new(new Guid("8E5C1F3A-7D2B-4A69-B4E0-2F6A9C8D1B37"), "Kalima instance entries", "The number of entries into the Kalima instance on the day of the last entry.");
 
     /// <summary>
+    /// Gets the attribute definition of the day of the last entry into Blood Castle (plugin 'Events by resets').
+    /// </summary>
+    public static AttributeDefinition BloodCastleEntryDay { get; } = new(new Guid("6C1E8A4F-2B7D-4D93-9F05-A3E7B1C9D428"), "Blood Castle entry day", "The number of the day (by the daily reset hour of the plugin 'Events by resets') of the last entry into Blood Castle.");
+
+    /// <summary>
+    /// Gets the attribute definition of the entries into Blood Castle on the day of <see cref="BloodCastleEntryDay"/>.
+    /// </summary>
+    public static AttributeDefinition BloodCastleEntries { get; } = new(new Guid("9F3B5D27-8E1A-4C64-B2D9-5E8A1F3C7B60"), "Blood Castle entries", "The number of entries into Blood Castle on the day of the last entry; 0 resets the daily limit.");
+
+    /// <summary>
+    /// Gets the attribute definition of the day of the last entry into Devil Square (plugin 'Events by resets').
+    /// </summary>
+    public static AttributeDefinition DevilSquareEntryDay { get; } = new(new Guid("2D7A9C14-5F3E-4B81-8C6A-D1B4E7F2A935"), "Devil Square entry day", "The number of the day (by the daily reset hour of the plugin 'Events by resets') of the last entry into Devil Square.");
+
+    /// <summary>
+    /// Gets the attribute definition of the entries into Devil Square on the day of <see cref="DevilSquareEntryDay"/>.
+    /// </summary>
+    public static AttributeDefinition DevilSquareEntries { get; } = new(new Guid("E8B2C6F9-1A4D-4F37-9B5E-7C3A2D8F1E64"), "Devil Square entries", "The number of entries into Devil Square on the day of the last entry; 0 resets the daily limit.");
+
+    /// <summary>
     /// Gets the attribute definition of the week of the last entry into the chamber of Kundun.
     /// </summary>
     public static AttributeDefinition KundunChamberEntryWeek { get; } = new(new Guid("B1D84E26-3F7A-4C59-9E02-6A1C5B8D3F74"), "Kundun chamber entry week", "The number of the week (by the weekly reset of the chamber of Kundun) of the last entry into the chamber of Kundun.");

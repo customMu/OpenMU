@@ -18,18 +18,11 @@ using MUnique.OpenMU.Pathfinding;
 /// </summary>
 public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
 {
-    private const byte IllusionSpawnDistance = 4;
-
     /// <summary>
-    /// The item group and number of the Box of Kundun; the levels 8 to 12 are the boxes +1 to +5.
+    /// The distance from Kundun at which the Illusions of a phase appear: at the edge of the arena of Kalima, so that
+    /// the players have to run to each of them.
     /// </summary>
-    private const byte BoxOfKundunGroup = 14;
-
-    private const byte BoxOfKundunNumber = 11;
-
-    private const byte BoxOfKundunFirstLevel = 8;
-
-    private const int BoxOfKundunMaximumGrade = 5;
+    private const int IllusionSpawnDistance = 8;
 
     private readonly KundunChamberConfiguration _configuration;
     private readonly IReadOnlyList<KundunChamberPhase> _phases;
@@ -156,6 +149,7 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
             return;
         }
 
+        this.CloseArena();
         var kundun = await this.SpawnMonsterAsync(0, definition, spawn.X1, spawn.Y1, spawn.X2, spawn.Y2, spawn.Direction).ConfigureAwait(false);
         if (kundun is null)
         {
@@ -195,6 +189,11 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
     {
         // The spots of a Kalima instance belong to the instance only.
         await ShowSpotsAsync(player, []).ConfigureAwait(false);
+        await ShowProgressAsync(player, 0, 0, 0).ConfigureAwait(false);
+        if (this.ArenaCenter is { } center && player.ViewPlugIns.GetPlugIn<Views.IKalimaInstanceViewPlugIn>() is { } view)
+        {
+            await view.ShowArenaAsync(center, this._configuration.ArenaRadius).ConfigureAwait(false);
+        }
 
         var kundun = this._kundun;
         var healthPercent = kundun is { } k && k.Attributes[Stats.MaximumHealth] > 0
@@ -239,6 +238,105 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
         }
     }
 
+    /// <summary>
+    /// Drops the rewards of Kundun: boxes of Kundun of the ranks of the level, a weapon of these ranks by chance and a second one
+    /// by a separate chance (both with luck, their skill and a weighted level), and an excellent ring by chance.
+    /// </summary>
+    /// <param name="killer">The killer.</param>
+    /// <param name="position">The position of Kundun.</param>
+    /// <returns>The task.</returns>
+    private async ValueTask DropRewardsAsync(Player killer, Point position)
+    {
+        var configuration = this._configuration;
+        var items = this.GameContext.Configuration.Items;
+        if (configuration.RewardBoxOfKundun)
+        {
+            var minimum = Math.Max(0, configuration.MinimumBoxes);
+            var count = Rand.NextInt(minimum, Math.Max(minimum, configuration.MaximumBoxes) + 1);
+            for (var i = 0; i < count; i++)
+            {
+                await this.DropItemAsync(killer, KalimaDrops.CreateBoxOfKundun(this.Tier, items), position).ConfigureAwait(false);
+            }
+        }
+
+        foreach (var chance in new[] { configuration.WeaponChance, configuration.SecondWeaponChance })
+        {
+            if (Rand.NextRandomBool(Math.Clamp(chance, 0, 1)))
+            {
+                var weapon = KalimaDrops.CreateWeapon(this.Tier, this.GameContext, configuration.WeaponMinimumLevel, configuration.WeaponLevelWeights, true);
+                await this.DropItemAsync(killer, weapon, position).ConfigureAwait(false);
+            }
+        }
+
+        var optionCounts = configuration.GetJewelryOptionCountWeights(this.Tier.Level);
+        if (Rand.NextRandomBool(Math.Clamp(configuration.ExcellentRingChance, 0, 1)))
+        {
+            await this.DropItemAsync(killer, KalimaDrops.CreateExcellentRing(items, optionCounts), position).ConfigureAwait(false);
+        }
+
+        if (Rand.NextRandomBool(Math.Clamp(configuration.ExcellentPendantChance, 0, 1)))
+        {
+            await this.DropItemAsync(killer, KalimaDrops.CreateExcellentPendant(items, optionCounts), position).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Gets the center of the closed arena, if the arena is closed.
+    /// </summary>
+    private Point? ArenaCenter => this._configuration.ArenaRadius > 0 && this.BossSpawn is { } spawn
+        ? new Point((byte)((spawn.X1 + spawn.X2) / 2), (byte)((spawn.Y1 + spawn.Y2) / 2))
+        : null;
+
+    /// <summary>
+    /// Closes everything outside of the arena on the map of this chamber: only the ring of columns around
+    /// Kundun stays walkable. The map of the chamber is its own, the other Kalima maps stay open.
+    /// </summary>
+    private void CloseArena()
+    {
+        if (this.ArenaCenter is not { } center)
+        {
+            return;
+        }
+
+        var terrain = this.Map.Terrain;
+        var radius = this._configuration.ArenaRadius;
+        for (var x = 0; x <= byte.MaxValue; x++)
+        {
+            for (var y = 0; y <= byte.MaxValue; y++)
+            {
+                if (Math.Sqrt(((x - center.X) * (x - center.X)) + ((y - center.Y) * (y - center.Y))) >= radius && terrain.WalkMap[x, y])
+                {
+                    terrain.WalkMap[x, y] = false;
+                    terrain.UpdateAiGridValue((byte)x, (byte)y);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the walkable spot for an Illusion: at the spawn distance from Kundun in the direction of the angle,
+    /// or nearer to Kundun if that's not walkable.
+    /// </summary>
+    /// <param name="center">The position of Kundun.</param>
+    /// <param name="angle">The angle in degrees.</param>
+    /// <returns>The spot.</returns>
+    private Point GetIllusionSpot(Point center, double angle)
+    {
+        var walkMap = this.Map.Terrain.WalkMap;
+        var radians = angle * Math.PI / 180;
+        for (var distance = IllusionSpawnDistance; distance > 1; distance--)
+        {
+            var x = (int)Math.Round(center.X + (distance * Math.Cos(radians)));
+            var y = (int)Math.Round(center.Y + (distance * Math.Sin(radians)));
+            if (x is >= 0 and <= byte.MaxValue && y is >= 0 and <= byte.MaxValue && walkMap[x, y])
+            {
+                return new Point((byte)x, (byte)y);
+            }
+        }
+
+        return center;
+    }
+
     private async Task StartPhaseAsync(int phaseIndex)
     {
         try
@@ -255,17 +353,14 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
                 return;
             }
 
+            // The puppets come out of the edge of the arena, evenly around Kundun, starting at a random side.
             var spawned = 0;
+            var center = kundun.Position;
+            var startAngle = Rand.NextInt(0, 360);
             for (var i = 0; i < phase.IllusionCount; i++)
             {
-                var center = kundun.Position;
-                var monster = await this.SpawnMonsterAsync(
-                    i + 1,
-                    illusion,
-                    (byte)Math.Max(center.X - IllusionSpawnDistance, 0),
-                    (byte)Math.Max(center.Y - IllusionSpawnDistance, 0),
-                    (byte)Math.Min(center.X + IllusionSpawnDistance, byte.MaxValue),
-                    (byte)Math.Min(center.Y + IllusionSpawnDistance, byte.MaxValue)).ConfigureAwait(false);
+                var spot = this.GetIllusionSpot(center, startAngle + (360.0 * i / phase.IllusionCount));
+                var monster = await this.SpawnMonsterAsync(i + 1, illusion, spot.X, spot.Y, spot.X, spot.Y).ConfigureAwait(false);
                 if (monster is not null)
                 {
                     lock (this)
@@ -314,12 +409,22 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
                 this._isShielded = false;
             }
 
-            await this.ShowGoldenMessageAsync(
-                nameof(PlayerMessage.KundunChamberPhaseEndedFormat),
-                (int)Math.Round(duration.TotalSeconds),
-                (int)Math.Round(heal * 100),
-                (int)Math.Round((this._defenseBonus.Value - 1) * 100),
-                (int)Math.Round((this._damageBonus.Value - 1) * 100)).ConfigureAwait(false);
+            // Only what this phase gave Kundun: nothing, only the heal, or the heal and the strength.
+            var healPercent = (int)Math.Round(healAmount * 100.0 / Math.Max(1, (int)(this._kundun?.Attributes[Stats.MaximumHealth] ?? 1)));
+            var defensePercent = Math.Round(defense * 100, 1);
+            var damagePercent = Math.Round(damage * 100, 1);
+            if (defensePercent > 0 || damagePercent > 0)
+            {
+                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberPhaseEndedStrongerFormat), healPercent, defensePercent, damagePercent).ConfigureAwait(false);
+            }
+            else if (healPercent > 0)
+            {
+                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberPhaseEndedHealFormat), healPercent).ConfigureAwait(false);
+            }
+            else
+            {
+                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberPhaseEndedFormat)).ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {
@@ -356,11 +461,9 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
             }
 
             var killer = players.FirstOrDefault(p => p.Name == killerName) ?? players.FirstOrDefault();
-            if (killer is not null && this._configuration.RewardBoxOfKundun)
+            if (killer is not null)
             {
-                var box = this.GameContext.Configuration.Items.FirstOrDefault(d => d is { Group: BoxOfKundunGroup, Number: BoxOfKundunNumber });
-                var boxLevel = (byte)(BoxOfKundunFirstLevel - 1 + Math.Clamp(this.Tier.Level, 1, BoxOfKundunMaximumGrade));
-                await this.DropAsync(killer, box, boxLevel, Math.Max(1, players.Count), position).ConfigureAwait(false);
+                await this.DropRewardsAsync(killer, position).ConfigureAwait(false);
             }
 
             await this.SaveRankingAsync(players

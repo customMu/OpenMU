@@ -223,6 +223,35 @@ public abstract class KalimaRunContextBase : MiniGameContext
     }
 
     /// <summary>
+    /// Shows the progress of the Kalima instance at the top of the screen of the player; all Kalima maps share it.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="clearedPacks">The number of killed packs.</param>
+    /// <param name="packCount">The number of packs; 0 to hide the progress.</param>
+    /// <param name="bossState">The state of the boss: 0 = not yet, 1 = alive, 2 = defeated.</param>
+    /// <returns>The task.</returns>
+    protected static async ValueTask ShowProgressAsync(Player player, int clearedPacks, int packCount, byte bossState)
+    {
+        if (player.ViewPlugIns.GetPlugIn<IKalimaInstanceViewPlugIn>() is { } view)
+        {
+            await view.ShowProgressAsync(clearedPacks, packCount, bossState).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Gets the center of the entrance of the mini game, where the players appear.
+    /// </summary>
+    /// <param name="definition">The definition of the mini game.</param>
+    /// <returns>The center of the entrance.</returns>
+    protected static Point GetEntrancePoint(MiniGameDefinition definition)
+    {
+        var entrance = definition.Entrance;
+        return entrance is null
+            ? default
+            : new Point((byte)((entrance.X1 + entrance.X2) / 2), (byte)((entrance.Y1 + entrance.Y2) / 2));
+    }
+
+    /// <summary>
     /// Determines whether the monster is an Illusion of Kundun.
     /// </summary>
     /// <param name="monster">The monster definition.</param>
@@ -372,6 +401,24 @@ public abstract class KalimaRunContextBase : MiniGameContext
             var dropPosition = i == 0 ? position : this.Map.Terrain.GetRandomCoordinate(position, DropSpread);
             await this.Map.AddAsync(killer.CreateDropForKiller(item, dropPosition, this.Map)).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Drops a prepared item (e.g. a weapon with options) for the killer. It belongs to the killer, or is distributed by the drop mode of its party.
+    /// </summary>
+    /// <param name="killer">The killer.</param>
+    /// <param name="item">The item, or <c>null</c> to drop nothing.</param>
+    /// <param name="position">The position of the drop; the item lands randomly around it.</param>
+    /// <returns>The task.</returns>
+    protected async ValueTask DropItemAsync(Player killer, Item? item, Point position)
+    {
+        if (item is null)
+        {
+            return;
+        }
+
+        var dropPosition = this.Map.Terrain.GetRandomCoordinate(position, DropSpread);
+        await this.Map.AddAsync(killer.CreateDropForKiller(item, dropPosition, this.Map)).ConfigureAwait(false);
     }
 
     /// <summary>

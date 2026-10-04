@@ -65,6 +65,30 @@ public class KalimaInstanceConfiguration
     public int MonstersPerPack { get; set; } = 8;
 
     /// <summary>
+    /// Gets or sets the growth of the health and damage of the monsters from one pack to the next.
+    /// </summary>
+    [Display(Name = "Pack strength growth", Description = "Multiplier of the health and damage from one pack to the next (1.06 = +6 % per pack). The middle pack has the strength of the tier, the first ones are weaker, the last ones stronger. 1 = all packs equal.")]
+    public float PackStrengthGrowth { get; set; } = 1.06f;
+
+    /// <summary>
+    /// Gets or sets the monsters which are placed along the way instead of at their own spots.
+    /// </summary>
+    [Display(Name = "Midway monsters", Description = "Monsters (start of the name, e.g. 'Aegis'; several separated by commas) whose spots on the map are next to the boss. They are taken out of the way and ambush the players at the spot of the pack they just killed, once after each pack between 'Midway from' and 'Midway to'. Empty = monsters at their own spots.")]
+    public string MidwayMonsters { get; set; } = "Aegis";
+
+    /// <summary>
+    /// Gets or sets the start of the part of the way with the midway monsters, as a share of the packs.
+    /// </summary>
+    [Display(Name = "Midway from", Description = "Start of the part of the way with the midway ambushes, as a share of the packs (0.6 of 10 packs = the first ambush after the 6th pack).")]
+    public double MidwayFrom { get; set; } = 0.6;
+
+    /// <summary>
+    /// Gets or sets the end of the part of the way with the midway monsters, as a share of the packs.
+    /// </summary>
+    [Display(Name = "Midway to", Description = "End of the part of the way with the midway ambushes, as a share of the packs (0.6 to 0.8 of 10 packs = 2 ambushes). The number of packs stays the same.")]
+    public double MidwayTo { get; set; } = 0.8;
+
+    /// <summary>
     /// Gets or sets the experience multiplier in the instance.
     /// </summary>
     [Display(Name = "Experience multiplier", Description = "Multiplier of the experience for the monsters of the instance.")]
@@ -113,6 +137,43 @@ public class KalimaInstanceConfiguration
     public float BossLostMapChance { get; set; } = 0.03f;
 
     /// <summary>
+    /// Gets or sets a value indicating whether the boss drops a Box of Kundun for the party.
+    /// </summary>
+    [Display(Name = "Boss Box of Kundun", Description = "The Illusion of Kundun of Kalima N drops one Box of Kundun +min(N, 5) for the party (or the single player).")]
+    public bool BossBoxOfKundun { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the chance that the boss drops a weapon of the ranks of the tier.
+    /// </summary>
+    [Display(Name = "Boss weapon chance", Description = "Chance (0.05 = 5 %) that the Illusion of Kundun drops a weapon of the item ranks of its Kalima, with the level by the weights below.")]
+    public float BossWeaponChance { get; set; } = 0.05f;
+
+    /// <summary>
+    /// Gets or sets the weights of the levels of the weapon of the boss, from +1.
+    /// </summary>
+    [MemberOfAggregate]
+    [Display(Name = "Boss weapon level weights", Description = "Weights of the levels +1, +2, ... of the weapon of the boss.")]
+    public IList<int> BossWeaponLevelWeights { get; set; } = new List<int> { 30, 25, 20, 13, 8, 4 };
+
+    /// <summary>
+    /// Gets or sets the chance that a killed monster drops money.
+    /// </summary>
+    [Display(Name = "Money chance", Description = "Chance (0.5 = 50 %) that a killed monster drops money: monster level x 'money per monster level' x Kalima level.")]
+    public float MoneyChance { get; set; } = 0.5f;
+
+    /// <summary>
+    /// Gets or sets the money per monster level and Kalima level.
+    /// </summary>
+    [Display(Name = "Money per monster level")]
+    public int MoneyPerMonsterLevel { get; set; } = 10;
+
+    /// <summary>
+    /// Gets or sets the multiplier of the item chances of the plugin 'Item drop by rank'.
+    /// </summary>
+    [Display(Name = "Item chance multiplier", Description = "The monsters drop the items of the ranks of the tier with the chance of the plugin 'Item drop by rank' x this.")]
+    public float ItemChanceMultiplier { get; set; } = 50f;
+
+    /// <summary>
     /// Gets or sets the health of the boss in relation to the health of the regular monsters.
     /// </summary>
     [Display(Name = "Boss health factor", Description = "The health of the Illusion of Kundun is this factor times the health of a regular monster of the tier.")]
@@ -123,6 +184,18 @@ public class KalimaInstanceConfiguration
     /// </summary>
     [Display(Name = "Minimum growth per tier", Description = "Each tier is at least this much stronger than the previous one (0.05 = 5 %), also when its reference map is weaker.")]
     public float MinimumTierGrowth { get; set; } = 0.05f;
+
+    /// <summary>
+    /// Gets or sets the global factor of the health of all monsters of Kalima (also the bosses and Kundun).
+    /// </summary>
+    [Display(Name = "Global health factor", Description = "Multiplies the health of all monsters of Kalima and of the chamber of Kundun, after the tiers (0.1 = a tenth).")]
+    public float GlobalHealthFactor { get; set; } = 0.1f;
+
+    /// <summary>
+    /// Gets or sets the global factor of the damage of all monsters of Kalima (also the bosses and Kundun).
+    /// </summary>
+    [Display(Name = "Global damage factor", Description = "Multiplies the damage of all monsters of Kalima and of the chamber of Kundun, after the tiers (0.2 = a fifth).")]
+    public float GlobalDamageFactor { get; set; } = 0.2f;
 
     /// <summary>
     /// Gets or sets the maximum monster level.
@@ -233,13 +306,13 @@ public class KalimaInstanceConfiguration
     // are based on Raklion is lower, because its monsters already hit very hard.
     private static List<KalimaInstanceTier> CreateDefaultTiers() =>
     [
-        new() { Level = 1, MinimumResets = 5, ReferenceMapNumber = 37, LevelFactor = 1.1f, DamageFactor = 2f },
-        new() { Level = 2, MinimumResets = 10, ReferenceMapNumber = 33, LevelFactor = 1.1f, DamageFactor = 2f },
-        new() { Level = 3, MinimumResets = 15, ReferenceMapNumber = 81, LevelFactor = 1.1f, DamageFactor = 2f },
-        new() { Level = 4, MinimumResets = 22, ReferenceMapNumber = 81, LevelFactor = 1.2f, DamageFactor = 2.2f },
-        new() { Level = 5, MinimumResets = 30, ReferenceMapNumber = 57, LevelFactor = 1.1f, DamageFactor = 1.3f },
-        new() { Level = 6, MinimumResets = 38, ReferenceMapNumber = 57, LevelFactor = 1.2f, DamageFactor = 1.4f },
-        new() { Level = 7, MinimumResets = 45, ReferenceMapNumber = 38, LevelFactor = 1.2f, DamageFactor = 2f },
+        new() { Level = 1, MinimumResets = 5, ReferenceMapNumber = 37, LevelFactor = 1.1f, DamageFactor = 2f, JewelChancePercent = 2f, ChaosWeight = 40, BlessWeight = 35, SoulWeight = 20, LifeWeight = 5, CreationWeight = 0, GuardianWeight = 0, MinimumItemRank = 3, MaximumItemRank = 4, ItemLevel = 0 },
+        new() { Level = 2, MinimumResets = 10, ReferenceMapNumber = 33, LevelFactor = 1.1f, DamageFactor = 2f, JewelChancePercent = 3f, ChaosWeight = 35, BlessWeight = 33, SoulWeight = 22, LifeWeight = 7, CreationWeight = 3, GuardianWeight = 0, MinimumItemRank = 5, MaximumItemRank = 5, ItemLevel = 0 },
+        new() { Level = 3, MinimumResets = 15, ReferenceMapNumber = 81, LevelFactor = 1.1f, DamageFactor = 2f, JewelChancePercent = 4f, ChaosWeight = 30, BlessWeight = 30, SoulWeight = 24, LifeWeight = 10, CreationWeight = 6, GuardianWeight = 0, MinimumItemRank = 6, MaximumItemRank = 6, ItemLevel = 0 },
+        new() { Level = 4, MinimumResets = 22, ReferenceMapNumber = 81, LevelFactor = 1.2f, DamageFactor = 2.2f, JewelChancePercent = 5.5f, ChaosWeight = 25, BlessWeight = 28, SoulWeight = 25, LifeWeight = 13, CreationWeight = 9, GuardianWeight = 0, MinimumItemRank = 7, MaximumItemRank = 8, ItemLevel = 0 },
+        new() { Level = 5, MinimumResets = 30, ReferenceMapNumber = 57, LevelFactor = 1.1f, DamageFactor = 1.3f, JewelChancePercent = 7f, ChaosWeight = 20, BlessWeight = 26, SoulWeight = 26, LifeWeight = 16, CreationWeight = 12, GuardianWeight = 0, MinimumItemRank = 8, MaximumItemRank = 8, ItemLevel = 1 },
+        new() { Level = 6, MinimumResets = 38, ReferenceMapNumber = 57, LevelFactor = 1.2f, DamageFactor = 1.4f, JewelChancePercent = 8.5f, ChaosWeight = 15, BlessWeight = 25, SoulWeight = 27, LifeWeight = 18, CreationWeight = 12, GuardianWeight = 3, MinimumItemRank = 8, MaximumItemRank = 8, ItemLevel = 2 },
+        new() { Level = 7, MinimumResets = 45, ReferenceMapNumber = 38, LevelFactor = 1.2f, DamageFactor = 2f, JewelChancePercent = 10f, ChaosWeight = 10, BlessWeight = 24, SoulWeight = 28, LifeWeight = 20, CreationWeight = 13, GuardianWeight = 5, MinimumItemRank = 8, MaximumItemRank = 8, ItemLevel = 3 },
     ];
 
     private DateTime ToLocalTime(DateTime utcNow)

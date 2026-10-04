@@ -161,6 +161,21 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
     protected abstract TState CreateState(IGameContext gameContext);
 
     /// <summary>
+    /// Gets the state of the task in the game context, e.g. for a status page.
+    /// </summary>
+    /// <param name="gameContext">The game context.</param>
+    /// <returns>The state.</returns>
+    public PeriodicTaskState GetTaskState(IGameContext gameContext) => this.GetStateByGameContext(gameContext).State;
+
+    /// <summary>
+    /// Gets the next start by the timetable, in the local time of the server.
+    /// </summary>
+    /// <param name="gameContext">The game context.</param>
+    /// <returns>The next start, or <c>null</c>.</returns>
+    public DateTime? GetNextStartLocal(IGameContext gameContext) =>
+        this.Configuration?.GetNextStartLocal(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, gameContext.ServerTimeZone));
+
+    /// <summary>
     /// Get a unique state per GameContext.
     /// </summary>
     /// <param name="gameContext">GameContext.</param>

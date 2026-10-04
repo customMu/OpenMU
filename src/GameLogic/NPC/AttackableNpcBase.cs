@@ -602,6 +602,18 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
 
     private async ValueTask DropItemAsync(IReadOnlyList<ExperienceShare> experienceShares, Player killer)
     {
+        if (killer.CurrentMiniGame?.GetMonsterDrops(this, killer) is { } ownDrops)
+        {
+            // The game (e.g. the Kalima instance) has its own drops instead of the regular ones.
+            if (ownDrops.Money > 0)
+            {
+                await this.HandleMoneyDropAsync(ownDrops.Money, killer, experienceShares, true).ConfigureAwait(false);
+            }
+
+            await this.DropItemsAtAsync(ownDrops.Items, killer, ownDrops.Money == 0).ConfigureAwait(false);
+            return;
+        }
+
         var exp = 0;
         foreach (var share in experienceShares)
         {
@@ -642,7 +654,12 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             items.AddRange(rolled);
         }
 
-        var firstItem = !droppedMoney.HasValue;
+        await this.DropItemsAtAsync(items, killer, !droppedMoney.HasValue).ConfigureAwait(false);
+    }
+
+    private async ValueTask DropItemsAtAsync(IReadOnlyList<Item> items, Player killer, bool firstItemOnPosition)
+    {
+        var firstItem = firstItemOnPosition;
         foreach (var item in items)
         {
             Point dropCoordinates;

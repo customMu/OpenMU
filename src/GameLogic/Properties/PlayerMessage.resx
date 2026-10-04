@@ -808,7 +808,7 @@
     <value>You need {0} resets to warp there.</value>
   </data>
   <data name="KalimaInstanceStatusFormat" xml:space="preserve">
-    <value>Kalima {0}: pack {1}/{2}, the instance closes in {3} minutes.</value>
+    <value>Kalima {0}: packs killed {1}/{2}, the instance closes in {3} minutes.</value>
   </data>
   <data name="KalimaInstanceClosesInMinutesFormat" xml:space="preserve">
     <value>The Kalima instance closes in {0} minutes!</value>
@@ -847,13 +847,19 @@
     <value>This item can't be bought with Kundun Essence.</value>
   </data>
   <data name="KalimaInstancePackFormat" xml:space="preserve">
-    <value>Pack {0}/{1}!</value>
+    <value>Horde {0}/{1} has fallen! The next one is coming - even more dangerous...</value>
   </data>
   <data name="KalimaInstanceBossAppeared" xml:space="preserve">
-    <value>The Illusion of Kundun appeared!</value>
+    <value>The ground trembles... The Illusion of Kundun rises from the darkness!</value>
+  </data>
+  <data name="KalimaInstanceStartedFormat" xml:space="preserve">
+    <value>The gates of Kalima {0} are open... The first horde is waiting for you!</value>
+  </data>
+  <data name="KalimaInstanceLastPack" xml:space="preserve">
+    <value>The last horde has fallen... Something ancient is waking up!</value>
   </data>
   <data name="KalimaInstanceBossDefeated" xml:space="preserve">
-    <value>The Illusion of Kundun is defeated!</value>
+    <value>The Illusion of Kundun is banished! Kalima is cleansed!</value>
   </data>
   <data name="KalimaInstanceTimeOver" xml:space="preserve">
     <value>The time of the Kalima instance is over.</value>
@@ -880,19 +886,25 @@
     <value>Time is over. Kundun has driven you out of his chamber.</value>
   </data>
   <data name="KundunChamberKundunAppeared" xml:space="preserve">
-    <value>Kundun has awakened!</value>
+    <value>Kundun, the lord of Kalima, has awakened! Stand and fight!</value>
   </data>
   <data name="KundunChamberStatusFormat" xml:space="preserve">
     <value>Chamber of Kundun {0}: Kundun has {1} % health, the chamber closes in {2} min.</value>
   </data>
   <data name="KundunChamberPhaseFormat" xml:space="preserve">
-    <value>{0} %: Kundun calls {1} Illusion(s) and is protected until they are destroyed!</value>
+    <value>Kundun is invulnerable! Destroy his puppets - {1} Illusion(s) - to break the shield!</value>
+  </data>
+  <data name="KundunChamberPhaseEndedHealFormat" xml:space="preserve">
+    <value>The shield is broken! But the Illusions managed to restore {0} % of Kundun's health.</value>
+  </data>
+  <data name="KundunChamberPhaseEndedStrongerFormat" xml:space="preserve">
+    <value>The shield is broken! But the Illusions restored {0} % of Kundun's health and empowered him: defense +{1} %, damage +{2} %.</value>
   </data>
   <data name="KundunChamberPhaseEndedFormat" xml:space="preserve">
-    <value>The Illusions are destroyed after {0} s. Kundun healed {1} %, defense +{2} %, damage +{3} %.</value>
+    <value>The shield is broken! You were faster than the Illusions - Kundun gained nothing.</value>
   </data>
   <data name="KundunChamberVictoryFormat" xml:space="preserve">
-    <value>Kundun {0} is defeated! Time: {1} min {2} s.</value>
+    <value>Kundun {0} has fallen! Glory to the heroes! Time: {1} min {2} s.</value>
   </data>
   <data name="KundunChamberNotAvailable" xml:space="preserve">
     <value>The chamber of Kundun is currently not available.</value>
@@ -914,5 +926,11 @@
   </data>
   <data name="KundunChamberEntryUsedFormat" xml:space="preserve">
     <value>The Lost Map +{0} was used. Remaining entries this week: {1}. You can return to this chamber until it closes.</value>
+  </data>
+  <data name="ResetEventRequiresResetsFormat" xml:space="preserve">
+    <value>You need at least {0} resets for this event.</value>
+  </data>
+  <data name="ResetEventDailyLimitFormat" xml:space="preserve">
+    <value>You already entered this event {0} times today. New entries at {1}:00.</value>
   </data>
 </root>

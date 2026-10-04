@@ -1,17 +1,19 @@
-// <copyright file="KalimaTierScaling.cs" company="MUnique">
+﻿// <copyright file="KalimaTierScaling.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 
+using System.Collections.Concurrent;
 using MUnique.OpenMU.AttributeSystem;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.NPC;
 
 /// <summary>
-/// Scales the monsters of a Kalima map to the strength of a tier. The regular monsters get the
-/// average strength of the tier, the differences between the monster types stay. Other monsters
-/// (e.g. the Illusion of Kundun) can get a target health relative to the tier.
+/// Scales the monsters of a Kalima map to the strength of a tier. Each regular monster type gets the
+/// strength of the tier (health, damage, defense, level), so all of them are equally strong and all
+/// Kalima maps are the same, just stronger. Other monsters (e.g. the Illusion of Kundun) can get a
+/// target health relative to the tier.
 /// </summary>
 public sealed class KalimaTierScaling
 {
@@ -20,6 +22,7 @@ public sealed class KalimaTierScaling
     private readonly SimpleElement _rateMultiplier = new(1.0f, AggregateType.Multiplicate);
     private readonly SimpleElement _levelIncrease = new(0f, AggregateType.AddRaw);
     private readonly SimpleElement _regularHealthMultiplier = new(1.0f, AggregateType.Multiplicate);
+    private readonly ConcurrentDictionary<MonsterDefinition, RegularElements> _regularElements = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KalimaTierScaling"/> class.
@@ -51,7 +54,40 @@ public sealed class KalimaTierScaling
     /// Applies the strength of the tier to a regular monster.
     /// </summary>
     /// <param name="monster">The monster.</param>
-    public void ApplyRegular(Monster monster)
+    /// <param name="packMultiplier">The additional multiplier of the health and damage, e.g. of the pack.</param>
+    public void ApplyRegular(Monster monster, IElement? packMultiplier = null)
+    {
+        var attributes = monster.Attributes;
+        if (packMultiplier is not null)
+        {
+            attributes.AddElement(packMultiplier, Stats.MaximumHealth);
+            attributes.AddElement(packMultiplier, Stats.MinimumPhysBaseDmg);
+            attributes.AddElement(packMultiplier, Stats.MaximumPhysBaseDmg);
+        }
+
+        if (this.Strength is not { } strength)
+        {
+            this.Apply(monster, this._regularHealthMultiplier, this._damageMultiplier);
+            return;
+        }
+
+        var elements = this._regularElements.GetOrAdd(monster.Definition, definition => CreateRegularElements(definition, strength));
+        attributes.AddElement(elements.Health, Stats.MaximumHealth);
+        attributes.AddElement(elements.Damage, Stats.MinimumPhysBaseDmg);
+        attributes.AddElement(elements.Damage, Stats.MaximumPhysBaseDmg);
+        attributes.AddElement(elements.Defense, Stats.DefenseBase);
+        attributes.AddElement(elements.Rate, Stats.AttackRatePvm);
+        attributes.AddElement(elements.Rate, Stats.DefenseRatePvm);
+        attributes.AddElement(elements.Level, Stats.Level);
+        monster.Health = (int)attributes[Stats.MaximumHealth];
+    }
+
+    /// <summary>
+    /// Applies the strength of the tier relative to the average of the spawns: the average monster gets the strength
+    /// of the tier, the differences between the monster types (e.g. the bosses of an event) stay.
+    /// </summary>
+    /// <param name="monster">The monster.</param>
+    public void ApplyRelative(Monster monster)
     {
         this.Apply(monster, this._regularHealthMultiplier, this._damageMultiplier);
     }
@@ -92,6 +128,17 @@ public sealed class KalimaTierScaling
 
     private static float GetRatio(float target, float average) => target > 0 && average > 0 ? target / average : 1.0f;
 
+    private static RegularElements CreateRegularElements(MonsterDefinition definition, KalimaStrength strength)
+    {
+        var level = KalimaStrengthCalculator.GetValue(definition, Stats.Level);
+        return new RegularElements(
+            new SimpleElement(GetRatio(strength.Health, KalimaStrengthCalculator.GetValue(definition, Stats.MaximumHealth)), AggregateType.Multiplicate),
+            new SimpleElement(GetRatio(strength.Damage, KalimaStrengthCalculator.GetValue(definition, Stats.MaximumPhysBaseDmg)), AggregateType.Multiplicate),
+            new SimpleElement(GetRatio(strength.Defense, KalimaStrengthCalculator.GetValue(definition, Stats.DefenseBase)), AggregateType.Multiplicate),
+            new SimpleElement(GetRatio(strength.Level, level), AggregateType.Multiplicate),
+            new SimpleElement(strength.Level > 0 && level > 0 ? strength.Level - level : 0, AggregateType.AddRaw));
+    }
+
     private void Apply(Monster monster, IElement healthMultiplier, IElement damageMultiplier)
     {
         var attributes = monster.Attributes;
@@ -108,4 +155,9 @@ public sealed class KalimaTierScaling
 
         monster.Health = (int)attributes[Stats.MaximumHealth];
     }
+
+    /// <summary>
+    /// The elements which scale a regular monster type to the strength of the tier.
+    /// </summary>
+    private sealed record RegularElements(SimpleElement Health, SimpleElement Damage, SimpleElement Defense, SimpleElement Rate, SimpleElement Level);
 }

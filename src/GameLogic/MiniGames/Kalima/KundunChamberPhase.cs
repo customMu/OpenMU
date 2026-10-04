@@ -13,6 +13,11 @@ namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 public class KundunChamberPhase
 {
     /// <summary>
+    /// The step in which the time of the Illusions is counted for the effects.
+    /// </summary>
+    public const int PenaltyStepSeconds = 10;
+
+    /// <summary>
     /// Gets or sets the health threshold of the phase, relative to the maximum health of Kundun.
     /// </summary>
     [Display(Name = "Health threshold", Description = "The phase starts when the health of Kundun reaches this part of his maximum health (0.75 = 75 %). The damage which would go below is cut.")]
@@ -79,7 +84,8 @@ public class KundunChamberPhase
     /// <returns>The heal (part of the maximum health), the defense increase and the damage increase.</returns>
     public (float Heal, float Defense, float Damage) CalculateEffects(double penaltySeconds)
     {
-        var seconds = (float)Math.Max(0, penaltySeconds);
+        // counted in full steps of 10 seconds: 0.001 per second = 1 % for each full 10 seconds
+        var seconds = (float)(Math.Floor(Math.Max(0, penaltySeconds) / PenaltyStepSeconds) * PenaltyStepSeconds);
         return (
             Math.Min(seconds * this.HealPerSecond, this.MaximumHeal),
             Math.Min(seconds * this.DefensePerSecond, this.MaximumDefenseIncrease),

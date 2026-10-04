@@ -100,6 +100,12 @@ public class KundunChamberConfiguration
     public int FreeSecondsPerPhase { get; set; } = 20;
 
     /// <summary>
+    /// Gets or sets the radius of the closed arena around Kundun.
+    /// </summary>
+    [Display(Name = "Arena radius", Description = "Everything farther than this many fields from the spawn of Kundun is not walkable in the chamber: the players stay inside the ring of columns (the arena of the Kalima maps). 0 = the whole map is open.")]
+    public float ArenaRadius { get; set; } = 10.5f;
+
+    /// <summary>
     /// Gets or sets the phases of the fight.
     /// </summary>
     [MemberOfAggregate]
@@ -116,8 +122,72 @@ public class KundunChamberConfiguration
     /// <summary>
     /// Gets or sets a value indicating whether Kundun drops a Box of Kundun per player.
     /// </summary>
-    [Display(Name = "Box of Kundun per player", Description = "Kundun drops a Box of Kundun +min(level, 5) per player in the chamber, distributed by the drop mode of the party.")]
+    [Display(Name = "Boxes of Kundun", Description = "Kundun drops boxes of Kundun of the item ranks of the Kalima of the same level (between the minimum and maximum below), distributed by the drop mode of the party. If the ranks need different boxes, each box is one of them.")]
     public bool RewardBoxOfKundun { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the minimum number of boxes of Kundun.
+    /// </summary>
+    [Display(Name = "Boxes of Kundun from")]
+    public int MinimumBoxes { get; set; } = 3;
+
+    /// <summary>
+    /// Gets or sets the maximum number of boxes of Kundun.
+    /// </summary>
+    [Display(Name = "Boxes of Kundun to")]
+    public int MaximumBoxes { get; set; } = 5;
+
+    /// <summary>
+    /// Gets or sets the chance of an excellent ring.
+    /// </summary>
+    [Display(Name = "Excellent ring chance", Description = "Chance (0.02 = 2 %) that Kundun drops an excellent ring (Ice, Poison, Fire, Earth, Wind or Magic), with the number of options of the chamber level.")]
+    public float ExcellentRingChance { get; set; } = 0.02f;
+
+    /// <summary>
+    /// Gets or sets the chance of an excellent pendant.
+    /// </summary>
+    [Display(Name = "Excellent pendant chance", Description = "Separate chance (0.01 = 1 %) that Kundun drops an excellent pendant (Lighting, Fire, Ice, Wind, Water or Ability), with the number of options of the chamber level.")]
+    public float ExcellentPendantChance { get; set; } = 0.01f;
+
+    /// <summary>
+    /// Gets or sets the weights of the number of excellent options of the ring and the pendant by chamber level.
+    /// </summary>
+    [MemberOfAggregate]
+    [Display(Name = "Jewelry options by level", Description = "Weights of 1, 2 and 3 excellent options of the ring and the pendant of Kundun, by chamber level: one option in the chamber 1, up to three in the chamber 7.")]
+    public ICollection<KundunChamberJewelryLevel> JewelryOptionCounts { get; set; } = CreateDefaultJewelryOptionCounts();
+
+    /// <summary>
+    /// Gets the weights of the number of excellent options of the jewelry of a chamber level.
+    /// </summary>
+    /// <param name="level">The chamber level.</param>
+    /// <returns>The weights of 1, 2 and 3 options.</returns>
+    public IList<int> GetJewelryOptionCountWeights(int level) =>
+        this.JewelryOptionCounts.FirstOrDefault(j => j.Level == level)?.GetWeights() ?? [1];
+
+    /// <summary>
+    /// Gets or sets the chance that Kundun drops a weapon of the item ranks of the Kalima of the same level.
+    /// </summary>
+    [Display(Name = "Weapon chance", Description = "Chance (0.8 = 80 %) that Kundun drops a weapon of the item ranks of the Kalima of the same level, with luck, its skill and the level by the weights below.")]
+    public float WeaponChance { get; set; } = 0.8f;
+
+    /// <summary>
+    /// Gets or sets the chance that Kundun drops a second weapon.
+    /// </summary>
+    [Display(Name = "Second weapon chance", Description = "Separate chance (0.1 = 10 %) for a second weapon.")]
+    public float SecondWeaponChance { get; set; } = 0.1f;
+
+    /// <summary>
+    /// Gets or sets the lowest level of the weapons of Kundun.
+    /// </summary>
+    [Display(Name = "Weapon level from")]
+    public int WeaponMinimumLevel { get; set; } = 3;
+
+    /// <summary>
+    /// Gets or sets the weights of the levels of the weapons of Kundun, from the lowest level.
+    /// </summary>
+    [MemberOfAggregate]
+    [Display(Name = "Weapon level weights", Description = "Weights of the levels of the weapons of Kundun, from 'weapon level from' (+3, +4, ... +9 by default).")]
+    public IList<int> WeaponLevelWeights { get; set; } = new List<int> { 28, 22, 17, 13, 10, 6, 4 };
 
     /// <summary>
     /// Gets the number of the day in UTC, counted from 2000-01-01. The chamber pass is stored as such a day number.
@@ -169,14 +239,27 @@ public class KundunChamberConfiguration
         return nextReset - localTime;
     }
 
-    // The free seconds are counted per phase. The examples of the design: a party which needs 90 seconds
-    // for the Illusions (70 seconds after the free ones) lets Kundun heal 7 / 8.4 / 10.5 %, gives him
-    // +14 % defense and +21 % damage.
+    // The free seconds are counted per phase, the rest in full steps of 10 seconds. Each step heals Kundun by 1 %
+    // (at most 20 / 40 / 60 % in the phases 1 / 2 / 3) and gives him +2 % defense (at most 20 / 40 / 60 %) and
+    // +1.5 % damage (at most 15 / 30 / 45 %). Example: 90 seconds for the Illusions = 7 steps = 7 % heal, +14 % defense,
+    // +10.5 % damage.
+    // One option in the chamber 1, a small chance for two from the chamber 2, three from the chamber 4, up to 8 % in the chamber 7.
+    private static List<KundunChamberJewelryLevel> CreateDefaultJewelryOptionCounts() =>
+    [
+        new() { Level = 1, OneOption = 100 },
+        new() { Level = 2, OneOption = 92, TwoOptions = 8 },
+        new() { Level = 3, OneOption = 85, TwoOptions = 15 },
+        new() { Level = 4, OneOption = 78, TwoOptions = 20, ThreeOptions = 2 },
+        new() { Level = 5, OneOption = 72, TwoOptions = 24, ThreeOptions = 4 },
+        new() { Level = 6, OneOption = 66, TwoOptions = 28, ThreeOptions = 6 },
+        new() { Level = 7, OneOption = 60, TwoOptions = 32, ThreeOptions = 8 },
+    ];
+
     private static List<KundunChamberPhase> CreateDefaultPhases() =>
     [
-        new() { HealthThreshold = 0.75f, IllusionCount = 1, IllusionHealthFactor = 0.5f, IllusionDamageFactor = 1.0f, HealPerSecond = 0.001f, MaximumHeal = 0.15f },
-        new() { HealthThreshold = 0.50f, IllusionCount = 2, IllusionHealthFactor = 0.4f, IllusionDamageFactor = 1.1f, HealPerSecond = 0.0012f, MaximumHeal = 0.20f, DefensePerSecond = 0.002f, MaximumDefenseIncrease = 0.4f },
-        new() { HealthThreshold = 0.25f, IllusionCount = 3, IllusionHealthFactor = 0.35f, IllusionDamageFactor = 1.2f, HealPerSecond = 0.0015f, MaximumHeal = 0.25f, DamagePerSecond = 0.003f, MaximumDamageIncrease = 0.5f },
+        new() { HealthThreshold = 0.75f, IllusionCount = 1, IllusionHealthFactor = 0.5f, IllusionDamageFactor = 1.0f, HealPerSecond = 0.001f, MaximumHeal = 0.2f, DefensePerSecond = 0.002f, MaximumDefenseIncrease = 0.2f, DamagePerSecond = 0.0015f, MaximumDamageIncrease = 0.15f },
+        new() { HealthThreshold = 0.50f, IllusionCount = 2, IllusionHealthFactor = 0.4f, IllusionDamageFactor = 1.1f, HealPerSecond = 0.001f, MaximumHeal = 0.4f, DefensePerSecond = 0.002f, MaximumDefenseIncrease = 0.4f, DamagePerSecond = 0.0015f, MaximumDamageIncrease = 0.3f },
+        new() { HealthThreshold = 0.25f, IllusionCount = 3, IllusionHealthFactor = 0.35f, IllusionDamageFactor = 1.2f, HealPerSecond = 0.001f, MaximumHeal = 0.6f, DefensePerSecond = 0.002f, MaximumDefenseIncrease = 0.6f, DamagePerSecond = 0.0015f, MaximumDamageIncrease = 0.45f },
     ];
 
     private DateTime ToLocalTime(DateTime utcNow)

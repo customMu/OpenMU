@@ -44,8 +44,10 @@ public class KundunEssenceConfiguration
         }
 
         var entry = this.Prices
-            .Where(p => p.Group == definition.Group && p.Number == definition.Number && (p.Level < 0 || p.Level == item.Level))
+            .Where(p => p.Group == definition.Group && p.Number == definition.Number && (p.Level < 0 || p.Level == item.Level)
+                        && (p.Amount <= 0 || p.Amount == (int)item.Durability))
             .OrderByDescending(p => p.Level)
+            .ThenByDescending(p => p.Amount)
             .FirstOrDefault();
         return entry is { Price: > 0 } ? entry.Price : null;
     }
@@ -63,7 +65,18 @@ public class KundunEssenceConfiguration
         new() { Name = "Box of Kundun +4", Group = 14, Number = 11, Level = 11, Price = 275 },
         new() { Name = "Box of Kundun +5", Group = 14, Number = 11, Level = 12, Price = 400 },
         .. CreateLostMapPrices(),
+        .. CreateLargePotionPrices(),
     ];
+
+    /// <summary>
+    /// The large healing and mana potions are only sold here, in stacks of 50, 100 and 255; the bigger stacks are cheaper per potion.
+    /// The regular stores sell the small and medium potions.
+    /// </summary>
+    /// <returns>The prices of the large potions.</returns>
+    private static IEnumerable<KundunEssencePrice> CreateLargePotionPrices() =>
+        from potion in new[] { (Name: "Large Healing Potion", Number: (short)3), (Name: "Large Mana Potion", Number: (short)6) }
+        from stack in new[] { (Amount: 50, Price: 5), (Amount: 100, Price: 9), (Amount: 255, Price: 20) }
+        select new KundunEssencePrice { Name = $"{potion.Name} x{stack.Amount}", Group = 14, Number = potion.Number, Level = -1, Amount = stack.Amount, Price = stack.Price };
 
     /// <summary>
     /// The lost map +N (the entry fee of the chamber of Kundun N) costs 25 x N essence, which is about

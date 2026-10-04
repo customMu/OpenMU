@@ -23,7 +23,9 @@ public static class GameMapDefinitionExtensions
     {
         errorMessage = null;
 
-        if (player.GameContext.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>() is { } kalimaInstance
+        // Game masters may enter the Kalima maps directly, e.g. to edit them.
+        if (player.SelectedCharacter?.CharacterStatus != CharacterStatus.GameMaster
+            && player.GameContext.FeaturePlugIns.GetPlugIn<KalimaInstancePlugIn>() is { } kalimaInstance
             && kalimaInstance.IsInstanceMap(gameMapDefinition, player.GameContext.Configuration))
         {
             errorMessage = player.GetLocalizedMessage(nameof(PlayerMessage.KalimaInstanceOnlyThroughGatekeeper));

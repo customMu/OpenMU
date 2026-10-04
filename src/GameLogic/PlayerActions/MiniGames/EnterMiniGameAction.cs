@@ -33,10 +33,26 @@ public class EnterMiniGameAction
             throw new InvalidOperationException("Character not selected or initialized.");
         }
 
+        // Blood Castle and Devil Square by resets (plugin 'Events by resets'): the level comes from the resets, not from the client.
+        var resetEvents = player.GameContext.FeaturePlugIns.GetPlugIn<GameLogic.MiniGames.ResetEvents.ResetEventsPlugIn>() is { } plugIn && plugIn.HandlesType(miniGameType)
+            ? plugIn
+            : null;
+        if (resetEvents is not null)
+        {
+            if (resetEvents.GetTier(player, miniGameType) is not { } tier)
+            {
+                await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ResetEventRequiresResetsFormat), resetEvents.GetMinimumResets(miniGameType)).ConfigureAwait(false);
+                await player.InvokeViewPlugInAsync<IShowMiniGameEnterResultPlugIn>(p => p.ShowResultAsync(miniGameType, EnterResult.CharacterLevelTooLow)).ConfigureAwait(false);
+                return;
+            }
+
+            gameLevel = tier.Level;
+        }
+
         var miniGameDefinition = player.GameContext.Configuration.MiniGameDefinitions
             .FirstOrDefault(def => def.Type == miniGameType && def.GameLevel == gameLevel);
         if (miniGameDefinition is null
-            || (miniGameDefinition.RequiresMasterClass && !player.SelectedCharacter.CharacterClass.IsMasterClass)
+            || (resetEvents is null && miniGameDefinition.RequiresMasterClass && !player.SelectedCharacter.CharacterClass.IsMasterClass)
             || player.CurrentMiniGame is not null)
         {
             await player.InvokeViewPlugInAsync<IShowMiniGameEnterResultPlugIn>(p => p.ShowResultAsync(miniGameType, EnterResult.Failed)).ConfigureAwait(false);
@@ -48,13 +64,13 @@ public class EnterMiniGameAction
         var minLevel = isSpecialCharacter ? miniGameDefinition.MinimumSpecialCharacterLevel : miniGameDefinition.MinimumCharacterLevel;
         var maxLevel = isSpecialCharacter ? miniGameDefinition.MaximumSpecialCharacterLevel : miniGameDefinition.MaximumCharacterLevel;
         var requiresMasterLevel = miniGameDefinition.RequiresMasterClass;
-        if (characterLevel < minLevel || (requiresMasterLevel && player.SelectedCharacter?.CharacterClass?.IsMasterClass is not true))
+        if (resetEvents is null && (characterLevel < minLevel || (requiresMasterLevel && player.SelectedCharacter?.CharacterClass?.IsMasterClass is not true)))
         {
             await player.InvokeViewPlugInAsync<IShowMiniGameEnterResultPlugIn>(p => p.ShowResultAsync(miniGameType, EnterResult.CharacterLevelTooLow)).ConfigureAwait(false);
             return;
         }
 
-        if (characterLevel > maxLevel)
+        if (resetEvents is null && characterLevel > maxLevel)
         {
             await player.InvokeViewPlugInAsync<IShowMiniGameEnterResultPlugIn>(p => p.ShowResultAsync(miniGameType, EnterResult.CharacterLevelTooHigh)).ConfigureAwait(false);
             return;
@@ -107,6 +123,12 @@ public class EnterMiniGameAction
             }
         }
 
+        if (resetEvents is not null && !await resetEvents.CheckEntriesAsync(player, miniGameType).ConfigureAwait(false))
+        {
+            await player.InvokeViewPlugInAsync<IShowMiniGameEnterResultPlugIn>(p => p.ShowResultAsync(miniGameType, EnterResult.Failed)).ConfigureAwait(false);
+            return;
+        }
+
         var entrance = miniGameDefinition.Entrance ?? throw new InvalidOperationException("mini game entrance not defined");
         var miniGame = await player.GameContext.GetMiniGameAsync(miniGameDefinition, player).ConfigureAwait(false);
 
@@ -123,6 +145,7 @@ public class EnterMiniGameAction
             }
 
             await this.ConsumeTicketItemAsync(ticketItem, player).ConfigureAwait(false);
+            resetEvents?.UseEntry(player, miniGameType);
 
             if (!miniGameDefinition.AllowParty && player.Party is { } party)
             {

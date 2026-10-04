@@ -94,6 +94,11 @@ public class InvasionGameServerState : PeriodicTaskGameServerState
     }
 
     /// <summary>
+    /// Gets the living monsters of the running invasion.
+    /// </summary>
+    public IReadOnlyList<Monster> AliveMonsters => this._monsters.Keys.Where(m => m.IsAlive).ToList();
+
+    /// <summary>
     /// Tracks a monster spawned by this invasion and handles its cleanup on death.
     /// </summary>
     /// <param name="monster">The monster to track.</param>

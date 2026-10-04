@@ -59,7 +59,7 @@ public sealed class DevilSquareContext : MiniGameContext
         var sortedFinishers = finishers
             .Select(f => this._gameStates[f.Name])
             .WhereNotNull()
-            .OrderBy(state => state.Score)
+            .OrderByDescending(state => state.Score)
             .ToList();
 
         var scoreList = new List<(string Name, int Score, int BonusMoney, int BonusExp)>();
@@ -70,6 +70,18 @@ public sealed class DevilSquareContext : MiniGameContext
             state.Rank = rank;
             var (bonusScore, givenMoney) = await this.GiveRewardsAndGetBonusScoreAsync(state.Player, rank).ConfigureAwait(false);
             state.AddScore(bonusScore);
+            if (state.Player.GameContext.FeaturePlugIns.GetPlugIn<ResetEvents.ResetEventsPlugIn>() is { } resetEvents)
+            {
+                var share = rank switch
+                {
+                    1 => new ResetEvents.ResetEventsPlugIn.RewardShare(1, 1, 1, false),
+                    2 => new ResetEvents.ResetEventsPlugIn.RewardShare(2f / 3, 0.7f, 0.5f, false),
+                    3 => new ResetEvents.ResetEventsPlugIn.RewardShare(1f / 3, 0.5f, 0, false),
+                    _ => new ResetEvents.ResetEventsPlugIn.RewardShare(0, 0.3f, 0, true),
+                };
+                givenMoney += await resetEvents.GiveRewardsAsync(state.Player, this.Definition, share).ConfigureAwait(false);
+            }
+
             scoreList.Add((
                 state.Player.Name,
                 state.Score,

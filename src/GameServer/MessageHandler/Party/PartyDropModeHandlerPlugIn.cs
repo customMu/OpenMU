@@ -45,6 +45,16 @@ internal class PartyDropModeHandlerPlugIn : IPacketHandlerPlugIn
             return;
         }
 
+        if (packet.Length >= 4 && packet.Span[3] == KalimaInstanceViewPlugIn.ChamberEnterRequestSubCode)
+        {
+            if (player.GameContext.FeaturePlugIns.GetPlugIn<KundunChamberPlugIn>() is { } chamber)
+            {
+                await chamber.EnterFromDialogAsync(player).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
         if (packet.Length < 5 || packet.Span[3] != PartyDropModeViewPlugIn.DropModeSubCode)
         {
             return;

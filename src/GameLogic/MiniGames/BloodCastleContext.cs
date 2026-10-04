@@ -225,6 +225,18 @@ public sealed class BloodCastleContext : MiniGameContext
             state.Rank = rank;
             var (bonusScore, givenMoney) = await this.GiveRewardsAndGetBonusScoreAsync(state.Player, rank).ConfigureAwait(false);
             state.AddScore(bonusScore);
+            if (state.Player.GameContext.FeaturePlugIns.GetPlugIn<ResetEvents.ResetEventsPlugIn>() is { } resetEvents)
+            {
+                var share = state.Player == this.Winner
+                    ? new ResetEvents.ResetEventsPlugIn.RewardShare(1, 1.5f, 1, false)
+                    : state.Player.IsAlive && state.Player.CurrentMap == this.Map
+                        ? new ResetEvents.ResetEventsPlugIn.RewardShare(0, 1, 0, true)
+                        : null;
+                if (share is not null)
+                {
+                    givenMoney += await resetEvents.GiveRewardsAsync(state.Player, this.Definition, share).ConfigureAwait(false);
+                }
+            }
 
             scoreList.Add((
                 state.Player.Name,

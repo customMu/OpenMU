@@ -101,6 +101,7 @@ public class KalimaInstancePlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, IPla
     {
         if (currentState != PlayerState.EnteredWorld
             || player.CurrentMiniGame is not null
+            || player.SelectedCharacter?.CharacterStatus == CharacterStatus.GameMaster
             || player.CurrentMap?.Definition is not { } map
             || !this.IsInstanceMap(map, player.GameContext.Configuration))
         {

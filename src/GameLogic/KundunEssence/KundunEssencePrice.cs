@@ -33,11 +33,17 @@ public class KundunEssencePrice
     public int Level { get; set; } = -1;
 
     /// <summary>
+    /// Gets or sets the amount of a stack (e.g. 50 potions), 0 for any amount.
+    /// </summary>
+    [Display(Name = "Amount", Description = "The size of the stack in the store (e.g. 50, 100 or 255 potions), 0 = any. The price is for the whole stack.")]
+    public int Amount { get; set; }
+
+    /// <summary>
     /// Gets or sets the price in essence.
     /// </summary>
     [Display(Name = "Price (essence)")]
     public int Price { get; set; }
 
     /// <inheritdoc />
-    public override string ToString() => $"{this.Name} ({this.Group}/{this.Number}, level {this.Level}): {this.Price}";
+    public override string ToString() => $"{this.Name} ({this.Group}/{this.Number}, level {this.Level}, amount {this.Amount}): {this.Price}";
 }

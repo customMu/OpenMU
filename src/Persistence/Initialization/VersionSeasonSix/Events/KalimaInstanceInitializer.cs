@@ -128,7 +128,7 @@ internal class KalimaInstanceInitializer : InitializerBase
             return;
         }
 
-        this.CreateNpcSpawn(lorencia, GatekeeperSpawnNumber, new KalimaInstanceConfiguration().GatekeeperNpcNumber, 125, 127, Direction.SouthEast);
+        this.CreateNpcSpawn(lorencia, GatekeeperSpawnNumber, new KalimaInstanceConfiguration().GatekeeperNpcNumber, 134, 125, Direction.SouthWest);
         this.CreateNpcSpawn(lorencia, EssenceShopSpawnNumber, new KundunEssenceConfiguration().ShopNpcNumber, 136, 127, Direction.SouthWest);
     }
 
