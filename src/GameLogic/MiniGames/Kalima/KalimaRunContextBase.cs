@@ -259,6 +259,14 @@ public abstract class KalimaRunContextBase : MiniGameContext
     protected bool IsIllusionOfKundun(MonsterDefinition monster) => this.KalimaConfiguration.BossMonsterNumbers.Contains(monster.Number);
 
     /// <summary>
+    /// Shows a notice of the run to all players: by default a golden message in the middle of the screen.
+    /// </summary>
+    /// <param name="messageKey">The key of the message in <see cref="PlayerMessage"/>.</param>
+    /// <param name="args">The arguments of the message.</param>
+    /// <returns>The task.</returns>
+    protected virtual ValueTask ShowNoticeAsync(string messageKey, params object?[] args) => this.ShowGoldenMessageAsync(messageKey, args);
+
+    /// <summary>
     /// Gets the players which are currently in the run.
     /// </summary>
     /// <returns>The players.</returns>
@@ -517,11 +525,11 @@ public abstract class KalimaRunContextBase : MiniGameContext
                 }
 
                 await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-                await this.ShowGoldenMessageAsync(this.ClosesInMinutesMessageKey, minutes).ConfigureAwait(false);
+                await this.ShowNoticeAsync(this.ClosesInMinutesMessageKey, minutes).ConfigureAwait(false);
             }
 
             await Task.Delay(this.TimeLeft, cancellationToken).ConfigureAwait(false);
-            await this.ShowGoldenMessageAsync(this.TimeOverMessageKey).ConfigureAwait(false);
+            await this.ShowNoticeAsync(this.TimeOverMessageKey).ConfigureAwait(false);
             this.FinishEvent();
         }
         catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException)

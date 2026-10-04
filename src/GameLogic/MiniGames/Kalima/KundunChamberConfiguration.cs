@@ -190,6 +190,19 @@ public class KundunChamberConfiguration
     public IList<int> WeaponLevelWeights { get; set; } = new List<int> { 28, 22, 17, 13, 10, 6, 4 };
 
     /// <summary>
+    /// Gets or sets the chance that an Illusion of a phase drops money.
+    /// </summary>
+    [Display(Name = "Illusion money chance", Description = "Chance (0.75 = 75 %) that an Illusion of a phase drops the money of the chamber level.")]
+    public float IllusionMoneyChance { get; set; } = 0.75f;
+
+    /// <summary>
+    /// Gets or sets the money of an Illusion by the chamber level, from level 1.
+    /// </summary>
+    [MemberOfAggregate]
+    [Display(Name = "Illusion money by level", Description = "Money of one Illusion in the chamber level 1, 2, ... 7 (6 Illusions per fight; grows like the zen of the monsters of the reset step of the level: 5, 10, 15, 22, 30, 38, 45 resets). Shared by the party like the money of the monsters.")]
+    public IList<int> IllusionMoneyByLevel { get; set; } = new List<int> { 100_000, 125_000, 155_000, 205_000, 235_000, 255_000, 275_000 };
+
+    /// <summary>
     /// Gets the number of the day in UTC, counted from 2000-01-01. The chamber pass is stored as such a day number.
     /// </summary>
     /// <param name="utcNow">The current time in UTC.</param>

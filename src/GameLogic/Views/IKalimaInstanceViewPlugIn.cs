@@ -49,4 +49,11 @@ public interface IKalimaInstanceViewPlugIn : IViewPlugIn
     /// <param name="radius">The radius of the arena in fields.</param>
     /// <returns>The task.</returns>
     ValueTask ShowArenaAsync(Point center, float radius);
+
+    /// <summary>
+    /// Shows the state of the fight in the chamber of Kundun as a banner at the top of the screen.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The task.</returns>
+    ValueTask ShowChamberStatusAsync(KundunChamberStatus status);
 }

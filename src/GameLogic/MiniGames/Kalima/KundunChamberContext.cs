@@ -37,6 +37,10 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
     private DateTime _phaseStartedAt;
     private bool _isShielded;
     private bool _isDefeated;
+    private byte _lastHealPercent;
+    private byte _lastDefensePercent;
+    private byte _lastDamagePercent;
+    private KundunChamberStatus? _sentStatus;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KundunChamberContext"/> class.
@@ -163,7 +167,19 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
         }
 
         kundun.DamageLimiter = this;
-        await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberKundunAppeared)).ConfigureAwait(false);
+        await this.ShowNoticeAsync(nameof(PlayerMessage.KundunChamberKundunAppeared)).ConfigureAwait(false);
+        _ = Task.Run(this.RunStatusAsync);
+    }
+
+    /// <summary>
+    /// The chamber shows its notices in the chat and keeps the state in the banner at the top of the screen,
+    /// instead of golden messages in the middle of the screen.
+    /// </summary>
+    /// <inheritdoc />
+    protected override async ValueTask ShowNoticeAsync(string messageKey, params object?[] args)
+    {
+        await this.ForEachPlayerAsync(player => player.ShowLocalizedBlueMessageAsync(messageKey, args).AsTask()).ConfigureAwait(false);
+        await this.SendStatusAsync(true).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -190,9 +206,14 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
         // The spots of a Kalima instance belong to the instance only.
         await ShowSpotsAsync(player, []).ConfigureAwait(false);
         await ShowProgressAsync(player, 0, 0, 0).ConfigureAwait(false);
-        if (this.ArenaCenter is { } center && player.ViewPlugIns.GetPlugIn<Views.IKalimaInstanceViewPlugIn>() is { } view)
+        if (player.ViewPlugIns.GetPlugIn<Views.IKalimaInstanceViewPlugIn>() is { } view)
         {
-            await view.ShowArenaAsync(center, this._configuration.ArenaRadius).ConfigureAwait(false);
+            if (this.ArenaCenter is { } center)
+            {
+                await view.ShowArenaAsync(center, this._configuration.ArenaRadius).ConfigureAwait(false);
+            }
+
+            await view.ShowChamberStatusAsync(this.GetStatus()).ConfigureAwait(false);
         }
 
         var kundun = this._kundun;
@@ -204,6 +225,24 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
             this.Tier.Level,
             healthPercent,
             (int)Math.Ceiling(this.TimeLeft.TotalMinutes)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The Illusions of the phases drop money by the level of the chamber; the other monsters drop as usual.
+    /// </summary>
+    /// <inheritdoc />
+    public override MiniGameMonsterDrops? GetMonsterDrops(AttackableNpcBase monster, Player killer)
+    {
+        if (monster is not Monster { SummonedBy: null } || monster.Definition != this.IllusionDefinition)
+        {
+            return base.GetMonsterDrops(monster, killer);
+        }
+
+        var amounts = this._configuration.IllusionMoneyByLevel;
+        var money = amounts.Count > 0 && Rand.NextRandomBool(Math.Clamp(this._configuration.IllusionMoneyChance, 0, 1))
+            ? (uint)Math.Max(0, amounts[Math.Clamp(this.Tier.Level - 1, 0, amounts.Count - 1)])
+            : 0u;
+        return new MiniGameMonsterDrops([], money);
     }
 
     /// <inheritdoc />
@@ -235,6 +274,81 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
         if (phaseCleared)
         {
             _ = Task.Run(() => this.EndPhaseAsync(phaseIndex, phaseDuration));
+        }
+        else
+        {
+            _ = Task.Run(async () => await this.SendStatusAsync(true).ConfigureAwait(false));
+        }
+    }
+
+    /// <summary>
+    /// Gets the current state of the fight.
+    /// </summary>
+    /// <returns>The state.</returns>
+    public KundunChamberStatus GetStatus()
+    {
+        lock (this)
+        {
+            var kundun = this._kundun;
+            var maximumHealth = kundun?.Attributes[Stats.MaximumHealth] ?? 0;
+            var healthPercent = this._isDefeated ? 0
+                : kundun is null || maximumHealth <= 0 ? 100
+                : (int)Math.Ceiling(Math.Max(0, kundun.Health) * 100.0 / maximumHealth);
+            return new KundunChamberStatus(
+                (byte)Math.Clamp(this.Tier.Level, 0, byte.MaxValue),
+                (byte)Math.Clamp(this._nextPhaseIndex, 0, byte.MaxValue),
+                (byte)Math.Clamp(this._phases.Count, 0, byte.MaxValue),
+                (byte)Math.Clamp(healthPercent, 0, 100),
+                (byte)Math.Clamp(this._aliveIllusions.Count, 0, byte.MaxValue),
+                this._isShielded,
+                this._isDefeated,
+                (ushort)Math.Clamp(this.TimeLeft.TotalSeconds, 0, ushort.MaxValue),
+                this._lastHealPercent,
+                this._lastDefensePercent,
+                this._lastDamagePercent);
+        }
+    }
+
+    /// <summary>
+    /// Sends the state to the players: always when <paramref name="force"/> is set, otherwise only when it changed
+    /// (the client counts the time down by itself).
+    /// </summary>
+    private async ValueTask SendStatusAsync(bool force)
+    {
+        var status = this.GetStatus();
+        lock (this)
+        {
+            if (!force && this._sentStatus is { } sent && sent with { SecondsLeft = status.SecondsLeft } == status)
+            {
+                return;
+            }
+
+            this._sentStatus = status;
+        }
+
+        await this.ForEachPlayerAsync(player => player.InvokeViewPlugInAsync<Views.IKalimaInstanceViewPlugIn>(p => p.ShowChamberStatusAsync(status)).AsTask()).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Updates the health of Kundun in the banner every 2 seconds while the fight lasts.
+    /// </summary>
+    private async Task RunStatusAsync()
+    {
+        try
+        {
+            while (!this.GameEndedToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2), this.GameEndedToken).ConfigureAwait(false);
+                await this.SendStatusAsync(false).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException)
+        {
+            // the game ended
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "{context}: Unexpected error when sending the state of the chamber.", this);
         }
     }
 
@@ -342,7 +456,7 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
         try
         {
             var phase = this._phases[phaseIndex];
-            await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberPhaseFormat), (int)Math.Round(phase.HealthThreshold * 100), phase.IllusionCount).ConfigureAwait(false);
+            await this.ShowNoticeAsync(nameof(PlayerMessage.KundunChamberPhaseFormat), (int)Math.Round(phase.HealthThreshold * 100), phase.IllusionCount).ConfigureAwait(false);
             if (this.IllusionDefinition is not { } illusion || this._kundun is not { } kundun)
             {
                 lock (this)
@@ -375,6 +489,10 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
             if (spawned == 0)
             {
                 await this.EndPhaseAsync(phaseIndex, TimeSpan.Zero).ConfigureAwait(false);
+            }
+            else
+            {
+                await this.SendStatusAsync(true).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -413,17 +531,24 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
             var healPercent = (int)Math.Round(healAmount * 100.0 / Math.Max(1, (int)(this._kundun?.Attributes[Stats.MaximumHealth] ?? 1)));
             var defensePercent = Math.Round(defense * 100, 1);
             var damagePercent = Math.Round(damage * 100, 1);
+            lock (this)
+            {
+                this._lastHealPercent = (byte)Math.Clamp(healPercent, 0, 100);
+                this._lastDefensePercent = (byte)Math.Clamp((int)Math.Round(defense * 100), 0, byte.MaxValue);
+                this._lastDamagePercent = (byte)Math.Clamp((int)Math.Round(damage * 100), 0, byte.MaxValue);
+            }
+
             if (defensePercent > 0 || damagePercent > 0)
             {
-                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberPhaseEndedStrongerFormat), healPercent, defensePercent, damagePercent).ConfigureAwait(false);
+                await this.ShowNoticeAsync(nameof(PlayerMessage.KundunChamberPhaseEndedStrongerFormat), healPercent, defensePercent, damagePercent).ConfigureAwait(false);
             }
             else if (healPercent > 0)
             {
-                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberPhaseEndedHealFormat), healPercent).ConfigureAwait(false);
+                await this.ShowNoticeAsync(nameof(PlayerMessage.KundunChamberPhaseEndedHealFormat), healPercent).ConfigureAwait(false);
             }
             else
             {
-                await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberPhaseEndedFormat)).ConfigureAwait(false);
+                await this.ShowNoticeAsync(nameof(PlayerMessage.KundunChamberPhaseEndedFormat)).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -450,7 +575,7 @@ public sealed class KundunChamberContext : KalimaRunContextBase, IDamageLimiter
 
             var players = this.GetPlayersOnMap();
             var seconds = (int)Math.Ceiling(fightDuration.TotalSeconds);
-            await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KundunChamberVictoryFormat), this.Tier.Level, seconds / 60, seconds % 60).ConfigureAwait(false);
+            await this.ShowNoticeAsync(nameof(PlayerMessage.KundunChamberVictoryFormat), this.Tier.Level, seconds / 60, seconds % 60).ConfigureAwait(false);
 
             if (this.GameContext.FeaturePlugIns.GetPlugIn<KundunEssencePlugIn>() is { } essence)
             {

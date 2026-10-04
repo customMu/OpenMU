@@ -64,6 +64,11 @@ public class KalimaInstanceViewPlugIn : IKalimaInstanceViewPlugIn
     public const byte ChamberEnterRequestSubCode = 0x0B;
 
     /// <summary>
+    /// The sub code of the state of the fight in the chamber of Kundun.
+    /// </summary>
+    public const byte ChamberStatusSubCode = 0x0C;
+
+    /// <summary>
     /// The maximum number of spots which fit into a C1 packet.
     /// </summary>
     private const int MaximumSpots = (byte.MaxValue - 5) / 2;
@@ -246,6 +251,40 @@ public class KalimaInstanceViewPlugIn : IKalimaInstanceViewPlugIn
             span[4] = (byte)Math.Clamp(clearedPacks, 0, byte.MaxValue);
             span[5] = (byte)Math.Clamp(packCount, 0, byte.MaxValue);
             span[6] = bossState;
+            return size;
+        }
+
+        await connection.SendAsync(Write).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask ShowChamberStatusAsync(KundunChamberStatus status)
+    {
+        var connection = this._player.Connection;
+        if (connection is null)
+        {
+            return;
+        }
+
+        int Write()
+        {
+            const int size = 15;
+            var span = connection.Output.GetSpan(size)[..size];
+            span[0] = 0xC1;
+            span[1] = size;
+            span[2] = Inventory.KundunEssenceViewPlugIn.Code;
+            span[3] = ChamberStatusSubCode;
+            span[4] = status.Level;
+            span[5] = status.Phase;
+            span[6] = status.PhaseCount;
+            span[7] = status.HealthPercent;
+            span[8] = status.Illusions;
+            span[9] = (byte)((status.IsShielded ? 1 : 0) | (status.IsDefeated ? 2 : 0));
+            span[10] = (byte)(status.SecondsLeft & 0xFF);
+            span[11] = (byte)(status.SecondsLeft >> 8);
+            span[12] = status.LastHealPercent;
+            span[13] = status.LastDefensePercent;
+            span[14] = status.LastDamagePercent;
             return size;
         }
 
