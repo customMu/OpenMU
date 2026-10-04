@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using System.Threading;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.NPC;
+using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.Pathfinding;
 
 /// <summary>
@@ -206,6 +207,20 @@ public abstract class KalimaRunContextBase : MiniGameContext
     /// <param name="amount">The amount.</param>
     /// <returns>The amount or 0.</returns>
     protected static int RollAmount(float chance, int amount) => chance > 0 && Rand.NextRandomBool((double)Math.Min(chance, 1f)) ? amount : 0;
+
+    /// <summary>
+    /// Shows the spots with living monsters on the minimap of the player; all Kalima maps share it.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="spots">The spots; empty to clear them.</param>
+    /// <returns>The task.</returns>
+    protected static async ValueTask ShowSpotsAsync(Player player, IReadOnlyList<Point> spots)
+    {
+        if (player.ViewPlugIns.GetPlugIn<IKalimaInstanceViewPlugIn>() is { } view)
+        {
+            await view.ShowSpotsAsync(spots).ConfigureAwait(false);
+        }
+    }
 
     /// <summary>
     /// Determines whether the monster is an Illusion of Kundun.

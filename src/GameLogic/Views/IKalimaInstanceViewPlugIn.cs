@@ -5,10 +5,12 @@
 namespace MUnique.OpenMU.GameLogic.Views;
 
 using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
+using MUnique.OpenMU.Pathfinding;
 
 /// <summary>
 /// Interface of a view which shows the entry dialog of the Kalima instance: the tiers by resets and the entries left.
 /// When the client has no such view, talking to the gatekeeper enters the instance at once.
+/// Inside the instance, it shows the spots with living monsters on the map.
 /// </summary>
 public interface IKalimaInstanceViewPlugIn : IViewPlugIn
 {
@@ -17,4 +19,10 @@ public interface IKalimaInstanceViewPlugIn : IViewPlugIn
     /// </summary>
     /// <param name="info">The information about the instance for the player.</param>
     ValueTask ShowEntryDialogAsync(KalimaInstanceInfo info);
+
+    /// <summary>
+    /// Shows the spots which still have living monsters: the ones of the current pack, or the one of the boss.
+    /// </summary>
+    /// <param name="spots">The spots; empty when no monster is left.</param>
+    ValueTask ShowSpotsAsync(IReadOnlyList<Point> spots);
 }

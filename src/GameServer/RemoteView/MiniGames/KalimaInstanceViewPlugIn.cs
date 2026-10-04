@@ -10,6 +10,7 @@ using MUnique.OpenMU.GameLogic.MiniGames.Kalima;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.Network;
 using MUnique.OpenMU.Network.PlugIns;
+using MUnique.OpenMU.Pathfinding;
 using MUnique.OpenMU.PlugIns;
 
 /// <summary>
@@ -17,6 +18,7 @@ using MUnique.OpenMU.PlugIns;
 /// <c>[resets u16 LE] [tier level] [entries left] [entries per day] [seconds until reset u32 LE] [can re-enter]
 /// [tier count] tier count × {[level] [minimum resets u16 LE] [maximum resets u16 LE, 0xFFFF = open]}</c>.
 /// The client answers with <c>C1 04 FB 05</c> to enter.
+/// Inside the instance, the spots with living monsters (custom packet <c>C1 [size] FB 06 [count] count × {[x] [y]}</c>).
 /// </summary>
 [PlugIn]
 [Display(Name = "Kalima instance view", Description = "Shows the entry dialog of the Kalima instance on the custom client.")]
@@ -33,6 +35,16 @@ public class KalimaInstanceViewPlugIn : IKalimaInstanceViewPlugIn
     /// The sub code of the request to enter, sent by the client.
     /// </summary>
     public const byte EnterRequestSubCode = 0x05;
+
+    /// <summary>
+    /// The sub code of the spots with living monsters.
+    /// </summary>
+    public const byte SpotsSubCode = 0x06;
+
+    /// <summary>
+    /// The maximum number of spots which fit into a C1 packet.
+    /// </summary>
+    private const int MaximumSpots = (byte.MaxValue - 5) / 2;
 
     private readonly RemotePlayer _player;
 
@@ -77,6 +89,38 @@ public class KalimaInstanceViewPlugIn : IKalimaInstanceViewPlugIn
                 entry[0] = level;
                 BinaryPrimitives.WriteUInt16LittleEndian(entry[1..], (ushort)Math.Clamp(minimum, 0, ushort.MaxValue - 1));
                 BinaryPrimitives.WriteUInt16LittleEndian(entry[3..], maximum is { } max ? (ushort)Math.Clamp(max, 0, ushort.MaxValue - 1) : ushort.MaxValue);
+            }
+
+            return size;
+        }
+
+        await connection.SendAsync(Write).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask ShowSpotsAsync(IReadOnlyList<Point> spots)
+    {
+        var connection = this._player.Connection;
+        if (connection is null)
+        {
+            return;
+        }
+
+        var count = Math.Min(spots.Count, MaximumSpots);
+
+        int Write()
+        {
+            var size = 5 + (count * 2);
+            var span = connection.Output.GetSpan(size)[..size];
+            span[0] = 0xC1;
+            span[1] = (byte)size;
+            span[2] = Inventory.KundunEssenceViewPlugIn.Code;
+            span[3] = SpotsSubCode;
+            span[4] = (byte)count;
+            for (var i = 0; i < count; i++)
+            {
+                span[5 + (i * 2)] = spots[i].X;
+                span[6 + (i * 2)] = spots[i].Y;
             }
 
             return size;

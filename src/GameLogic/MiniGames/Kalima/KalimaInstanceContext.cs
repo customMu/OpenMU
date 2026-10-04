@@ -14,17 +14,24 @@ using MUnique.OpenMU.Pathfinding;
 /// along the way from the entrance; the next pack appears when the previous one is killed, and
 /// the Illusion of Kundun after the last pack. The monsters have the fixed strength of the tier.
 /// Players can leave and enter again (e.g. after a death) as long as the instance is running.
+/// The spots which still have living monsters are shown on the map of the players.
 /// </summary>
 public sealed class KalimaInstanceContext : KalimaRunContextBase
 {
     private const int PackSpawnSpread = 2;
 
     private readonly KalimaInstanceConfiguration _configuration;
-    private readonly HashSet<AttackableNpcBase> _alivePackMonsters = new();
+
+    /// <summary>
+    /// The living monsters of the current pack with their spots.
+    /// </summary>
+    private readonly Dictionary<AttackableNpcBase, Point> _alivePackMonsters = new();
+
     private readonly IReadOnlyList<IReadOnlyList<MonsterSpawnArea>> _packs;
 
     private int _currentPack = -1;
     private bool _bossSpawned;
+    private Point? _bossSpot;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KalimaInstanceContext"/> class.
@@ -72,14 +79,26 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
     }
 
     /// <inheritdoc />
-    protected override ValueTask OnPlayerEnteredAsync(Player player)
+    protected override async ValueTask OnPlayerEnteredAsync(Player player)
     {
-        return player.ShowLocalizedBlueMessageAsync(
+        await player.ShowLocalizedBlueMessageAsync(
             nameof(PlayerMessage.KalimaInstanceStatusFormat),
             this.Tier.Level,
             Math.Min(this._currentPack + 1, this._packs.Count),
             this._packs.Count,
-            (int)Math.Ceiling(this.TimeLeft.TotalMinutes));
+            (int)Math.Ceiling(this.TimeLeft.TotalMinutes)).ConfigureAwait(false);
+        await ShowSpotsAsync(player, this.GetSpots()).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    protected override async ValueTask OnObjectRemovedFromMapAsync((GameMap Map, ILocateable Object) args)
+    {
+        await base.OnObjectRemovedFromMapAsync(args).ConfigureAwait(false);
+        if (args.Object is Player player)
+        {
+            // The other Kalima maps (e.g. the chamber of Kundun) use the same minimap.
+            await ShowSpotsAsync(player, []).ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />
@@ -101,6 +120,10 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         lock (this.SyncRoot)
         {
             isPackCleared = this._alivePackMonsters.Remove(monster) && this._alivePackMonsters.Count == 0;
+            if (isBoss)
+            {
+                this._bossSpot = null;
+            }
         }
 
         var position = monster.Position;
@@ -115,9 +138,14 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
                 {
                     await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceBossDefeated)).ConfigureAwait(false);
                 }
-                else if (isPackCleared)
+
+                if (isPackCleared)
                 {
                     await this.SpawnNextPackAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    await this.ShowSpotsToAllAsync().ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -162,6 +190,7 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
             if (await this.SpawnPackAsync(this._packs[packIndex]).ConfigureAwait(false) > 0)
             {
                 await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstancePackFormat), packIndex + 1, this._packs.Count).ConfigureAwait(false);
+                await this.ShowSpotsToAllAsync().ConfigureAwait(false);
                 return;
             }
 
@@ -191,7 +220,7 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
             {
                 lock (this.SyncRoot)
                 {
-                    this._alivePackMonsters.Add(monster);
+                    this._alivePackMonsters[monster] = new Point(point.X1, point.Y1);
                 }
 
                 spawned++;
@@ -214,8 +243,47 @@ public sealed class KalimaInstanceContext : KalimaRunContextBase
         }
 
         var spawn = this.BossSpawn;
-        await this.SpawnMonsterAsync(0, spawn.MonsterDefinition, spawn.X1, spawn.Y1, spawn.X2, spawn.Y2, spawn.Direction).ConfigureAwait(false);
+        if (await this.SpawnMonsterAsync(0, spawn.MonsterDefinition, spawn.X1, spawn.Y1, spawn.X2, spawn.Y2, spawn.Direction).ConfigureAwait(false) is not null)
+        {
+            lock (this.SyncRoot)
+            {
+                this._bossSpot = new Point((byte)((spawn.X1 + spawn.X2) / 2), (byte)((spawn.Y1 + spawn.Y2) / 2));
+            }
+        }
+
         await this.ShowGoldenMessageAsync(nameof(PlayerMessage.KalimaInstanceBossAppeared)).ConfigureAwait(false);
+        await this.ShowSpotsToAllAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets the spots which still have living monsters: the ones of the current pack, or the one of the boss.
+    /// </summary>
+    /// <returns>The spots.</returns>
+    private IReadOnlyList<Point> GetSpots()
+    {
+        lock (this.SyncRoot)
+        {
+            if (this._alivePackMonsters.Count > 0)
+            {
+                return this._alivePackMonsters.Values.Distinct().ToList();
+            }
+
+            if (this._bossSpot is { } bossSpot)
+            {
+                return [bossSpot];
+            }
+
+            return [];
+        }
+    }
+
+    private async ValueTask ShowSpotsToAllAsync()
+    {
+        var spots = this.GetSpots();
+        foreach (var player in this.GetPlayersOnMap())
+        {
+            await ShowSpotsAsync(player, spots).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
