@@ -72,12 +72,13 @@ public sealed class DevilSquareContext : MiniGameContext
             state.AddScore(bonusScore);
             if (state.Player.GameContext.FeaturePlugIns.GetPlugIn<ResetEvents.ResetEventsPlugIn>() is { } resetEvents)
             {
+                // the feathers for finishing the event, the same chance for everyone (like the winner of Blood Castle)
                 var share = rank switch
                 {
-                    1 => new ResetEvents.ResetEventsPlugIn.RewardShare(1, 1, 1, false),
-                    2 => new ResetEvents.ResetEventsPlugIn.RewardShare(2f / 3, 0.7f, 0.5f, false),
-                    3 => new ResetEvents.ResetEventsPlugIn.RewardShare(1f / 3, 0.5f, 0, false),
-                    _ => new ResetEvents.ResetEventsPlugIn.RewardShare(0, 0.3f, 0, true),
+                    1 => new ResetEvents.ResetEventsPlugIn.RewardShare(1, 1, 1, false, 1),
+                    2 => new ResetEvents.ResetEventsPlugIn.RewardShare(2f / 3, 0.7f, 0.5f, false, 1),
+                    3 => new ResetEvents.ResetEventsPlugIn.RewardShare(1f / 3, 0.5f, 0, false, 1),
+                    _ => new ResetEvents.ResetEventsPlugIn.RewardShare(0, 0.3f, 0, true, 1),
                 };
                 givenMoney += await resetEvents.GiveRewardsAsync(state.Player, this.Definition, share).ConfigureAwait(false);
             }

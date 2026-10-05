@@ -37,9 +37,10 @@ public class ResetEventsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Res
     /// </summary>
     /// <param name="Jewels">The multiplier of the jewels of the level.</param>
     /// <param name="Money">The multiplier of the money of the level.</param>
-    /// <param name="Materials">The multiplier of the chances of the materials of the wings.</param>
+    /// <param name="Materials">The multiplier of the chance of the chaos weapon.</param>
     /// <param name="FinisherJewel">If set to <c>true</c>, the player gets one jewel of the level by the finisher chance.</param>
-    public sealed record RewardShare(float Jewels, float Money, float Materials, bool FinisherJewel);
+    /// <param name="Feathers">The multiplier of the chances of Loch's Feather and Crest of Monarch.</param>
+    public sealed record RewardShare(float Jewels, float Money, float Materials, bool FinisherJewel, float Feathers);
 
     /// <inheritdoc />
     public ResetEventsConfiguration? Configuration { get; set; }
@@ -195,12 +196,12 @@ public class ResetEventsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Res
             rewards.Add(CreateChaosWeapon(items, configuration));
         }
 
-        if (Rand.NextRandomBool(Math.Clamp(tier.FeatherChance * share.Materials, 0, 1)))
+        if (Rand.NextRandomBool(Math.Clamp(tier.FeatherChance * share.Feathers, 0, 1)))
         {
             AddItem(rewards, items, 13, 14, 0); // Loch's Feather
         }
 
-        if (Rand.NextRandomBool(Math.Clamp(tier.CrestChance * share.Materials, 0, 1)))
+        if (Rand.NextRandomBool(Math.Clamp(tier.CrestChance * share.Feathers, 0, 1)))
         {
             AddItem(rewards, items, 13, 14, 1); // Crest of Monarch
         }

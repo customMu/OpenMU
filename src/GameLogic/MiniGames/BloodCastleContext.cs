@@ -228,9 +228,9 @@ public sealed class BloodCastleContext : MiniGameContext
             if (state.Player.GameContext.FeaturePlugIns.GetPlugIn<ResetEvents.ResetEventsPlugIn>() is { } resetEvents)
             {
                 var share = state.Player == this.Winner
-                    ? new ResetEvents.ResetEventsPlugIn.RewardShare(1, 1.5f, 1, false)
+                    ? new ResetEvents.ResetEventsPlugIn.RewardShare(1, 1.5f, 1, false, 1)
                     : state.Player.IsAlive && state.Player.CurrentMap == this.Map
-                        ? new ResetEvents.ResetEventsPlugIn.RewardShare(0, 1, 0, true)
+                        ? new ResetEvents.ResetEventsPlugIn.RewardShare(0, 1, 0, true, 0)
                         : null;
                 if (share is not null)
                 {
