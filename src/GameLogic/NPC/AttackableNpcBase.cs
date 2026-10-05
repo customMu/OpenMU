@@ -595,6 +595,18 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             return;
         }
 
+        // Zen auto loot: straight into the inventory of the owner of the drop (or its party, by the shares).
+        if (killer.GameContext.FeaturePlugIns.GetPlugIn<ZenAutoLootPlugIn>() is { } autoLoot && autoLoot.IsActiveFor(killer))
+        {
+            var received = killer.Party is { } ownerParty
+                ? MoneyDistribution.TryPayShares(shares, member => ownerParty.IsEligibleForMoney(member, killer))
+                : MoneyDistribution.TryPay(killer, amount);
+            if (received)
+            {
+                return;
+            }
+        }
+
         var owners = killer.Party?.PartyList.AsEnumerable() ?? killer.GetAsEnumerable();
         var droppedMoney = new DroppedMoney(amount, this.Position, this.CurrentMap, shares, owners);
         await this.CurrentMap.AddAsync(droppedMoney).ConfigureAwait(false);
