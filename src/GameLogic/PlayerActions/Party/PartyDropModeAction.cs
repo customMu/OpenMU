@@ -4,44 +4,34 @@
 
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Party;
 
+using MUnique.OpenMU.GameLogic.Views.Party;
+
 /// <summary>
-/// Action to change the drop mode of the party, which only the party master may do.
+/// Action to choose the drop mode: without a party the mode of the parties which the player creates,
+/// in a party a proposal of a change, to which all members must agree.
 /// </summary>
 public class PartyDropModeAction
 {
     /// <summary>
-    /// Sets the drop mode of the party of the player.
+    /// Chooses the drop mode (without a party) or proposes it to the party.
     /// </summary>
     /// <param name="player">The player who requests the change.</param>
     /// <param name="mode">The new drop mode.</param>
     public async ValueTask SetDropModeAsync(Player player, PartyDropMode mode)
     {
-        if (player.Party is not { } party)
-        {
-            return;
-        }
-
         if (!Enum.IsDefined(mode))
         {
             player.Logger.LogWarning("{player} requested the unknown drop mode {mode}.", player, mode);
             return;
         }
 
-        if (!await party.TrySetDropModeAsync(player, mode).ConfigureAwait(false))
+        if (player.Party is not { } party)
         {
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.PartyDropModeOnlyMaster)).ConfigureAwait(false);
+            player.PreferredPartyDropMode = mode;
+            await player.InvokeViewPlugInAsync<IPartyDropModeViewPlugIn>(p => p.ShowDropModeAsync(mode)).ConfigureAwait(false);
             return;
         }
 
-        var messageKey = mode switch
-        {
-            PartyDropMode.Random => nameof(PlayerMessage.PartyDropModeRandomFormat),
-            PartyDropMode.RoundRobin => nameof(PlayerMessage.PartyDropModeRoundRobinFormat),
-            _ => nameof(PlayerMessage.PartyDropModeFreeFormat),
-        };
-        foreach (var member in party.PartyList.OfType<Player>())
-        {
-            await member.ShowLocalizedBlueMessageAsync(messageKey, player.Name).ConfigureAwait(false);
-        }
+        await party.StartDropModeVoteAsync(player, mode).ConfigureAwait(false);
     }
 }

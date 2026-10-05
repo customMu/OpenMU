@@ -26,6 +26,13 @@ public static class ItemDropOwnerExtensions
             return new DroppedItem(item, position, map, null, killer.GetAsEnumerable());
         }
 
+        // Quest items are free for the party in every mode: only members with the quest can pick them up anyway,
+        // an assignment to a member without the quest would lose the item.
+        if (item.Definition?.IsQuestItem == true)
+        {
+            return new DroppedItem(item, position, map, null, party.PartyList, false, DroppedItem.TimeUntilDropIsFree);
+        }
+
         var owners = party.GetItemOwners(killer, position);
         var priority = party.DropMode == PartyDropMode.Free ? DroppedItem.TimeUntilDropIsFree : DroppedItem.TimeUntilAssignedDropIsFree;
         return new DroppedItem(item, position, map, null, owners, false, priority);

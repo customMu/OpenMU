@@ -59,6 +59,7 @@ public class PartyResponseAction
         {
             var master = player.LastPartyRequester;
             var party = player.GameContext.PartyManager.CreateParty();
+            party.InitializeDropMode((master as Player)?.PreferredPartyDropMode ?? PartyDropMode.Free);
             await party.AddAsync(master).ConfigureAwait(false);
             await party.AddAsync(player).ConfigureAwait(false);
         }

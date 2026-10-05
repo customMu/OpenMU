@@ -363,6 +363,11 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
     public IPartyMember? LastPartyRequester { get; set; }
 
     /// <summary>
+    /// Gets or sets the drop mode which the player chose without a party: a party which the player creates gets it.
+    /// </summary>
+    public PartyDropMode PreferredPartyDropMode { get; set; }
+
+    /// <summary>
     /// Gets or sets the last guild requester.
     /// </summary>
     public Player? LastGuildRequester { get; set; }

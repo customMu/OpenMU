@@ -92,6 +92,7 @@ public static class PartyRequestHandler
             {
                 // Neither side has a party; create a new one.
                 var party = receiver.GameContext.PartyManager.CreateParty();
+                party.InitializeDropMode(requester.PreferredPartyDropMode);
                 success = await party.AddAsync(requester).ConfigureAwait(false)
                     && await party.AddAsync(receiver).ConfigureAwait(false);
             }

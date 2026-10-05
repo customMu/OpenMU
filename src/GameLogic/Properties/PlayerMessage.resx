@@ -885,6 +885,30 @@
   <data name="PartyDropModeRoundRobinFormat" xml:space="preserve">
     <value>{0} set the drop mode: in turn - the items belong to the members nearby in turn.</value>
   </data>
+  <data name="PartyDropModeVoteStartedFormat" xml:space="preserve">
+    <value>{0} proposes the drop mode: {1}. All party members must agree (30 seconds).</value>
+  </data>
+  <data name="PartyDropModeVoteDeclinedFormat" xml:space="preserve">
+    <value>{0} declined the change of the drop mode.</value>
+  </data>
+  <data name="PartyDropModeVoteExpired" xml:space="preserve">
+    <value>The drop mode stays: not all party members agreed in time.</value>
+  </data>
+  <data name="PartyDropModeVoteCancelled" xml:space="preserve">
+    <value>The vote for the drop mode was cancelled: the party changed.</value>
+  </data>
+  <data name="PartyDropModeVoteRunning" xml:space="preserve">
+    <value>A vote for the drop mode is already running.</value>
+  </data>
+  <data name="PartyDropModeNameFree" xml:space="preserve">
+    <value>free</value>
+  </data>
+  <data name="PartyDropModeNameRandom" xml:space="preserve">
+    <value>random</value>
+  </data>
+  <data name="PartyDropModeNameRoundRobin" xml:space="preserve">
+    <value>in turn</value>
+  </data>
   <data name="KundunChamberClosesInMinutesFormat" xml:space="preserve">
     <value>The chamber of Kundun closes in {0} min.!</value>
   </data>

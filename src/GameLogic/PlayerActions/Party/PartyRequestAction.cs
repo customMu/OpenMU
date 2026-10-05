@@ -86,6 +86,13 @@ public class PartyRequestAction
             }
         }
 
+        // the invited player sees the drop mode of the party (or of the party which the requester creates)
+        if (requester is Player requestingPlayer)
+        {
+            var mode = requestingPlayer.Party?.DropMode ?? requestingPlayer.PreferredPartyDropMode;
+            await toRequest.InvokeViewPlugInAsync<IPartyDropModeViewPlugIn>(p => p.ShowInviteDropModeAsync(mode)).ConfigureAwait(false);
+        }
+
         await toRequest.InvokeViewPlugInAsync<IShowPartyRequestPlugIn>(p => p.ShowPartyRequestAsync(requester)).ConfigureAwait(false);
     }
 }

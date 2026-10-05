@@ -180,6 +180,7 @@ internal static class BotPartyHandler
         {
             // Like the regular party response: the requester becomes the master of the new party.
             var party = bot.GameContext.PartyManager.CreateParty();
+            party.InitializeDropMode(requester.PreferredPartyDropMode);
             success = await party.AddAsync(requester).ConfigureAwait(false)
                 && await party.AddAsync(bot).ConfigureAwait(false);
         }

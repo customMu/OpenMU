@@ -65,6 +65,16 @@ internal class PartyDropModeHandlerPlugIn : IPacketHandlerPlugIn
             return;
         }
 
+        if (packet.Length >= 5 && packet.Span[3] == PartyDropModeViewPlugIn.VoteAnswerSubCode)
+        {
+            if (player.Party is { } party)
+            {
+                await party.AnswerDropModeVoteAsync(player, packet.Span[4] != 0).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
         if (packet.Length < 5 || packet.Span[3] != PartyDropModeViewPlugIn.DropModeSubCode)
         {
             return;

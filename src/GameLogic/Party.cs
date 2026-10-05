@@ -37,6 +37,16 @@ public sealed class Party : AsyncDisposable
 
     private IPartyMember[] _partyMembers = [];
 
+    /// <summary>
+    /// How long the members have to agree to a change of the drop mode.
+    /// </summary>
+    private static readonly TimeSpan DropModeVoteTimeout = TimeSpan.FromSeconds(30);
+
+    private readonly HashSet<IPartyMember> _dropModeVoteAccepted = new();
+    private PartyDropMode? _dropModeVote;
+    private string _dropModeVoteInitiator = string.Empty;
+    private int _dropModeVoteId;
+
     private IPartyMember? _lastRoundRobinOwner;
 
     /// <summary>
@@ -73,7 +83,7 @@ public sealed class Party : AsyncDisposable
     public IPartyMember? PartyMaster { get; private set; }
 
     /// <summary>
-    /// Gets the drop mode of the party, which the party master chooses.
+    /// Gets the drop mode of the party: the one which the creator chose, changed only when all members agree.
     /// </summary>
     public PartyDropMode DropMode { get; private set; }
 
@@ -106,7 +116,112 @@ public sealed class Party : AsyncDisposable
         await this.SendPartyListAsync().ConfigureAwait(false);
         await this.UpdateNearbyCountAsync().ConfigureAwait(false);
         await this.SendDropModeAsync(newMember).ConfigureAwait(false);
+        await this.CancelDropModeVoteAsync().ConfigureAwait(false);
         return true;
+    }
+
+    /// <summary>
+    /// Sets the drop mode of a new party, before the members are added.
+    /// </summary>
+    /// <param name="mode">The drop mode which the creator of the party chose.</param>
+    public void InitializeDropMode(PartyDropMode mode)
+    {
+        if (Enum.IsDefined(mode))
+        {
+            this.DropMode = mode;
+        }
+    }
+
+    /// <summary>
+    /// Proposes a change of the drop mode: it's changed when all members agree within <see cref="DropModeVoteTimeout"/>.
+    /// Members which can't answer (offline leveling, bots) agree.
+    /// </summary>
+    /// <param name="initiator">The member who proposes the change; it agrees.</param>
+    /// <param name="mode">The proposed drop mode.</param>
+    public async ValueTask StartDropModeVoteAsync(Player initiator, PartyDropMode mode)
+    {
+        if (!Enum.IsDefined(mode) || mode == this.DropMode)
+        {
+            return;
+        }
+
+        bool running;
+        int voteId = 0;
+        IPartyMember[] members;
+        lock (this._writeLock)
+        {
+            members = this._partyMembers;
+            running = this._dropModeVote is not null;
+            if (!running && members.Contains(initiator))
+            {
+                this._dropModeVote = mode;
+                this._dropModeVoteInitiator = initiator.Name;
+                this._dropModeVoteAccepted.Clear();
+                foreach (var member in members)
+                {
+                    if (member == initiator || !CanAnswerVote(member))
+                    {
+                        this._dropModeVoteAccepted.Add(member);
+                    }
+                }
+
+                voteId = ++this._dropModeVoteId;
+            }
+        }
+
+        if (running)
+        {
+            await initiator.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.PartyDropModeVoteRunning)).ConfigureAwait(false);
+            return;
+        }
+
+        foreach (var member in members.OfType<Player>())
+        {
+            await member.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.PartyDropModeVoteStartedFormat), initiator.Name, GetModeName(member, mode)).ConfigureAwait(false);
+            if (member != initiator && CanAnswerVote(member))
+            {
+                await member.InvokeViewPlugInAsync<IPartyDropModeViewPlugIn>(p => p.ShowDropModeVoteAsync(initiator.Name, mode)).ConfigureAwait(false);
+            }
+        }
+
+        await this.CompleteDropModeVoteIfAcceptedAsync().ConfigureAwait(false);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(DropModeVoteTimeout).ConfigureAwait(false);
+            await this.CancelDropModeVoteAsync(voteId, nameof(PlayerMessage.PartyDropModeVoteExpired)).ConfigureAwait(false);
+        });
+    }
+
+    /// <summary>
+    /// The answer of a member to the proposed change of the drop mode; one "no" cancels it.
+    /// </summary>
+    /// <param name="member">The member.</param>
+    /// <param name="accept">If set to <c>true</c>, the member agrees.</param>
+    public async ValueTask AnswerDropModeVoteAsync(Player member, bool accept)
+    {
+        int voteId;
+        lock (this._writeLock)
+        {
+            if (this._dropModeVote is null || !this._partyMembers.Contains(member))
+            {
+                return;
+            }
+
+            voteId = this._dropModeVoteId;
+            if (accept)
+            {
+                this._dropModeVoteAccepted.Add(member);
+            }
+        }
+
+        if (accept)
+        {
+            await this.CompleteDropModeVoteIfAcceptedAsync().ConfigureAwait(false);
+        }
+        else
+        {
+            await this.CancelDropModeVoteAsync(voteId, nameof(PlayerMessage.PartyDropModeVoteDeclinedFormat), member.Name).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -389,6 +504,7 @@ public sealed class Party : AsyncDisposable
                 await member.InvokeViewPlugInAsync<IPartyMemberRemovedPlugIn>(
                     p => p.PartyMemberRemovedAsync(index)).ConfigureAwait(false);
                 this.CleanupMember(member);
+                await SendPreferredDropModeAsync(member).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -543,9 +659,23 @@ public sealed class Party : AsyncDisposable
         }
 
         this.CleanupMember(member);
+        await SendPreferredDropModeAsync(member).ConfigureAwait(false);
 
         await this.SendPartyListAsync().ConfigureAwait(false);
         await this.UpdateNearbyCountAsync().ConfigureAwait(false);
+        await this.CancelDropModeVoteAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// After leaving the party, the member sees its own chosen drop mode for new parties again.
+    /// </summary>
+    private static async ValueTask SendPreferredDropModeAsync(IPartyMember member)
+    {
+        if (member is Player player)
+        {
+            var mode = player.PreferredPartyDropMode;
+            await player.InvokeViewPlugInAsync<IPartyDropModeViewPlugIn>(p => p.ShowDropModeAsync(mode)).ConfigureAwait(false);
+        }
     }
 
     private void CleanupMember(IPartyMember member)
@@ -632,6 +762,81 @@ public sealed class Party : AsyncDisposable
                && member.IsAlive
                && member.Attributes is { }
                && member.GetDistanceTo(position) <= DroppedItem.MaximumAssignmentDistance;
+    }
+
+    private static bool CanAnswerVote(IPartyMember member)
+        => member is Player player and not Offline.OfflinePlayer && player.Account?.IsBot != true;
+
+    private static string GetModeName(Player player, PartyDropMode mode)
+        => player.GetLocalizedMessage(mode switch
+        {
+            PartyDropMode.Random => nameof(PlayerMessage.PartyDropModeNameRandom),
+            PartyDropMode.RoundRobin => nameof(PlayerMessage.PartyDropModeNameRoundRobin),
+            _ => nameof(PlayerMessage.PartyDropModeNameFree),
+        });
+
+    private async ValueTask CompleteDropModeVoteIfAcceptedAsync()
+    {
+        PartyDropMode mode;
+        string initiator;
+        IPartyMember[] members;
+        lock (this._writeLock)
+        {
+            members = this._partyMembers;
+            if (this._dropModeVote is not { } vote || !members.All(this._dropModeVoteAccepted.Contains))
+            {
+                return;
+            }
+
+            mode = vote;
+            initiator = this._dropModeVoteInitiator;
+            this._dropModeVote = null;
+            this._dropModeVoteAccepted.Clear();
+            this.DropMode = mode;
+        }
+
+        var messageKey = mode switch
+        {
+            PartyDropMode.Random => nameof(PlayerMessage.PartyDropModeRandomFormat),
+            PartyDropMode.RoundRobin => nameof(PlayerMessage.PartyDropModeRoundRobinFormat),
+            _ => nameof(PlayerMessage.PartyDropModeFreeFormat),
+        };
+        foreach (var member in members)
+        {
+            await this.SendDropModeAsync(member).ConfigureAwait(false);
+            if (member is Player player)
+            {
+                await player.ShowLocalizedBlueMessageAsync(messageKey, initiator).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Cancels a running vote because the members of the party changed.
+    /// </summary>
+    private ValueTask CancelDropModeVoteAsync()
+        => this.CancelDropModeVoteAsync(null, nameof(PlayerMessage.PartyDropModeVoteCancelled));
+
+    private async ValueTask CancelDropModeVoteAsync(int? voteId, string messageKey, params object?[] args)
+    {
+        IPartyMember[] members;
+        lock (this._writeLock)
+        {
+            if (this._dropModeVote is null || (voteId is { } id && id != this._dropModeVoteId))
+            {
+                return;
+            }
+
+            this._dropModeVote = null;
+            this._dropModeVoteAccepted.Clear();
+            members = this._partyMembers;
+        }
+
+        foreach (var member in members.OfType<Player>())
+        {
+            await member.ShowLocalizedBlueMessageAsync(messageKey, args).ConfigureAwait(false);
+            await this.SendDropModeAsync(member).ConfigureAwait(false);
+        }
     }
 
     private async ValueTask SendDropModeAsync(IPartyMember member)

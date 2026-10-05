@@ -2365,6 +2365,78 @@ namespace MUnique.OpenMU.GameLogic.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} proposes the drop mode: {1}. All party members must agree (30 seconds)..
+        /// </summary>
+        public static string PartyDropModeVoteStartedFormat {
+            get {
+                return ResourceManager.GetString("PartyDropModeVoteStartedFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} declined the change of the drop mode..
+        /// </summary>
+        public static string PartyDropModeVoteDeclinedFormat {
+            get {
+                return ResourceManager.GetString("PartyDropModeVoteDeclinedFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The drop mode stays: not all party members agreed in time..
+        /// </summary>
+        public static string PartyDropModeVoteExpired {
+            get {
+                return ResourceManager.GetString("PartyDropModeVoteExpired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The vote for the drop mode was cancelled: the party changed..
+        /// </summary>
+        public static string PartyDropModeVoteCancelled {
+            get {
+                return ResourceManager.GetString("PartyDropModeVoteCancelled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A vote for the drop mode is already running..
+        /// </summary>
+        public static string PartyDropModeVoteRunning {
+            get {
+                return ResourceManager.GetString("PartyDropModeVoteRunning", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to free.
+        /// </summary>
+        public static string PartyDropModeNameFree {
+            get {
+                return ResourceManager.GetString("PartyDropModeNameFree", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to random.
+        /// </summary>
+        public static string PartyDropModeNameRandom {
+            get {
+                return ResourceManager.GetString("PartyDropModeNameRandom", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to in turn.
+        /// </summary>
+        public static string PartyDropModeNameRoundRobin {
+            get {
+                return ResourceManager.GetString("PartyDropModeNameRoundRobin", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The chamber of Kundun closes in {0} min.!.
         /// </summary>
         public static string KundunChamberClosesInMinutesFormat {
