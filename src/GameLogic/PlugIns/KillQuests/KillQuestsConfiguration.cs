@@ -142,6 +142,18 @@ public class KillQuest
     public int StatPoints { get; set; }
 
     /// <summary>
+    /// Gets or sets the zen of the reward.
+    /// </summary>
+    [Display(Name = "Zen", Description = "Zen of the reward (about 2 hours of farming at the monster).")]
+    public int Money { get; set; }
+
+    /// <summary>
+    /// Gets or sets the map where the monster lives, shown with the monster name ("Hound (Lorencia)").
+    /// </summary>
+    [Display(Name = "Location", Description = "The map where the monster lives; shown with the monster name.")]
+    public string Location { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets the variants of the quest for characters whose class starts on another map than Lorencia.
     /// </summary>
     [MemberOfAggregate]
@@ -174,6 +186,12 @@ public class KillQuestVariant
     /// </summary>
     [Display(Name = "Monster name")]
     public string MonsterName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the map where the monster lives.
+    /// </summary>
+    [Display(Name = "Location")]
+    public string Location { get; set; } = string.Empty;
 
     /// <inheritdoc />
     public override string ToString() => $"map {this.HomeMapNumber}: {this.MonsterName} ({this.MonsterNumber})";

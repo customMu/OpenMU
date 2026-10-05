@@ -129,7 +129,13 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
     /// <summary>
     /// Gets the monster name of the quest as shown to the player: the one of the variant of the home map, if any.
     /// </summary>
-    private static string MonsterNameFor(Player player, KillQuest quest) => GetVariant(player, quest)?.MonsterName ?? quest.MonsterName;
+    private static string MonsterNameFor(Player player, KillQuest quest)
+    {
+        var variant = GetVariant(player, quest);
+        var name = variant?.MonsterName ?? quest.MonsterName;
+        var location = variant is not null ? variant.Location : quest.Location;
+        return string.IsNullOrWhiteSpace(location) ? name : $"{name} ({location})";
+    }
 
     /// <summary>
     /// Determines whether the killed monster counts for the quest: the monster of the quest or of its variant for the
@@ -204,7 +210,7 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
     private async ValueTask TryHandInAsync(Player player, int step, KillQuest quest, KillQuestsConfiguration configuration)
     {
         var items = this.GetRewardItems(player, quest, configuration);
-        var money = this.GetRewardMoney(player, quest, configuration);
+        var money = this.GetRewardMoney(player, quest, configuration) + Math.Max(0, quest.Money);
         if (items.Count > 0 && !HasSpace(player, items))
         {
             player.TrySetStoredStatValue(Stats.KillQuestRewardWaiting, 1);
@@ -354,7 +360,7 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
     {
         var configuration = this.GetConfiguration();
         var parts = this.GetRewardItems(player, quest, configuration).Select(p => Describe(p.Gear, p.Definition)).ToList();
-        if (this.GetRewardMoney(player, quest, configuration) is > 0 and var money)
+        if (this.GetRewardMoney(player, quest, configuration) + Math.Max(0, quest.Money) is > 0 and var money)
         {
             parts.Add(DescribeMoney(money));
         }
