@@ -53,7 +53,7 @@ public class SkillBookDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConf
                 continue;
             }
 
-            args.Items.Add(new TemporaryItem { Definition = definition, Durability = 1 });
+            args.Items.Add(new TemporaryItem { Definition = definition, Durability = 1, Level = Math.Min(book.ItemLevel, definition.MaximumItemLevel) });
             args.Killer.Logger.LogInformation(
                 "[SkillDrop] {character}: {item} from monster {monsterNumber} {monsterName}, level {monsterLevel}",
                 args.Killer.SelectedCharacter?.Name,
