@@ -47,7 +47,10 @@ internal sealed class ZenConsumptionHandler
             return true;
         }
 
-        var amount = MuHelperZenCostCalculator.Calculate(this._player, this._configuration, this._player.StartTimestamp);
+        // No fee by time while the helper keeps a share of the picked up zen instead.
+        var amount = MuHelperZenFeePlugIn.IsActive(this._player.GameContext)
+            ? 0
+            : MuHelperZenCostCalculator.Calculate(this._player, this._configuration, this._player.StartTimestamp);
 
         if (amount > 0 && this._player.TryRemoveMoney(amount))
         {

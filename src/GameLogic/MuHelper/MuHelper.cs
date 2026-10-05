@@ -131,8 +131,15 @@ public class MuHelper : AsyncDisposable
         await this.StopAsync().ConfigureAwait(false);
     }
 
-    private int CalculateRequiredMoney() =>
-        MuHelperZenCostCalculator.Calculate(this._player, this._configuration, this._startTimestamp);
+    /// <summary>
+    /// Gets a value indicating whether the helper runs.
+    /// </summary>
+    public bool IsRunning => this._runTask is not null;
+
+    // No fee by time while the helper keeps a share of the picked up zen instead.
+    private int CalculateRequiredMoney() => MuHelperZenFeePlugIn.IsActive(this._player.GameContext)
+        ? 0
+        : MuHelperZenCostCalculator.Calculate(this._player, this._configuration, this._startTimestamp);
 
     private async Task RunLoopAsync(CancellationToken cancellationToken)
     {
@@ -168,7 +175,12 @@ public class MuHelper : AsyncDisposable
     private async ValueTask CollectAsync()
     {
         var amount = this.CalculateRequiredMoney();
-        if (amount > 0 && this._player.TryRemoveMoney(amount))
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        if (this._player.TryRemoveMoney(amount))
         {
             await this._player.InvokeViewPlugInAsync<IMuHelperStatusUpdatePlugIn>(p => p.ConsumeMoneyAsync((uint)amount)).ConfigureAwait(false);
         }

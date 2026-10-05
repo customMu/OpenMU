@@ -140,6 +140,8 @@ internal static class MoneyDistribution
         // The rate is applied in double precision: a float multiplication would round money amounts
         // above the ~16.7M the float mantissa can represent exactly, before the cast to long.
         var scaled = (long)(amount * (double)(player.Attributes?[Stats.MoneyAmountRate] ?? 1.0f));
+        // The MU Helper keeps its share of the zen which is picked up while it runs.
+        scaled -= MuHelper.MuHelperZenFeePlugIn.GetFee(player, scaled);
         if (scaled <= 0)
         {
             return false;
