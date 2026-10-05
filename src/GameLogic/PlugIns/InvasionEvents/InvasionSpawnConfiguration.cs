@@ -60,6 +60,12 @@ public class InvasionSpawnConfiguration
     public ushort Count { get; set; }
 
     /// <summary>
+    /// Gets or sets the minimum count: when above 0, a random count from this minimum to <see cref="Count"/> spawns.
+    /// </summary>
+    [Range(0, 254)]
+    public ushort MinimumCount { get; set; }
+
+    /// <summary>
     /// Gets or sets the list of map IDs where the monster can spawn.
     /// </summary>
     [Required]

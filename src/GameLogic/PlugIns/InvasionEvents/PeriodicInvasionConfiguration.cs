@@ -33,6 +33,13 @@ public class PeriodicInvasionConfiguration : PeriodicTaskConfiguration
     public bool ForceSingleMap { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the invasion takes place on one random map: of all maps of the mobs one
+    /// is picked, and only the mobs of that map spawn.
+    /// </summary>
+    [Display(Name = "One Random Map", Description = "One map is picked at random from the maps of all mobs; only the mobs of that map spawn.", Order = 6)]
+    public bool OneRandomMap { get; set; }
+
+    /// <summary>
     /// Gets or sets the monster spawns for this invasion.
     /// </summary>
     [Display(Name = "Monster Spawns", Order = 7)]

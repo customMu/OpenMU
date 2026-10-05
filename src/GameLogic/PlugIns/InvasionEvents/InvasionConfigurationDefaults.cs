@@ -21,17 +21,18 @@ internal static class InvasionConfigurationDefaults
         StartMessage = "[{mapName}] Golden invasion!",
         EndMessage = "[{mapName}] Golden invasion has ended.",
         Timetable = PeriodicTaskConfiguration.GenerateTimeSequence(TimeSpan.FromHours(4)).ToList(),
+        OneRandomMap = true,
         Mobs =
         [
-            new(InvasionMonsters.GoldenBudgeDragon, 20, [InvasionMaps.Lorencia], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenGoblin, 20, [InvasionMaps.Noria], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenSoldier, 20, [InvasionMaps.Devias], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenTitan, 10, [InvasionMaps.Devias], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenVepar, 20, [InvasionMaps.Atlans], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenLizardKing, 10, [InvasionMaps.Atlans], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenWheel, 20, [InvasionMaps.Tarkan], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenTantallos, 10, [InvasionMaps.Tarkan], SpawnMapStrategy.RandomMap),
-            new(InvasionMonsters.GoldenDragon, 10, [InvasionMaps.Lorencia, InvasionMaps.Noria, InvasionMaps.Devias], SpawnMapStrategy.RandomMap),
+            new(InvasionMonsters.GoldenBudgeDragon, 3, [InvasionMaps.Lorencia], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenGoblin, 3, [InvasionMaps.Noria], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenSoldier, 3, [InvasionMaps.Devias], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenTitan, 3, [InvasionMaps.Devias], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenVepar, 3, [InvasionMaps.Atlans], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenLizardKing, 3, [InvasionMaps.Atlans], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenWheel, 3, [InvasionMaps.Tarkan], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenTantallos, 3, [InvasionMaps.Tarkan], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
+            new(InvasionMonsters.GoldenDragon, 3, [InvasionMaps.Lorencia, InvasionMaps.Noria, InvasionMaps.Devias], SpawnMapStrategy.RandomMap) { MinimumCount = 1 },
         ],
     };
 

@@ -139,7 +139,10 @@ public abstract class BaseInvasionPlugIn<TConfiguration> : PeriodicTaskBasePlugI
         {
             if (gameContext.Configuration.Monsters.FirstOrDefault(m => m.Number == spawn.MonsterId) is { } monsterDefinition)
             {
-                await this.CreateMonstersAsync(gameContext, logger, gameMap, monsterDefinition, spawn.Count, spawn.AnnounceDeath, spawn.X, spawn.Y).ConfigureAwait(false);
+                var count = spawn.MinimumCount is > 0 and var minimum && minimum < spawn.Count
+                    ? (ushort)Rand.NextInt(minimum, spawn.Count + 1)
+                    : spawn.Count;
+                await this.CreateMonstersAsync(gameContext, logger, gameMap, monsterDefinition, count, spawn.AnnounceDeath, spawn.X, spawn.Y).ConfigureAwait(false);
             }
             else
             {
@@ -160,6 +163,12 @@ public abstract class BaseInvasionPlugIn<TConfiguration> : PeriodicTaskBasePlugI
         if (config.ForceSingleMap)
         {
             this.SelectSingleMap(state, mobs);
+            return;
+        }
+
+        if (config.OneRandomMap)
+        {
+            SelectOneRandomMap(state, mobs);
             return;
         }
 
@@ -350,6 +359,29 @@ public abstract class BaseInvasionPlugIn<TConfiguration> : PeriodicTaskBasePlugI
         {
             gameContext.LoggerFactory.CreateLogger(typeof(BaseInvasionPlugIn<TConfiguration>)).LogError(ex, "Error during invasion monster death broadcast.");
         }
+    }
+
+    /// <summary>
+    /// Picks one map at random from the maps of all mobs and registers the mobs of that map on it
+    /// (<see cref="PeriodicInvasionConfiguration.OneRandomMap"/>); the other mobs don't spawn.
+    /// </summary>
+    /// <param name="state">The invasion state.</param>
+    /// <param name="mobs">The mob spawn configurations.</param>
+    private static void SelectOneRandomMap(InvasionGameServerState state, IList<InvasionSpawnConfiguration> mobs)
+    {
+        var maps = mobs.SelectMany(m => m.MapIds).Distinct().ToList();
+        if (maps.Count == 0)
+        {
+            return;
+        }
+
+        var chosenMap = maps[Rand.NextInt(0, maps.Count)];
+        foreach (var mob in mobs.Where(m => m.MapIds.Contains(chosenMap)))
+        {
+            state.RegisterMap(chosenMap, mob.MonsterId);
+        }
+
+        state.SetAnnouncedMaps([chosenMap]);
     }
 
     /// <summary>

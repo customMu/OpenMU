@@ -40,11 +40,13 @@ public class EventsController : Controller
     [HttpGet]
     public async Task<IActionResult> GetEventsAsync()
     {
-        if (this._gameServers.Values.OfType<GameServer>().FirstOrDefault() is not { } server)
+        var servers = this._gameServers.Values.OfType<GameServer>().OrderBy(s => s.Id).ToList();
+        if (servers.FirstOrDefault() is not { } server)
         {
             return this.Ok(Array.Empty<EventState>());
         }
 
+        // The schedules are the same on all game servers; the invasions run on each game server with its own monsters.
         var context = server.Context;
         var plugIns = context.PlugInManager;
         var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, context.ServerTimeZone);
@@ -52,21 +54,37 @@ public class EventsController : Controller
 
         foreach (var invasion in plugIns.GetActivePlugInsOf<IPeriodicTaskPlugIn>().Where(p => IsInvasion(p.GetType())))
         {
-            var monsters = (IReadOnlyList<GameLogic.NPC.Monster>)invasion.GetType().GetMethod("GetAliveMonsters")!.Invoke(invasion, [context])!;
-            var maps = monsters
-                .Select(m => m.CurrentMap?.Definition.Name.ValueInNeutralLanguage)
-                .Where(name => !string.IsNullOrEmpty(name))
-                .Distinct()
-                .ToList();
+            var name = GetName(invasion.GetType());
             var next = (DateTime?)invasion.GetType().GetMethod("GetNextStartLocal")!.Invoke(invasion, [context]);
-            result.Add(new EventState(
-                "invasion",
-                GetName(invasion.GetType()),
-                monsters.Count > 0 ? string.Join(", ", maps) : null,
-                monsters.Count > 0,
-                monsters.Count,
-                ToSeconds(next, nowLocal),
-                null));
+            var anyActive = false;
+            foreach (var gameServer in servers)
+            {
+                // The plugin instance of each game server holds the monsters of its invasion.
+                var serverInvasion = gameServer.Context.PlugInManager.GetActivePlugInsOf<IPeriodicTaskPlugIn>().FirstOrDefault(p => p.GetType() == invasion.GetType());
+                if (serverInvasion is null)
+                {
+                    continue;
+                }
+
+                var monsters = (IReadOnlyList<GameLogic.NPC.Monster>)serverInvasion.GetType().GetMethod("GetAliveMonsters")!.Invoke(serverInvasion, [gameServer.Context])!;
+                if (monsters.Count == 0)
+                {
+                    continue;
+                }
+
+                anyActive = true;
+                var maps = monsters
+                    .GroupBy(m => m.CurrentMap?.Definition.Name.ValueInNeutralLanguage)
+                    .Where(g => !string.IsNullOrEmpty(g.Key))
+                    .Select(g => g.Key!)
+                    .ToList();
+                result.Add(new EventState("invasion", name, string.Join(", ", maps), true, monsters.Count, null, null, servers.Count > 1 ? gameServer.Description : null));
+            }
+
+            if (!anyActive)
+            {
+                result.Add(new EventState("invasion", name, null, false, null, ToSeconds(next, nowLocal), null));
+            }
         }
 
         await AddMiniGameAsync(result, context, MiniGameType.BloodCastle, "Blood Castle", "Devias").ConfigureAwait(false);
@@ -142,5 +160,6 @@ public class EventsController : Controller
     /// <param name="Monsters">The living monsters of an invasion.</param>
     /// <param name="StartsInSeconds">The seconds until the next start, if known and not active.</param>
     /// <param name="Info">Additional information, e.g. the multiplier of the happy hour.</param>
-    public sealed record EventState(string Kind, string Name, string? Location, bool Active, int? Monsters, int? StartsInSeconds, string? Info);
+    /// <param name="Server">The game server of an active invasion, when there are several game servers.</param>
+    public sealed record EventState(string Kind, string Name, string? Location, bool Active, int? Monsters, int? StartsInSeconds, string? Info, string? Server = null);
 }
