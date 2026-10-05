@@ -39,6 +39,13 @@ public class SetGuardConfiguration
     [Display(Name = "Step bonus (%)", Description = "Bonus per reached enhancement step, in percent of the rank value. 10 means x1.5 with all five steps.")]
     public float StepBonusPercent { get; set; } = 10f;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether a complete set of a class which can't wear one of its pieces (the helm of
+    /// the Magic Gladiator, the gloves of the Rage Fighter) gives the defense of that piece, at the lowest level of the set.
+    /// </summary>
+    [Display(Name = "Compensate missing pieces", Description = "A complete set of a class which can't wear one of its pieces (MG: helm, RF: gloves) gives the base defense of that piece at the lowest level of the set - the sets which the class shares with other classes are as strong as for them.")]
+    public bool CompensateMissingPieces { get; set; } = true;
+
     private static ICollection<SetGuardSet> CreateDefaultSets() => new List<SetGuardSet>
     {
         new() { Name = "Pad", ItemNumber = 2, Rank = 1 },

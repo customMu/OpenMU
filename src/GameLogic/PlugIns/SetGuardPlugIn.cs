@@ -50,6 +50,39 @@ public class SetGuardPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<SetGua
     }
 
     /// <summary>
+    /// Creates the power up which compensates the pieces of a complete set which the character class can't wear (the helm
+    /// of the Magic Gladiator, the gloves of the Rage Fighter): their base defense at the lowest level of the set.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="activeEquippedItems">The equipped items which give their bonuses.</param>
+    /// <param name="attributeHolder">The attribute holder.</param>
+    /// <returns>The power up, or <c>null</c> if no complete set with missing pieces is equipped.</returns>
+    public PowerUpWrapper? CreateMissingPiecePowerUp(Player player, IReadOnlyCollection<Item> activeEquippedItems, AttributeSystem attributeHolder)
+    {
+        var configuration = this.Configuration ??= (SetGuardConfiguration)this.CreateDefaultConfig();
+        if (!configuration.CompensateMissingPieces
+            || this.GetCompleteSet(player, activeEquippedItems) is not { } completeSet)
+        {
+            return null;
+        }
+
+        var characterClass = player.SelectedCharacter!.CharacterClass!;
+        var defense = player.GameContext.Configuration.Items
+            .Where(definition => definition.Number == completeSet.SetNumber
+                                 && definition.Group >= FirstArmorGroup
+                                 && definition.Group <= LastArmorGroup
+                                 && !definition.QualifiedCharacters.Contains(characterClass))
+            .GroupBy(definition => definition.Group)
+            .Select(group => group.First())
+            .SelectMany(definition => definition.BasePowerUpAttributes.Where(p => p.TargetAttribute == Stats.DefenseBase))
+            .Sum(powerUp => powerUp.BaseValue
+                            + (powerUp.BonusPerLevelTable?.BonusPerLevel.FirstOrDefault(b => b.Level == completeSet.LowestLevel)?.AdditionalValue ?? 0));
+        return defense > 0
+            ? new PowerUpWrapper(new SimpleElement(defense, AggregateType.AddRaw), Stats.DefenseBase, attributeHolder)
+            : null;
+    }
+
+    /// <summary>
     /// Gets the damage decrease in percent of the complete set which the player wears.
     /// </summary>
     /// <param name="player">The player.</param>
@@ -58,10 +91,27 @@ public class SetGuardPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<SetGua
     public float GetDamageDecreasePercent(Player player, IReadOnlyCollection<Item> activeEquippedItems)
     {
         var configuration = this.Configuration ??= (SetGuardConfiguration)this.CreateDefaultConfig();
+        if (this.GetCompleteSet(player, activeEquippedItems) is not { } completeSet
+            || configuration.Sets.FirstOrDefault(s => s.ItemNumber == completeSet.SetNumber) is not { } set
+            || configuration.Ranks.FirstOrDefault(r => r.Rank == set.Rank) is not { } rank)
+        {
+            return 0;
+        }
+
+        var reachedSteps = ParseStepLevels(configuration.StepLevels).Count(level => completeSet.LowestLevel >= level);
+        return rank.Percent * (1f + (reachedSteps * configuration.StepBonusPercent / 100f));
+    }
+
+    /// <summary>
+    /// Gets the complete set which the player wears: every piece of one set which the character class can wear is
+    /// equipped and active (durability above 0).
+    /// </summary>
+    private (short SetNumber, byte LowestLevel)? GetCompleteSet(Player player, IReadOnlyCollection<Item> activeEquippedItems)
+    {
         var characterClass = player.SelectedCharacter?.CharacterClass;
         if (characterClass is null)
         {
-            return 0;
+            return null;
         }
 
         var armorPieces = activeEquippedItems
@@ -69,15 +119,13 @@ public class SetGuardPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<SetGua
             .ToList();
         if (armorPieces.Count == 0)
         {
-            return 0;
+            return null;
         }
 
         var setNumber = armorPieces[0].Definition!.Number;
-        if (armorPieces.Any(item => item.Definition!.Number != setNumber)
-            || configuration.Sets.FirstOrDefault(s => s.ItemNumber == setNumber) is not { } set
-            || configuration.Ranks.FirstOrDefault(r => r.Rank == set.Rank) is not { } rank)
+        if (armorPieces.Any(item => item.Definition!.Number != setNumber))
         {
-            return 0;
+            return null;
         }
 
         var requiredGroups = player.GameContext.Configuration.Items
@@ -91,12 +139,10 @@ public class SetGuardPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<SetGua
         if (requiredGroups.Count == 0
             || requiredGroups.Any(group => armorPieces.All(item => item.Definition!.Group != group)))
         {
-            return 0;
+            return null;
         }
 
-        var lowestLevel = armorPieces.Min(item => item.Level);
-        var reachedSteps = ParseStepLevels(configuration.StepLevels).Count(level => lowestLevel >= level);
-        return rank.Percent * (1f + (reachedSteps * configuration.StepBonusPercent / 100f));
+        return (setNumber, armorPieces.Min(item => item.Level));
     }
 
     private static IEnumerable<int> ParseStepLevels(string? stepLevels)

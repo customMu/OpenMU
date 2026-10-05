@@ -230,9 +230,18 @@ public class InventoryStorage : Storage, IInventoryStorage
         var factory = this._gameContext.ItemPowerUpFactory;
         var activeItems = this.EquippedItems.Where(this._player.IsEquippedItemActive).ToList();
         var setPowerUps = factory.GetSetPowerUps(activeItems, this._player.Attributes, this._player.GameContext.Configuration).ToList();
-        if (this._gameContext.FeaturePlugIns.GetPlugIn<SetGuardPlugIn>()?.CreatePowerUp(this._player, activeItems, this._player.Attributes) is { } setGuard)
+        if (this._gameContext.FeaturePlugIns.GetPlugIn<SetGuardPlugIn>() is { } setGuardPlugIn)
         {
-            setPowerUps.Add(setGuard);
+            if (setGuardPlugIn.CreatePowerUp(this._player, activeItems, this._player.Attributes) is { } setGuard)
+            {
+                setPowerUps.Add(setGuard);
+            }
+
+            // MG / RF: the defense of the piece of the set which the class can't wear
+            if (setGuardPlugIn.CreateMissingPiecePowerUp(this._player, activeItems, this._player.Attributes) is { } missingPieces)
+            {
+                setPowerUps.Add(missingPieces);
+            }
         }
 
         this._player.Attributes.ItemSetPowerUps = setPowerUps;
