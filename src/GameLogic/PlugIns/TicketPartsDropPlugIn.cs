@@ -80,7 +80,9 @@ public class TicketPartsDropConfiguration
         // Blood Castle and Devil Square have the same levels 1-7; Blood Castle 8 (50 resets) from the monsters of level 395+.
         (int Minimum, int Maximum, float Chance)[] devilSquare =
             [(1, 90, 0.6f), (91, 165, 0.5f), (166, 215, 0.42f), (216, 270, 0.35f), (271, 320, 0.3f), (321, 357, 0.25f), (358, 394, 0.2f)];
-        (int Minimum, int Maximum, float Chance)[] bloodCastle = [.. devilSquare, (395, 400, 0.15f)];
+        // Blood Castle: 0.1 % (+1) ... 0.01 % (+7) per part, +8 like +7.
+        (int Minimum, int Maximum, float Chance)[] bloodCastle =
+            [(1, 90, 0.1f), (91, 165, 0.068f), (166, 215, 0.046f), (216, 270, 0.032f), (271, 320, 0.022f), (321, 357, 0.015f), (358, 394, 0.01f), (395, 400, 0.01f)];
         var result = new List<TicketPart>();
         for (var i = 0; i < bloodCastle.Length; i++)
         {

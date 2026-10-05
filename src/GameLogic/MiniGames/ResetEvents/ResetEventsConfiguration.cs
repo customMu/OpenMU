@@ -96,12 +96,13 @@ public class ResetEventsConfiguration
         new() { Level = 8, MinimumResets = 50, MonsterLevel = 400, Money = 700_000, LifeJewels = 2, CreationJewels = 2, GuardianJewels = 1 },
     ];
 
+    // Loch's Feather and Crest of Monarch only at levels 2 and 3, level 3 five times as often.
     private static List<ResetEventTier> CreateDefaultDevilSquare() =>
     [
-        new() { Level = 1, MinimumResets = 0, MonsterLevel = 40, Money = 60_000, ChaosJewels = 2, BlessJewels = 1, FeatherChance = 0.01f, CrestChance = 0.01f },
+        new() { Level = 1, MinimumResets = 0, MonsterLevel = 40, Money = 60_000, ChaosJewels = 2, BlessJewels = 1 },
         new() { Level = 2, MinimumResets = 5, MonsterLevel = 140, Money = 150_000, BlessJewels = 2, SoulJewels = 1, ChaosWeaponChance = 0.2f, FeatherChance = 0.025f, CrestChance = 0.025f },
-        new() { Level = 3, MinimumResets = 10, MonsterLevel = 190, Money = 220_000, BlessJewels = 1, SoulJewels = 2, ChaosWeaponChance = 0.2f, FeatherChance = 0.04f, CrestChance = 0.04f },
-        new() { Level = 4, MinimumResets = 15, MonsterLevel = 240, Money = 300_000, SoulJewels = 2, LifeJewels = 1, ChaosWeaponChance = 0.2f, FeatherChance = 0.06f, CrestChance = 0.06f },
+        new() { Level = 3, MinimumResets = 10, MonsterLevel = 190, Money = 220_000, BlessJewels = 1, SoulJewels = 2, FeatherChance = 0.125f, CrestChance = 0.125f },
+        new() { Level = 4, MinimumResets = 15, MonsterLevel = 240, Money = 300_000, SoulJewels = 2, LifeJewels = 1 },
         new() { Level = 5, MinimumResets = 22, MonsterLevel = 300, Money = 420_000, SoulJewels = 1, LifeJewels = 1, CreationJewels = 1 },
         new() { Level = 6, MinimumResets = 30, MonsterLevel = 340, Money = 520_000, LifeJewels = 2, CreationJewels = 1 },
         new() { Level = 7, MinimumResets = 38, MonsterLevel = 375, Money = 600_000, LifeJewels = 2, CreationJewels = 1, GuardianJewels = 1 },
