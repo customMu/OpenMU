@@ -4,6 +4,7 @@
 
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Quests;
 
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 using MUnique.OpenMU.GameLogic.Views.Quest;
 
@@ -35,6 +36,13 @@ public class QuestStartAction
         }
 
         var questState = player.SelectedCharacter!.QuestStates.FirstOrDefault(q => q.Group == group);
+        var missingResets = player.GameContext.FeaturePlugIns.GetPlugIn<QuestResetRequirementsPlugIn>()?.GetMissingResets(player, quest) ?? 0;
+        if (questState?.ActiveQuest is null && missingResets > 0)
+        {
+            player.Logger.LogDebug("Failed, the quest requires {0} resets.", missingResets);
+            return;
+        }
+
         if (questState is null)
         {
             questState = player.PersistenceContext.CreateNew<CharacterQuestState>();

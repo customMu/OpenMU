@@ -185,6 +185,23 @@ public class TalkNpcAction
             return;
         }
 
+        // the next quest of this NPC may need resets (plugin "Quest reset requirements"); an active quest can be finished
+        if (questState?.ActiveQuest is null || !quests.Contains(questState.ActiveQuest))
+        {
+            var lastFinishedNumber = questState?.LastFinishedQuest?.Number ?? -1;
+            var nextQuest = quests.Where(q => q.Number > lastFinishedNumber).MinBy(q => q.Number);
+            var missingResets = nextQuest is null ? 0 : player.GameContext.FeaturePlugIns.GetPlugIn<QuestResetRequirementsPlugIn>()?.GetMissingResets(player, nextQuest) ?? 0;
+            if (missingResets > 0)
+            {
+                await player.InvokeViewPlugInAsync<IShowMessageOfObjectPlugIn>(p => p.ShowMessageOfObjectAsync(
+                    $"You are not ready yet. Come back when you are stronger - after {missingResets} reset{(missingResets == 1 ? string.Empty : "s")}.",
+                    player.OpenedNpc)).ConfigureAwait(false);
+                player.OpenedNpc = null;
+                await player.PlayerState.TryAdvanceToAsync(PlayerState.EnteredWorld).ConfigureAwait(false);
+                return;
+            }
+        }
+
         await player.InvokeViewPlugInAsync<ILegacyQuestStateDialogPlugIn>(p => p.ShowAsync()).ConfigureAwait(false);
     }
 
