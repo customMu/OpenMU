@@ -91,14 +91,18 @@ public class KillQuestsConfiguration
         Set(20, 39);               // Summoner: Mistery
         Set(24, 5, gloves: false); // Rage Fighter: Leather without gloves
 
-        // the weapon: a Short Sword (+luck; it has no skill) for all but the elf: a Short Bow (+skill, +luck) with arrows
-        foreach (var classNumber in new[] { 0, 4, 12, 16, 20, 24 })
+        // the weapon (+luck): one weapon for all classes which can use it, the weakest one with a skill where rank 1 has one:
+        // Morning Star (Falling Slash) for DK, MG, DL and RF, Golden Crossbow (Triple Shot) with bolts for the elf;
+        // Skull Staff for DW and Mistery Stick for the summoner (the staffs and sticks of rank 1 have no skill)
+        foreach (var classNumber in new[] { 4, 12, 16, 24 })
         {
-            Weapon(classNumber, 0, 1);
+            Weapon(classNumber, 2, 1);
         }
 
-        Weapon(8, 4, 0);
-        gear.Add(new KillQuestGearItem { ClassNumber = 8, Step = 6, ItemGroup = 4, ItemNumber = 15 });
+        Weapon(8, 4, 9);
+        Weapon(0, 5, 0);
+        Weapon(20, 5, 14);
+        gear.Add(new KillQuestGearItem { ClassNumber = 8, Step = 6, ItemGroup = 4, ItemNumber = 7 });
         return gear;
     }
 }
