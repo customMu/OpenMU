@@ -12,7 +12,7 @@ namespace MUnique.OpenMU.GameLogic.Views;
 /// <param name="Name">The name of the monster.</param>
 /// <param name="Level">The level of the monster.</param>
 /// <param name="Count">The number of monsters.</param>
-public sealed record MinimapSpot(byte X, byte Y, string Name, int Level, int Count);
+public sealed record MinimapSpot(byte X, byte Y, string Name, int Level, int Count, bool IsBoss = false);
 
 /// <summary>
 /// Interface of a view which shows the monster spots of the current map on the minimap.

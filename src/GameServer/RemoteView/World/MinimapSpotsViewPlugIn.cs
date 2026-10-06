@@ -14,7 +14,7 @@ using MUnique.OpenMU.PlugIns;
 
 /// <summary>
 /// Sends the monster spots of the map for the minimap (custom packet <c>C2 [size] FB 06</c>):
-/// <c>[count u16 LE] count × {[x] [y] [level u16 LE] [monster count] [name length] [name UTF-8]}</c>.
+/// <c>[count u16 LE] count × {[x] [y] [level u16 LE] [monster count] [flags: 1 = boss] [name length] [name UTF-8]}</c>.
 /// </summary>
 [PlugIn]
 [Display(Name = "Minimap spots view", Description = "Sends the monster spots of the map to the minimap of the custom client.")]
@@ -49,6 +49,7 @@ public class MinimapSpotsViewPlugIn : IMinimapSpotsViewPlugIn
         }
 
         var entries = new List<(MinimapSpot Spot, byte[] Name)>();
+        const int entryHeader = 7;   // x, y, level (u16), monsters, flags (1 = boss), name length
         var size = 7;
         foreach (var spot in spots)
         {
@@ -58,13 +59,13 @@ public class MinimapSpotsViewPlugIn : IMinimapSpotsViewPlugIn
                 name = name[..MaximumNameLength];
             }
 
-            if (size + 6 + name.Length > MaximumPacketSize)
+            if (size + entryHeader + name.Length > MaximumPacketSize)
             {
                 break;
             }
 
             entries.Add((spot, name));
-            size += 6 + name.Length;
+            size += entryHeader + name.Length;
         }
 
         int Write()
@@ -82,9 +83,10 @@ public class MinimapSpotsViewPlugIn : IMinimapSpotsViewPlugIn
                 span[offset + 1] = spot.Y;
                 BinaryPrimitives.WriteUInt16LittleEndian(span[(offset + 2)..], (ushort)Math.Clamp(spot.Level, 0, ushort.MaxValue));
                 span[offset + 4] = (byte)Math.Clamp(spot.Count, 0, byte.MaxValue);
-                span[offset + 5] = (byte)name.Length;
-                name.CopyTo(span[(offset + 6)..]);
-                offset += 6 + name.Length;
+                span[offset + 5] = spot.IsBoss ? (byte)1 : (byte)0;
+                span[offset + 6] = (byte)name.Length;
+                name.CopyTo(span[(offset + entryHeader)..]);
+                offset += entryHeader + name.Length;
             }
 
             return size;

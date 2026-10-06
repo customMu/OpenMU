@@ -27,6 +27,11 @@ public class MinimapSpotsPlugIn : IObjectAddedToMapPlugIn
 
     private const int MaximumSpots = 400;
 
+    /// <summary>
+    /// The bosses of the hunting maps (role "boss" of tools/balance/mob-layout.csv): their spots are marked on the minimap.
+    /// </summary>
+    private static readonly HashSet<short> BossMonsters = [38, 49, 59, 63, 77, 161, 181, 189, 197, 267, 275, 295, 309, 338, 459];
+
     private readonly ConditionalWeakTable<GameMapDefinition, IReadOnlyList<MinimapSpot>> _spotsByMap = new();
 
     /// <summary>
@@ -63,7 +68,8 @@ public class MinimapSpotsPlugIn : IObjectAddedToMapPlugIn
                 (byte)Math.Round(c.SumY / c.Weight),
                 c.Monster.Designation.ValueInNeutralLanguage,
                 (int)(c.Monster.Attributes.FirstOrDefault(a => a.AttributeDefinition?.Id == Stats.Level.Id)?.Value ?? 0),
-                c.Count))
+                c.Count,
+                BossMonsters.Contains(c.Monster.Number)))
             .ToList();
     }
 
