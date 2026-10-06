@@ -27,33 +27,25 @@ public class ItemConsumeAction
         var item = player.Inventory?.GetItem(inventorySlot);
         if (item?.Definition is null)
         {
-            player.Logger.LogInformation("[MultiShotDebug][Dispatch] item or item.Definition is NULL at slot " + inventorySlot);
             await player.InvokeViewPlugInAsync<IRequestedItemConsumptionFailedPlugIn>(p => p.RequestedItemConsumptionFailedAsync()).ConfigureAwait(false);
             return;
         }
 
-        player.Logger.LogInformation($"[MultiShotDebug][Dispatch] item={item.Definition.Name}, Number={item.Definition.Number}, Group={item.Definition.Group}, Skill={(item.Definition.Skill == null ? "NULL" : item.Definition.Skill.Name)}, IsWearable={item.IsWearable()}, ConsumeEffect={(item.Definition.ConsumeEffect == null ? "NULL" : "SET")}");
-
         var consumeHandler = player.GameContext.PlugInManager.GetStrategy<ItemIdentifier, IItemConsumeHandlerPlugIn>(new ItemIdentifier(item.Definition.Number, item.Definition.Group))
                       ?? player.GameContext.PlugInManager.GetStrategy<ItemIdentifier, IItemConsumeHandlerPlugIn>(new ItemIdentifier(null, item.Definition.Group));
-
-        player.Logger.LogInformation($"[MultiShotDebug][Dispatch] after exact/group match: consumeHandler={(consumeHandler == null ? "NULL" : consumeHandler.GetType().Name)}");
 
         if (consumeHandler is null && item.Definition.Skill is { } && !item.IsWearable())
         {
             consumeHandler = player.GameContext.PlugInManager.GetStrategy<ItemIdentifier, IItemConsumeHandlerPlugIn>(ItemConstants.AllScrolls);
-            player.Logger.LogInformation($"[MultiShotDebug][Dispatch] after AllScrolls fallback: consumeHandler={(consumeHandler == null ? "NULL" : consumeHandler.GetType().Name)}");
         }
 
         if (consumeHandler is null && item.Definition.ConsumeEffect is { })
         {
             consumeHandler = this._magicEffectHandler;
-            player.Logger.LogInformation("[MultiShotDebug][Dispatch] fell back to magicEffectHandler");
         }
 
         if (consumeHandler is null)
         {
-            player.Logger.LogInformation("[MultiShotDebug][Dispatch] NO HANDLER FOUND AT ALL - sending UsingThisItemNotImplemented");
             await player.InvokeViewPlugInAsync<IRequestedItemConsumptionFailedPlugIn>(p => p.RequestedItemConsumptionFailedAsync()).ConfigureAwait(false);
             await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.UsingThisItemNotImplemented)).ConfigureAwait(false);
             return;
@@ -67,15 +59,12 @@ public class ItemConsumeAction
             plugInPoint.ItemConsuming(player, item, targetItem, eventArgs);
             if (eventArgs.Cancel)
             {
-                player.Logger.LogInformation("[MultiShotDebug][Dispatch] cancelled by IItemConsumingPlugIn");
                 return;
             }
         }
 
-        player.Logger.LogInformation($"[MultiShotDebug][Dispatch] calling {consumeHandler.GetType().Name}.ConsumeItemAsync");
         if (!await consumeHandler.ConsumeItemAsync(player, item, targetItem, fruitUsage).ConfigureAwait(false))
         {
-            player.Logger.LogInformation("[MultiShotDebug][Dispatch] ConsumeItemAsync returned false");
             await player.InvokeViewPlugInAsync<IRequestedItemConsumptionFailedPlugIn>(p => p.RequestedItemConsumptionFailedAsync()).ConfigureAwait(false);
             return;
         }

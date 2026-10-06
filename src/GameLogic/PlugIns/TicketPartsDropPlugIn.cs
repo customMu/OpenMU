@@ -76,26 +76,40 @@ public class TicketPartsDropConfiguration
 
     private static List<TicketPart> CreateDefaultParts()
     {
-        // The level ranges follow the monster levels of the reset ladder of the event levels (plugin 'Events by resets').
-        // Blood Castle and Devil Square have the same levels 1-7; Blood Castle 8 (50 resets) from the monsters of level 395+.
-        (int Minimum, int Maximum, float Chance)[] devilSquare =
-            [(1, 90, 0.06f), (91, 165, 0.05f), (166, 215, 0.042f), (216, 270, 0.035f), (271, 320, 0.03f), (321, 357, 0.025f), (358, 394, 0.02f)];
-        // Blood Castle: 0.01 % (+1) ... 0.001 % (+7) per part, +8 like +7 (Devil Square 0.06 % ... 0.02 %).
-        (int Minimum, int Maximum, float Chance)[] bloodCastle =
-            [(1, 90, 0.01f), (91, 165, 0.0068f), (166, 215, 0.0046f), (216, 270, 0.0032f), (271, 320, 0.0022f), (321, 357, 0.0015f), (358, 394, 0.001f), (395, 400, 0.001f)];
+        // The monster levels of the reset steps of the event levels (plugin 'Events by resets'): a level of the parts drops
+        // from the monsters of the reset where its event level starts until the next one; in the window the chance grows:
+        // first third x0.5, middle x1, last third x1.5 of the base chance (BC 8 for 50 resets: only level 400).
+        (int Minimum, int Maximum)[] windows = [(1, 119), (120, 170), (171, 220), (221, 289), (290, 341), (342, 365), (366, 399), (400, 400)];
+        float[] bloodCastle = [0.01f, 0.0068f, 0.0046f, 0.0032f, 0.0022f, 0.0015f, 0.001f, 0.001f];
+        float[] devilSquare = [0.06f, 0.05f, 0.042f, 0.035f, 0.03f, 0.025f, 0.02f];
         var result = new List<TicketPart>();
-        for (var i = 0; i < bloodCastle.Length; i++)
+        void Add(string name, byte group, short number, int level, float chance)
         {
-            var (minimum, maximum, chance) = bloodCastle[i];
-            result.Add(new() { Name = $"Scroll of Archangel +{i + 1}", ItemGroup = 13, ItemNumber = 16, ItemLevel = (byte)(i + 1), MinimumMonsterLevel = minimum, MaximumMonsterLevel = maximum, ChancePercent = chance });
-            result.Add(new() { Name = $"Blood Bone +{i + 1}", ItemGroup = 13, ItemNumber = 17, ItemLevel = (byte)(i + 1), MinimumMonsterLevel = minimum, MaximumMonsterLevel = maximum, ChancePercent = chance });
+            var (minimum, maximum) = windows[level - 1];
+            if (minimum == maximum)
+            {
+                result.Add(new() { Name = $"{name} +{level}", ItemGroup = group, ItemNumber = number, ItemLevel = (byte)level, MinimumMonsterLevel = minimum, MaximumMonsterLevel = maximum, ChancePercent = chance });
+                return;
+            }
+
+            var third = (maximum - minimum + 1) / 3;
+            (int From, int To, float Factor)[] steps = [(minimum, minimum + third - 1, 0.5f), (minimum + third, maximum - third, 1f), (maximum - third + 1, maximum, 1.5f)];
+            foreach (var (from, to, factor) in steps)
+            {
+                result.Add(new() { Name = $"{name} +{level}", ItemGroup = group, ItemNumber = number, ItemLevel = (byte)level, MinimumMonsterLevel = from, MaximumMonsterLevel = to, ChancePercent = chance * factor });
+            }
         }
 
-        for (var i = 0; i < devilSquare.Length; i++)
+        for (var level = 1; level <= bloodCastle.Length; level++)
         {
-            var (minimum, maximum, chance) = devilSquare[i];
-            result.Add(new() { Name = $"Devil's Eye +{i + 1}", ItemGroup = 14, ItemNumber = 17, ItemLevel = (byte)(i + 1), MinimumMonsterLevel = minimum, MaximumMonsterLevel = maximum, ChancePercent = chance });
-            result.Add(new() { Name = $"Devil's Key +{i + 1}", ItemGroup = 14, ItemNumber = 18, ItemLevel = (byte)(i + 1), MinimumMonsterLevel = minimum, MaximumMonsterLevel = maximum, ChancePercent = chance });
+            Add("Scroll of Archangel", 13, 16, level, bloodCastle[level - 1]);
+            Add("Blood Bone", 13, 17, level, bloodCastle[level - 1]);
+        }
+
+        for (var level = 1; level <= devilSquare.Length; level++)
+        {
+            Add("Devil's Eye", 14, 17, level, devilSquare[level - 1]);
+            Add("Devil's Key", 14, 18, level, devilSquare[level - 1]);
         }
 
         return result;
