@@ -67,7 +67,14 @@ public class ItemDropByRankPlugIn : IAdditionalItemDropPlugIn, ISupportCustomCon
             return ValueTask.CompletedTask;
         }
 
-        var roll = Rand.NextDouble();
+        var multiplier = GetMonsterMultiplier(configuration, args.Monster.Number);
+        if (multiplier <= 0)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        // the multiplier scales the chance of every item: the same as dividing the roll
+        var roll = Rand.NextDouble() / multiplier;
         if (roll >= candidates.TotalChance)
         {
             return ValueTask.CompletedTask;
@@ -172,6 +179,19 @@ public class ItemDropByRankPlugIn : IAdditionalItemDropPlugIn, ISupportCustomCon
     private static int GetStartSixth(ItemDefinition definition)
     {
         return StartSixthByGroup.TryGetValue(definition.Group, out var sixth) ? sixth : WeaponAndShieldStartSixth;
+    }
+
+    private static float GetMonsterMultiplier(ItemDropByRankConfiguration configuration, short monsterNumber)
+    {
+        foreach (var entry in configuration.MonsterMultipliers)
+        {
+            if (entry.MonsterNumber == monsterNumber)
+            {
+                return entry.Multiplier;
+            }
+        }
+
+        return 1f;
     }
 
     private sealed record Candidate(ItemDefinition Definition, int Rank, int MinimumMonsterLevel, int MaximumMonsterLevel, double Chance);

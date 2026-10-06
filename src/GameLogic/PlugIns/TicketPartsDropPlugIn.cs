@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameLogic.PlugIns;
 
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.DataModel.Composition;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.PlugIns;
 
@@ -36,7 +37,14 @@ public class TicketPartsDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomCo
         }
 
         var level = (int)args.Monster[Stats.Level];
-        var roll = Rand.NextDouble();
+        var multiplier = MonsterDropMultiplier.Get(configuration.MonsterMultipliers, args.Monster.Number);
+        if (multiplier <= 0)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        // the multiplier scales the chance of every part: the same as dividing the roll
+        var roll = Rand.NextDouble() / multiplier;
         foreach (var part in configuration.Parts)
         {
             if (level < part.MinimumMonsterLevel || level > part.MaximumMonsterLevel)
@@ -67,6 +75,14 @@ public class TicketPartsDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomCo
 /// </summary>
 public class TicketPartsDropConfiguration
 {
+    /// <summary>
+    /// Gets or sets the multipliers for specific monsters, e.g. bosses which take much longer to kill.
+    /// </summary>
+    [MemberOfAggregate]
+    [ScaffoldColumn(true)]
+    [Display(Name = "Monster multipliers", Description = "Multiplies the chances for specific monsters (bosses). Monsters which are not listed use 1. Use 0 to disable the drop of a monster.")]
+    public ICollection<MonsterDropMultiplier> MonsterMultipliers { get; set; } = new List<MonsterDropMultiplier>();
+
     /// <summary>
     /// Gets or sets the parts.
     /// </summary>

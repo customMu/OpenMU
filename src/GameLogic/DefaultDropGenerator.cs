@@ -27,7 +27,7 @@ public class DefaultDropGenerator : IDropGenerator
     /// <summary>
     /// A re-usable list of drop item groups.
     /// </summary>
-    private readonly List<DropItemGroup> _chanceDropGroups = new(64);
+    private readonly List<(DropItemGroup Group, double Chance)> _chanceDropGroups = new(64);
     private readonly List<DropItemGroup> _guaranteedDropGroups = new(16);
 
     private readonly AsyncLock _lock = new();
@@ -83,7 +83,8 @@ public class DefaultDropGenerator : IDropGenerator
             this.PartitionDropGroups(monster.DropItemGroups ?? []);
             this.PartitionDropGroups(character.DropItemGroups ?? [], monster);
             this.PartitionDropGroups(map.DropItemGroups ?? [], monster);
-            this.PartitionDropGroups(await GetQuestItemGroupsAsync(player).ConfigureAwait(false) ?? [], monster);
+            var questMultiplier = player.GameContext.FeaturePlugIns.GetPlugIn<PlugIns.QuestItemDropMultiplierPlugIn>()?.GetMultiplier(monster.Number) ?? 1f;
+            this.PartitionDropGroups(await GetQuestItemGroupsAsync(player).ConfigureAwait(false) ?? [], monster, questMultiplier);
         }
 
         uint money = 0;
@@ -303,9 +304,9 @@ public class DefaultDropGenerator : IDropGenerator
         if (remainingDrops > 0 && this._chanceDropGroups.Count > 0)
         {
             double totalChance = 0;
-            foreach (var group in this._chanceDropGroups)
+            foreach (var (_, chance) in this._chanceDropGroups)
             {
-                totalChance += group.Chance;
+                totalChance += chance;
             }
 
             for (int i = 0; i < remainingDrops; i++)
@@ -333,7 +334,7 @@ public class DefaultDropGenerator : IDropGenerator
         return (droppedItems, money);
     }
 
-    private void PartitionDropGroups(IEnumerable<DropItemGroup> groups, MonsterDefinition? monster = null)
+    private void PartitionDropGroups(IEnumerable<DropItemGroup> groups, MonsterDefinition? monster = null, float chanceMultiplier = 1f)
     {
         foreach (var group in groups)
         {
@@ -346,9 +347,10 @@ public class DefaultDropGenerator : IDropGenerator
             {
                 this._guaranteedDropGroups.Add(group);
             }
-            else
+            else if (chanceMultiplier > 0)
             {
-                this._chanceDropGroups.Add(group);
+                // the multiplier (quest items from bosses) may make the chance 1 or more: then the group always competes with its full share
+                this._chanceDropGroups.Add((group, Math.Min(1.0, group.Chance * chanceMultiplier)));
             }
         }
     }
@@ -550,6 +552,29 @@ public class DefaultDropGenerator : IDropGenerator
             SpecialItemType.SocketItem => this.GenerateRandomItem(monsterLevel, true),
             _ => null,
         };
+    }
+
+    private DropItemGroup? SelectRandomGroup(IEnumerable<(DropItemGroup Group, double Chance)> groups, double totalChance)
+    {
+        var remainingThreshold = this._randomizer.NextDouble();
+        if (totalChance > 1.0)
+        {
+            remainingThreshold *= totalChance;
+        }
+
+        foreach (var (group, chance) in groups)
+        {
+            if (remainingThreshold > chance)
+            {
+                remainingThreshold -= chance;
+            }
+            else
+            {
+                return group;
+            }
+        }
+
+        return null;
     }
 
     private DropItemGroup? SelectRandomGroup(IEnumerable<DropItemGroup> groups, double totalChance)

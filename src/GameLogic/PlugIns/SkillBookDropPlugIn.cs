@@ -35,12 +35,13 @@ public class SkillBookDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConf
         }
 
         var monsterLevel = (int)args.Monster[Stats.Level];
+        var multiplier = MonsterDropMultiplier.Get(configuration.MonsterMultipliers, args.Monster.Number);
         foreach (var book in configuration.Books)
         {
             if (book.ChancePercent <= 0
                 || monsterLevel < book.MinimumMonsterLevel
                 || monsterLevel > book.MaximumMonsterLevel
-                || Rand.NextDouble() >= book.ChancePercent / 100.0)
+                || Rand.NextDouble() >= book.ChancePercent * multiplier * GetLevelFactor(configuration, book, monsterLevel) / 100.0)
             {
                 continue;
             }
@@ -64,5 +65,19 @@ public class SkillBookDropPlugIn : IAdditionalItemDropPlugIn, ISupportCustomConf
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Gets the factor of the chance by the position of the monster level inside the window of the book:
+    /// x0.5 at the first level up to x1.5 at the last one (x1 on average). Must match tools/balance/skill_books.py.
+    /// </summary>
+    private static double GetLevelFactor(SkillBookDropConfiguration configuration, SkillBookDropConfiguration.SkillBookDropEntry book, int monsterLevel)
+    {
+        if (!configuration.GrowingChance || book.MaximumMonsterLevel <= book.MinimumMonsterLevel)
+        {
+            return 1.0;
+        }
+
+        return 0.5 + ((double)(monsterLevel - book.MinimumMonsterLevel) / (book.MaximumMonsterLevel - book.MinimumMonsterLevel));
     }
 }
