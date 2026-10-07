@@ -52,6 +52,16 @@ public class AreaSkillAttackAction
                     return;
                 }
             }
+
+            if (player.GameContext.PlugInManager.GetPlugInPoint<ISkillCastTimeCheckPlugIn>() is { } castTime)
+            {
+                var castCheck = new System.ComponentModel.CancelEventArgs();
+                castTime.CheckCast(player, skill, castCheck);
+                if (castCheck.Cancel)
+                {
+                    return;
+                }
+            }
         }
 
         if (!await player.TryConsumeForSkillAsync(skillEntry).ConfigureAwait(false))

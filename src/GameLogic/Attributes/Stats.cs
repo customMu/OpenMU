@@ -946,6 +946,15 @@ public class Stats
     public static AttributeDefinition DamageReceiveHorseDecrement { get; } = new(new Guid("041B2811-05C0-49DE-B083-4D1FBD7E6286"), "Damage Receive From Dark Horse Multiplier", string.Empty);
 
     /// <summary>
+    /// Gets the minimum share of a monster hit which a player receives, whatever its defense is (e.g. 0.2 = 20 %).
+    /// </summary>
+    /// <remarks>
+    /// The share of the monster damage before the defense of the player. Without it, a high flat defense makes a player
+    /// immune against the monsters of his zone. Not for summoned monsters and players.
+    /// </remarks>
+    public static AttributeDefinition MonsterHitMinimumShare { get; } = new(new Guid("7C1E5B2A-3F84-4D6A-9B0C-2E5F7A8D9C14"), "Monster Hit Minimum Share", "The minimum share of a monster hit which goes through the defense of the player.");
+
+    /// <summary>
     /// Gets the total armor damage decrease (receive) attribute definition.
     /// <remarks>Includes the sum of excellent, harmony, and socket DD options.</remarks>
     /// </summary>

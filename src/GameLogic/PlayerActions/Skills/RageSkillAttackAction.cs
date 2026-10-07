@@ -4,6 +4,7 @@
 
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Skills;
 
+using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.World;
 
@@ -29,6 +30,16 @@ public class RageSkillAttackAction
                                      || (explicitTarget is not null && !explicitTarget.IsInRange(player.Position, skill.Skill!.Range)))
         {
             return;
+        }
+
+        if (player.GameContext.PlugInManager.GetPlugInPoint<ISkillCastTimeCheckPlugIn>() is { } castTime)
+        {
+            var castCheck = new System.ComponentModel.CancelEventArgs();
+            castTime.CheckCast(player, skill.Skill!, castCheck);
+            if (castCheck.Cancel)
+            {
+                return;
+            }
         }
 
         var targets = new List<IAttackable>(MaximumTargetsPerAttack);

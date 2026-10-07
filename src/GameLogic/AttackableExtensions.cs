@@ -111,6 +111,7 @@ public static class AttackableExtensions
 
         attacker.GetBaseDmg(skill, out int baseMinDamage, out int baseMaxDamage, out DamageType damageType);
         int dmg;
+        int rawDamage; // the damage before the defense of the defender
         if (damageType == DamageType.Physical)
         {
             if (isExcellentHit)
@@ -145,7 +146,8 @@ public static class AttackableExtensions
                 dmg += dmg;
             }
 
-            dmg = (int)((dmg * duelDmgDec) - defense);
+            rawDamage = (int)(dmg * duelDmgDec);
+            dmg = rawDamage - defense;
             dmg += GetMasterSkillTreePhysicalPassiveDamageBonus(attacker, true);
 
             if (attacker.Attributes[Stats.IsTwoHandedWeaponEquipped] > 0)
@@ -168,13 +170,15 @@ public static class AttackableExtensions
             // Wizardry, Curse, and Fenrir.
             if (isExcellentHit)
             {
-                dmg = (int)((baseMaxDamage * duelDmgDec) - defense);
+                rawDamage = (int)(baseMaxDamage * duelDmgDec);
+                dmg = rawDamage - defense;
                 dmg = (int)((dmg * 1.2) + attacker.Attributes[Stats.ExcellentDamageBonus]);
                 attributes |= DamageAttributes.Excellent;
             }
             else if (isCriticalHit)
             {
-                dmg = (int)((baseMaxDamage * duelDmgDec) - defense);
+                rawDamage = (int)(baseMaxDamage * duelDmgDec);
+                dmg = rawDamage - defense;
                 dmg += (int)attacker.Attributes[Stats.CriticalDamageBonus];
                 attributes |= DamageAttributes.Critical;
             }
@@ -189,8 +193,17 @@ public static class AttackableExtensions
                     dmg = Rand.NextInt(baseMinDamage, baseMaxDamage);
                 }
 
-                dmg = (int)((dmg * duelDmgDec) - defense);
+                rawDamage = (int)(dmg * duelDmgDec);
+                dmg = rawDamage - defense;
             }
+        }
+
+        // A monster hit always takes a share of its damage before the defense of the player (flat defense 1:1 would
+        // make a well equipped player immune against the monsters of his zone). Not for summoned monsters.
+        if (defender is Player && attacker is Monster { SummonedBy: null }
+            && defender.Attributes[Stats.MonsterHitMinimumShare] is var minimumShare and > 0f)
+        {
+            dmg = Math.Max(dmg, (int)(rawDamage * minimumShare));
         }
 
         dmg += (int)attacker.Attributes[Stats.GreaterDamageBonus];

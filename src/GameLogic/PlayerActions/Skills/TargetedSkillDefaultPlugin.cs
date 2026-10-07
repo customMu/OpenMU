@@ -82,6 +82,16 @@ public class TargetedSkillDefaultPlugin : TargetedSkillPluginBase
                     return;
                 }
             }
+
+            if (player.GameContext.PlugInManager.GetPlugInPoint<ISkillCastTimeCheckPlugIn>() is { } castTime)
+            {
+                var castCheck = new System.ComponentModel.CancelEventArgs();
+                castTime.CheckCast(player, skill, castCheck);
+                if (castCheck.Cancel)
+                {
+                    return;
+                }
+            }
         }
 
         var miniGame = player.CurrentMiniGame;
