@@ -113,7 +113,7 @@ public class PetDropConfiguration
     [
         new() { Name = "Guardian Angel", ItemGroup = 13, ItemNumber = 0 },
         new() { Name = "Imp", ItemGroup = 13, ItemNumber = 1 },
-        new() { Name = "Horn of Uniria", ItemGroup = 13, ItemNumber = 2 },
+        new() { Name = "Horn of Uniria", ItemGroup = 13, ItemNumber = 2, MinimumChancePercent = 0.002f, MaximumChancePercent = 0.1f }, // 10 make a Dinorant
     ];
 
     /// <summary>
