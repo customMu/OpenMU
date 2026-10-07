@@ -46,6 +46,46 @@ public class SkillCastTimeConfiguration
     [Display(Name = "Option factor for the elf")]
     public float ElfOptionFactor { get; set; } = 0.6f;
 
+    /// <summary>
+    /// Gets or sets the attack speed of the fix time (10 000 agility + a median weapon), see the client SkillCastTime.h.
+    /// </summary>
+    [Display(Name = "Attack speed at the fix time")]
+    public int AttackSpeedAtFix { get; set; } = 335;
+
+    /// <summary>
+    /// Gets or sets the magic speed of the fix time (10 000 agility + a median weapon), see the client SkillCastTime.h.
+    /// </summary>
+    [Display(Name = "Magic speed at the fix time")]
+    public int MagicSpeedAtFix { get; set; } = 285;
+
+    /// <summary>
+    /// Gets or sets the share of the animation time at the speed of the player which is checked.
+    /// </summary>
+    /// <remarks>
+    /// Leeway for the rounded fix times and the variants of an action (e.g. on a mount); 1 = the exact client time.
+    /// </remarks>
+    [Display(Name = "Share of the animation time at the player's speed", Description = "Below the fix speed a skill can't be cast faster than its animation at the attack / magic speed of the player, times this share.")]
+    public float SpeedCheckShare { get; set; } = 0.9f;
+
+    /// <summary>
+    /// Gets or sets the minimum time between two normal attacks (milliseconds), 0 to not check them.
+    /// </summary>
+    /// <remarks>
+    /// The client plays no attack action faster than 0.15 s (the floor of the fix time). Normal attacks and skills share
+    /// the time: one action after the other.
+    /// </remarks>
+    [Display(Name = "Normal attack time (ms)", Description = "The minimum time between two normal attacks; 0 = not checked.")]
+    public int NormalAttackMilliseconds { get; set; } = 150;
+
+    /// <summary>
+    /// Gets or sets the animation speed curves of the skills: how the animation time grows below the fix speed.
+    /// </summary>
+    /// <remarks>
+    /// Skills which are not listed are checked at their fix time only, whatever the speed of the player.
+    /// </remarks>
+    [Display(Name = "Speed curves of the skills", Description = "Below the fix speed the animation of a skill takes fix x (base + factor x fix speed) / (base + factor x speed of the player).")]
+    public ICollection<SkillSpeedCurve> SpeedCurves { get; set; } = CreateSpeedCurves();
+
     // generated:start
     private static ICollection<SkillFixTime> CreateFixTimes() => new List<SkillFixTime>
     {
@@ -126,6 +166,52 @@ public class SkillCastTimeConfiguration
     };
 
     // generated:end
+
+    // The play speed of the client action of a skill = base + factor x speed (client SetAttackSpeed, the speeds below
+    // the fix). The actions are matched to the fix times above: the frames of each come out whole (e.g. 6 frames of the
+    // DW spells at 279 ms). Not listed (fix time only): Rageful Blow and Earthshake (their speed doesn't depend on the
+    // stats), Lance, Spiral Slash, Fire Slash, Mana Rays and Charge (the action can't be told from the fix time).
+    private static ICollection<SkillSpeedCurve> CreateSpeedCurves() => new List<SkillSpeedCurve>
+    {
+        new() { SkillNumber = 2, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.29f, SpeedFactor = 0.002f }, // Meteorite: PLAYER_SKILL_HAND
+        new() { SkillNumber = 5, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.29f, SpeedFactor = 0.002f }, // Flame: PLAYER_SKILL_HAND
+        new() { SkillNumber = 8, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.29f, SpeedFactor = 0.002f }, // Twister: PLAYER_SKILL_HAND
+        new() { SkillNumber = 9, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.29f, SpeedFactor = 0.002f }, // Evil Spirit: PLAYER_SKILL_HAND
+        new() { SkillNumber = 10, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.5f, SpeedFactor = 0.002f }, // Hellfire: PLAYER_SKILL_HELL
+        new() { SkillNumber = 12, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.4f, SpeedFactor = 0.002f }, // Aqua Beam: PLAYER_SKILL_FLASH
+        new() { SkillNumber = 13, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.29f, SpeedFactor = 0.002f }, // Cometfall: PLAYER_SKILL_HAND
+        new() { SkillNumber = 14, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.6f, SpeedFactor = 0.002f }, // Inferno: PLAYER_SKILL_INFERNO
+        new() { SkillNumber = 19, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Falling Slash: PLAYER_ATTACK_SKILL_SWORD
+        new() { SkillNumber = 24, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Triple Shot: PLAYER_ATTACK_BOW
+        new() { SkillNumber = 38, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.29f, SpeedFactor = 0.002f }, // Decay: PLAYER_SKILL_HAND
+        new() { SkillNumber = 39, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.29f, SpeedFactor = 0.002f }, // Ice Storm: PLAYER_SKILL_HAND
+        new() { SkillNumber = 41, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.24f, SpeedFactor = 0.004f }, // Twisting Slash: PLAYER_ATTACK_SKILL_WHEEL
+        new() { SkillNumber = 43, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.004f }, // Death Stab: PLAYER_ATTACK_DEATHSTAB
+        new() { SkillNumber = 44, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Crescent Moon Slash: PLAYER_ATTACK_SKILL_SWORD
+        new() { SkillNumber = 46, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Starfall: PLAYER_ATTACK_BOW
+        new() { SkillNumber = 47, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Impale: PLAYER_ATTACK_SKILL_SPEAR
+        new() { SkillNumber = 51, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Ice Arrow: PLAYER_ATTACK_BOW
+        new() { SkillNumber = 52, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Penetration: PLAYER_ATTACK_BOW
+        new() { SkillNumber = 56, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.004f }, // Power Slash: PLAYER_ATTACK_TWO_HAND_SWORD_TWO
+        new() { SkillNumber = 61, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.004f }, // Fire Burst: PLAYER_ATTACK_STRIKE
+        new() { SkillNumber = 66, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.004f }, // Force Wave: PLAYER_ATTACK_STRIKE
+        new() { SkillNumber = 74, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.004f }, // Fire Blast: PLAYER_ATTACK_STRIKE
+        new() { SkillNumber = 78, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.004f }, // Fire Scream: PLAYER_ATTACK_STRIKE
+        new() { SkillNumber = 214, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.002f }, // Drain Life: PLAYER_SKILL_DRAIN_LIFE
+        new() { SkillNumber = 215, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.002f }, // Chain Lightning: PLAYER_SKILL_CHAIN_LIGHTNING
+        new() { SkillNumber = 223, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.002f }, // Explosion: PLAYER_SKILL_SUMMON
+        new() { SkillNumber = 224, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.002f }, // Requiem: PLAYER_SKILL_SUMMON
+        new() { SkillNumber = 225, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.002f }, // Pollution: PLAYER_SKILL_SUMMON
+        new() { SkillNumber = 230, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.35f, SpeedFactor = 0.002f }, // Lightning Shock: PLAYER_SKILL_LIGHTNING_SHOCK
+        new() { SkillNumber = 232, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Strike of Destruction: PLAYER_SKILL_BLOW_OF_DESTRUCTION
+        new() { SkillNumber = 235, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.004f }, // Multi-Shot: PLAYER_ATTACK_BOW
+        new() { SkillNumber = 236, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.69f, SpeedFactor = 0.002f }, // Flame Strike: PLAYER_SKILL_FLAMESTRIKE
+        new() { SkillNumber = 237, Speed = SkillSpeedStat.MagicSpeed, PlaySpeedBase = 0.55f, SpeedFactor = 0.004f }, // Gigantic Storm: PLAYER_SKILL_GIGANTICSTORM
+        new() { SkillNumber = 238, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.25f, SpeedFactor = 0.004f }, // Chaotic Diseier: PLAYER_ATTACK_STRIKE
+        new() { SkillNumber = 260, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.4f, SpeedFactor = 0.002f }, // Killing Blow: PLAYER_SKILL_THRUST (rage speed)
+        new() { SkillNumber = 263, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.002f }, // Dark Side: PLAYER_SKILL_DARKSIDE (rage speed)
+        new() { SkillNumber = 264, Speed = SkillSpeedStat.AttackSpeed, PlaySpeedBase = 0.3f, SpeedFactor = 0.002f }, // Dragon Roar: PLAYER_SKILL_DRAGONLORE (rage speed)
+    };
 }
 
 /// <summary>

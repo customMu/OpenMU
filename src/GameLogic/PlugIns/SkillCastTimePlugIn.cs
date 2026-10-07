@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
+using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.PlugIns;
 
 /// <summary>
@@ -32,6 +33,8 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
 
     private Dictionary<short, int>? _fixTimes;
 
+    private Dictionary<short, SkillSpeedCurve>? _speedCurves;
+
     private SkillCastTimeConfiguration? _configuration;
 
     /// <inheritdoc />
@@ -42,6 +45,7 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
         {
             this._configuration = value;
             this._fixTimes = null;
+            this._speedCurves = null;
         }
     }
 
@@ -57,6 +61,26 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
         }
     }
 
+    /// <inheritdoc />
+    public void CheckNormalAttack(Player player, CancelEventArgs eventArgs)
+    {
+        if (!this.TryNormalAttack(player))
+        {
+            eventArgs.Cancel = true;
+        }
+    }
+
+    /// <summary>
+    /// Checks if the player may do a normal attack now and registers it.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns><c>true</c>, if the attack is allowed; <c>false</c>, if it comes too early and has to be ignored.</returns>
+    public bool TryNormalAttack(Player player)
+    {
+        var milliseconds = this.Configuration?.NormalAttackMilliseconds ?? 0;
+        return this.TryAct(player, TimeSpan.FromMilliseconds(milliseconds), "Normal attack");
+    }
+
     /// <summary>
     /// Checks if the player may cast the skill now and registers the cast.
     /// </summary>
@@ -65,34 +89,12 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
     /// <returns><c>true</c>, if the cast is allowed; <c>false</c>, if it comes too early and has to be ignored.</returns>
     public bool TryCast(Player player, Skill skill)
     {
-        if (this.Configuration is not { } config || player is Offline.OfflinePlayer)
-        {
-            return true;
-        }
-
-        var interval = this.GetCastTime(player, skill);
-        if (interval <= TimeSpan.Zero)
-        {
-            return true;
-        }
-
-        var now = DateTime.UtcNow;
-        var state = this._states.GetValue(player, _ => new State());
-        lock (state)
-        {
-            if (now + TimeSpan.FromMilliseconds(config.ToleranceMilliseconds) < state.NextAllowed)
-            {
-                player.Logger.LogDebug("Skill {skill} of {player} refused: {early} ms too early.", skill.Number, player.Name, (state.NextAllowed - now).TotalMilliseconds);
-                return false;
-            }
-
-            state.NextAllowed = (now > state.NextAllowed ? now : state.NextAllowed) + interval;
-            return true;
-        }
+        return this.TryAct(player, this.GetCastTime(player, skill), $"Skill {skill.Number}");
     }
 
     /// <summary>
-    /// Gets the minimum time until the next cast after a cast of the skill: the fix time, lowered by the options of the weapons.
+    /// Gets the minimum time until the next cast after a cast of the skill: the fix time, lowered by the options of the
+    /// weapons; below the fix speed at least the animation time at the speed of the player.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="skill">The skill.</param>
@@ -112,11 +114,46 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
             if (this._fixTimes.TryGetValue(candidate.Number, out var fixTime) && fixTime > 0)
             {
                 var cut = Math.Clamp(this.GetOptionCut(player, candidate.Number), 0, 0.9);
-                return TimeSpan.FromMilliseconds(Math.Max(config.MinimumCastMilliseconds, fixTime * (1 - cut)));
+                var milliseconds = Math.Max(config.MinimumCastMilliseconds, fixTime * (1 - cut));
+                milliseconds = Math.Max(milliseconds, this.GetAnimationMilliseconds(player, candidate.Number, fixTime) * config.SpeedCheckShare);
+                return TimeSpan.FromMilliseconds(milliseconds);
             }
         }
 
         return TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// Gets the animation time of the skill at the attack / magic speed of the player (as the client plays it below the
+    /// fix speed): the fix time x (base + factor x fix speed) / (base + factor x speed).
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="skillNumber">The (base) skill number.</param>
+    /// <param name="fixTime">The fix time of the skill in milliseconds.</param>
+    /// <returns>The animation time in milliseconds, or 0 if the skill has no speed curve.</returns>
+    public double GetAnimationMilliseconds(Player player, short skillNumber, int fixTime)
+    {
+        if (this.Configuration is not { } config || player.Attributes is not { } attributes)
+        {
+            return 0;
+        }
+
+        this._speedCurves ??= config.SpeedCurves.GroupBy(c => c.SkillNumber).ToDictionary(g => g.Key, g => g.First());
+        if (!this._speedCurves.TryGetValue(skillNumber, out var curve) || curve.PlaySpeedBase <= 0 || curve.SpeedFactor < 0)
+        {
+            return 0;
+        }
+
+        var (speed, fixSpeed) = curve.Speed == SkillSpeedStat.MagicSpeed
+            ? (attributes[Stats.MagicSpeed], config.MagicSpeedAtFix)
+            : (attributes[Stats.AttackSpeed], config.AttackSpeedAtFix);
+        if (speed >= fixSpeed)
+        {
+            return 0;
+        }
+
+        // the fix time must be the animation time at the fix speed - not the floor of 0.15 s (no curve for such skills)
+        return fixTime * (curve.PlaySpeedBase + (curve.SpeedFactor * fixSpeed)) / (curve.PlaySpeedBase + (curve.SpeedFactor * Math.Max(0, speed)));
     }
 
     /// <summary>
@@ -165,6 +202,28 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
         }
 
         return cut;
+    }
+
+    private bool TryAct(Player player, TimeSpan interval, string action)
+    {
+        if (this.Configuration is not { } config || player is Offline.OfflinePlayer || interval <= TimeSpan.Zero)
+        {
+            return true;
+        }
+
+        var now = DateTime.UtcNow;
+        var state = this._states.GetValue(player, _ => new State());
+        lock (state)
+        {
+            if (now + TimeSpan.FromMilliseconds(config.ToleranceMilliseconds) < state.NextAllowed)
+            {
+                player.Logger.LogDebug("{action} of {player} refused: {early} ms too early.", action, player.Name, (state.NextAllowed - now).TotalMilliseconds);
+                return false;
+            }
+
+            state.NextAllowed = (now > state.NextAllowed ? now : state.NextAllowed) + interval;
+            return true;
+        }
     }
 
     private sealed class State

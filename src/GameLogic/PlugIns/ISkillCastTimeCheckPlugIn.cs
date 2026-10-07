@@ -13,7 +13,7 @@ using MUnique.OpenMU.PlugIns;
 /// A plugin point interface which checks the minimum time between two skill casts of a player.
 /// </summary>
 [Guid("3E6A1D52-8B47-4C9F-A2D1-5F0B7C3E9A68")]
-[PlugInPoint("Skill cast time check", "Is called before a player casts an attack skill; refuses casts faster than the fix time of the skill.")]
+[PlugInPoint("Skill cast time check", "Is called before a player casts an attack skill or does a normal attack; refuses casts faster than the fix time of the skill.")]
 public interface ISkillCastTimeCheckPlugIn
 {
     /// <summary>
@@ -23,4 +23,11 @@ public interface ISkillCastTimeCheckPlugIn
     /// <param name="skill">The skill.</param>
     /// <param name="eventArgs">Cancelled, if the cast comes too early and has to be ignored.</param>
     void CheckCast(Player player, Skill skill, CancelEventArgs eventArgs);
+
+    /// <summary>
+    /// Checks if the player may do a normal attack now and registers it.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="eventArgs">Cancelled, if the attack comes too early and has to be ignored.</param>
+    void CheckNormalAttack(Player player, CancelEventArgs eventArgs);
 }
