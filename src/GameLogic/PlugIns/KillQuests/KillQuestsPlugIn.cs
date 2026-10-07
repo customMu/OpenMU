@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.Attributes;
+using MUnique.OpenMU.GameLogic.KundunEssence;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlugIns.ChatCommands;
 using MUnique.OpenMU.GameLogic.Views;
@@ -94,7 +95,7 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
         }
 
         var kills = (int)player.GetStoredStatValue(Stats.KillQuestKills);
-        await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestCurrentFormat), step + 1, quests.Count, quest.Kills, MonsterNameFor(player, quest), kills, this.DescribeReward(player, quest)).ConfigureAwait(false);
+        await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestCurrentFormat), step + 1, quests.Count, quest.Kills, MonsterNameFor(player, quest), kills, this.DescribeReward(player, step, quest)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -209,8 +210,9 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
     /// </summary>
     private async ValueTask TryHandInAsync(Player player, int step, KillQuest quest, KillQuestsConfiguration configuration)
     {
-        var items = this.GetRewardItems(player, quest, configuration);
+        var items = this.GetRewardItems(player, step, quest, configuration);
         var money = this.GetRewardMoney(player, quest, configuration) + Math.Max(0, quest.Money);
+        var essence = GetRewardEssence(player, step, configuration);
         if (items.Count > 0 && !HasSpace(player, items))
         {
             player.TrySetStoredStatValue(Stats.KillQuestRewardWaiting, 1);
@@ -220,10 +222,20 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
             return;
         }
 
-        foreach (var (gear, definition) in items)
+        foreach (var (item, _) in items)
         {
-            await GiveItemAsync(player, CreateItem(gear, definition)).ConfigureAwait(false);
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestItemRewardFormat), MonsterNameFor(player, quest), Describe(gear, definition)).ConfigureAwait(false);
+            await GiveItemAsync(player, item).ConfigureAwait(false);
+        }
+
+        if (items.Count > 0)
+        {
+            var descriptions = string.Join(", ", items.Select(p => p.Description).Where(d => d.Length > 0));
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.KillQuestItemRewardFormat), MonsterNameFor(player, quest), descriptions).ConfigureAwait(false);
+        }
+
+        if (essence > 0 && player.GameContext.FeaturePlugIns.GetPlugIn<KundunEssencePlugIn>() is { } essencePlugIn)
+        {
+            await essencePlugIn.TryAddAsync(player, essence).ConfigureAwait(false);
         }
 
         if (money > 0 && player.TryAddMoney(money))
@@ -274,25 +286,93 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
         var step = (int)player.GetStoredStatValue(Stats.KillQuestStep);
         var state = step < quests.Count
             ? new KillQuestState(step + 1, quests.Count, MonsterNameFor(player, quests[step]), (int)player.GetStoredStatValue(Stats.KillQuestKills), quests[step].Kills,
-                quests[step].StatPoints, this.DescribeItems(player, quests[step]), IsRewardWaiting(player), GetQuestPoints(player))
+                quests[step].StatPoints, this.DescribeItems(player, step, quests[step], "\n"), IsRewardWaiting(player), GetQuestPoints(player))
             : new KillQuestState(quests.Count + 1, quests.Count, string.Empty, 0, 0, 0, string.Empty, false, GetQuestPoints(player));
         await player.InvokeViewPlugInAsync<IKillQuestViewPlugIn>(p => p.ShowKillQuestAsync(state)).ConfigureAwait(false);
     }
 
-    private List<(KillQuestGearItem Gear, ItemDefinition Definition)> GetRewardItems(Player player, KillQuest quest, KillQuestsConfiguration configuration)
+    /// <summary>
+    /// Gets the reward items of the quest for the class of the player: the starter gear of its gear step and the
+    /// reward items of the quest number, with the text of each item for the player.
+    /// </summary>
+    private List<(Item Item, string Description)> GetRewardItems(Player player, int step, KillQuest quest, KillQuestsConfiguration configuration)
     {
-        if (quest.GearStep <= 0 || player.SelectedCharacter?.CharacterClass is not { } characterClass)
+        if (player.SelectedCharacter?.CharacterClass is not { } characterClass)
         {
             return [];
         }
 
         var baseClass = characterClass.Number & ~3;
-        return configuration.Gear
-            .Where(g => g.ClassNumber == baseClass && g.Step == quest.GearStep && g.Money <= 0)
-            .Select(g => (Gear: g, Definition: player.GameContext.Configuration.Items.FirstOrDefault(d => d.Group == g.ItemGroup && d.Number == g.ItemNumber)))
-            .Where(p => p.Definition is not null)
-            .Select(p => (p.Gear, p.Definition!))
-            .ToList();
+        var definitions = player.GameContext.Configuration.Items;
+        var result = new List<(Item Item, string Description)>();
+        if (quest.GearStep > 0)
+        {
+            foreach (var gear in configuration.Gear.Where(g => g.ClassNumber == baseClass && g.Step == quest.GearStep && g.Money <= 0))
+            {
+                if (definitions.FirstOrDefault(d => d.Group == gear.ItemGroup && d.Number == gear.ItemNumber) is { } definition)
+                {
+                    result.Add((CreateItem(gear, definition), Describe(gear, definition)));
+                }
+            }
+        }
+
+        foreach (var reward in configuration.RewardItems.Where(r => r.QuestNumber == step + 1 && r.KundunEssence <= 0 && r.Amount > 0 && r.IsFor(baseClass)))
+        {
+            if (definitions.FirstOrDefault(d => d.Group == reward.ItemGroup && d.Number == reward.ItemNumber) is not { } definition)
+            {
+                player.Logger.LogWarning("Kill quest reward: item {group}/{number} ({name}) not found in the configuration.", reward.ItemGroup, reward.ItemNumber, reward.Name);
+                continue;
+            }
+
+            var items = CreateItems(reward, definition);
+            var name = string.IsNullOrWhiteSpace(reward.Name) ? definition.Name.ValueInNeutralLanguage : reward.Name;
+            for (var i = 0; i < items.Count; i++)
+            {
+                // the text of the whole reward on the first stack: "Jewel of Bless x120"
+                result.Add((items[i], i > 0 ? string.Empty : reward.Amount > 1 ? $"{name} x{reward.Amount}" : name));
+            }
+        }
+
+        return result;
+    }
+
+    private static int GetRewardEssence(Player player, int step, KillQuestsConfiguration configuration)
+    {
+        if (player.SelectedCharacter?.CharacterClass is not { } characterClass)
+        {
+            return 0;
+        }
+
+        var baseClass = characterClass.Number & ~3;
+        return configuration.RewardItems.Where(r => r.QuestNumber == step + 1 && r.KundunEssence > 0 && r.IsFor(baseClass)).Sum(r => r.KundunEssence);
+    }
+
+    /// <summary>
+    /// Creates the items of the reward: stacks of the amount for a stackable item, else the amount of items.
+    /// </summary>
+    private static List<Item> CreateItems(KillQuestRewardItem reward, ItemDefinition definition)
+    {
+        var result = new List<Item>();
+        var remaining = reward.Amount;
+        while (remaining > 0)
+        {
+            var item = new TemporaryItem { Definition = definition, Level = Math.Min(reward.ItemLevel, definition.MaximumItemLevel) };
+            if (item.IsStackable())
+            {
+                var pieces = Math.Min(remaining, (int)definition.Durability);
+                item.Durability = pieces;
+                remaining -= pieces;
+            }
+            else
+            {
+                item.Durability = item.GetMaximumDurabilityOfOnePiece();
+                remaining--;
+            }
+
+            result.Add(item);
+        }
+
+        return result;
     }
 
     private int GetRewardMoney(Player player, KillQuest quest, KillQuestsConfiguration configuration)
@@ -345,33 +425,39 @@ public class KillQuestsPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<Kill
         return text;
     }
 
-    private static bool HasSpace(Player player, IReadOnlyList<(KillQuestGearItem Gear, ItemDefinition Definition)> items)
+    private static bool HasSpace(Player player, IReadOnlyList<(Item Item, string Description)> items)
     {
-        // each item on its own free place: the reward is one item, or the bow with the arrows
+        // every item fits on its own, and all of them together fit into the free cells
         if (player.Inventory is not { } inventory)
         {
             return false;
         }
 
-        return items.All(p => inventory.CheckInvSpace(new TemporaryItem { Definition = p.Definition }) is not null);
+        var cells = items.Sum(p => p.Item.Definition!.Width * p.Item.Definition.Height);
+        return items.All(p => inventory.CheckInvSpace(p.Item) is not null) && inventory.FreeSlots.Count() >= cells;
     }
 
-    private string DescribeItems(Player player, KillQuest quest)
+    private string DescribeItems(Player player, int step, KillQuest quest, string separator = ", ")
     {
         var configuration = this.GetConfiguration();
-        var parts = this.GetRewardItems(player, quest, configuration).Select(p => Describe(p.Gear, p.Definition)).ToList();
+        var parts = this.GetRewardItems(player, step, quest, configuration).Select(p => p.Description).Where(d => d.Length > 0).ToList();
+        if (GetRewardEssence(player, step, configuration) is > 0 and var essence)
+        {
+            parts.Add($"Kundun Essence x{essence}");
+        }
+
         if (this.GetRewardMoney(player, quest, configuration) + Math.Max(0, quest.Money) is > 0 and var money)
         {
             parts.Add(DescribeMoney(money));
         }
 
-        return string.Join(", ", parts);
+        return string.Join(separator, parts);
     }
 
-    private string DescribeReward(Player player, KillQuest quest)
+    private string DescribeReward(Player player, int step, KillQuest quest)
     {
         var parts = new List<string>();
-        var items = this.DescribeItems(player, quest);
+        var items = this.DescribeItems(player, step, quest);
         if (items.Length > 0)
         {
             parts.Add(items);

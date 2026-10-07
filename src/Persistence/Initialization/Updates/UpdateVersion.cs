@@ -594,4 +594,9 @@ public enum UpdateVersion
     /// The version of the <see cref="AddKundunChamberUpdatePlugIn"/>.
     /// </summary>
     AddKundunChamber = 117,
+
+    /// <summary>
+    /// The version of the <see cref="QuestRewardBoxesUpdatePlugIn"/>.
+    /// </summary>
+    QuestRewardBoxes = 118,
 }

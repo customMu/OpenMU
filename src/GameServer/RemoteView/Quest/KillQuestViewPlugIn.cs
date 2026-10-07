@@ -15,9 +15,9 @@ using MUnique.OpenMU.PlugIns;
 
 /// <summary>
 /// Sends the state of the kill quests to the quest window of the custom client (key T), as custom packet
-/// <c>C1 117 FB 0D [quest number u16 LE, from 1; quest count + 1 when all are done] [quest count u16 LE] [kills u32 LE]
+/// <c>C1 245 FB 0D [quest number u16 LE, from 1; quest count + 1 when all are done] [quest count u16 LE] [kills u32 LE]
 /// [kills needed u32 LE] [stat points of the reward u16 LE] [reward waiting: 0/1] [stat points from quests u16 LE]
-/// [monster name, 32 bytes UTF-8] [reward text, 64 bytes UTF-8]</c>.
+/// [monster name, 32 bytes UTF-8] [reward text, 192 bytes UTF-8, one item per line]</c>.
 /// The client takes a waiting reward with <c>C1 04 FB 0E</c>.
 /// </summary>
 [PlugIn]
@@ -36,9 +36,9 @@ public class KillQuestViewPlugIn : IKillQuestViewPlugIn
     /// </summary>
     public const byte ClaimRequestSubCode = 0x0E;
 
-    private const int Size = 117;
+    private const int Size = 245;
     private const int NameLength = 32;
-    private const int RewardLength = 64;
+    private const int RewardLength = 192;
 
     private readonly RemotePlayer _player;
 
