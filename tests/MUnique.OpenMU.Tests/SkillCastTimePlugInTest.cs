@@ -156,24 +156,58 @@ public class SkillCastTimePlugInTest
     }
 
     /// <summary>
-    /// The speed curves of the default configuration fit the fix times: the client action of every skill comes out with
-    /// whole frames (25 frames per second) at the fix speed.
+    /// One speed curve for all: the offsets of attack and magic speed are equal in agility (0.03 and 0.025 per agility
+    /// + 35 of a median weapon), every listed skill has a fix time.
     /// </summary>
     [Test]
-    public void SpeedCurvesFitTheFixTimes()
+    public void SpeedCurveOffsetsAreEqualInAgility()
     {
         var config = new SkillCastTimeConfiguration();
+        Assert.That((config.AttackSpeedCurveOffset + 35) / 0.03, Is.EqualTo((config.MagicSpeedCurveOffset + 35) / 0.025).Within(1));
         Assert.That(config.SpeedCurves, Is.Not.Empty);
         foreach (var curve in config.SpeedCurves)
         {
-            var fix = config.FixTimes.FirstOrDefault(f => f.SkillNumber == curve.SkillNumber);
-            Assert.That(fix, Is.Not.Null, $"fix time of skill {curve.SkillNumber}");
-            var fixSpeed = curve.Speed == SkillSpeedStat.MagicSpeed ? config.MagicSpeedAtFix : config.AttackSpeedAtFix;
-            var playSpeed = curve.PlaySpeedBase + (curve.SpeedFactor * fixSpeed);
-            var frames = fix!.Milliseconds / 1000.0 * 25 * playSpeed;
-            var roundingOfTheMilliseconds = 0.0005 * 25 * playSpeed;
-            Assert.That(frames, Is.EqualTo(Math.Round(frames)).Within(roundingOfTheMilliseconds + 0.002), $"frames of skill {curve.SkillNumber}");
+            Assert.That(config.FixTimes.Any(f => f.SkillNumber == curve.SkillNumber), $"fix time of skill {curve.SkillNumber}");
         }
+    }
+
+    /// <summary>
+    /// At the maximum attack speed (510) and magic speed (430) the animation is at least 25 % shorter than the fix time:
+    /// every class can use the full harmony option (-25 %).
+    /// </summary>
+    [Test]
+    public void TheSpeedMaximumsAllowTheFullOption()
+    {
+        var config = new SkillCastTimeConfiguration();
+        var attack = (config.AttackSpeedCurveOffset + config.AttackSpeedAtFix) / (config.AttackSpeedCurveOffset + Stats.AttackSpeed.MaximumValue!.Value);
+        var magic = (config.MagicSpeedCurveOffset + config.MagicSpeedAtFix) / (config.MagicSpeedCurveOffset + Stats.MagicSpeed.MaximumValue!.Value);
+        Assert.That((attack, magic), Is.EqualTo((0.75f, 0.75f)).Using<(float, float)>((x, y) => Math.Abs(x.Item1 - y.Item1) < 0.01f && Math.Abs(x.Item2 - y.Item2) < 0.01f));
+        Assert.That(attack, Is.LessThanOrEqualTo(0.75f));
+        Assert.That(magic, Is.LessThanOrEqualTo(0.75f));
+    }
+
+    /// <summary>
+    /// The harmony option lowers the cast time only as far as the speed of the player reaches: at the fix speed the
+    /// animation is still the fix time, at the maximum speed the full option counts.
+    /// </summary>
+    [Test]
+    public async ValueTask OptionNeedsSpeedAboveTheFixAsync()
+    {
+        var plugIn = CreatePlugIn(withSpeedCurves: true);
+        var config = plugIn.Configuration!;
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        await EquipAsync(player, Weapon(0, 17, optionNumber: 11, level: 13, value: 0.25f)).ConfigureAwait(false);
+        player.Attributes!.AddElement(new ConstantElement(config.AttackSpeedAtFix), Stats.AttackSpeed);
+        var speed = player.Attributes[Stats.AttackSpeed];
+        Assert.That(speed, Is.GreaterThanOrEqualTo(config.AttackSpeedAtFix));
+
+        var animation = TwistingFix * (config.AttackSpeedCurveOffset + config.AttackSpeedAtFix) / (config.AttackSpeedCurveOffset + speed);
+        var expected = Math.Max(TwistingFix * 0.75, animation * config.SpeedCheckShare);
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(expected).Within(1));
+
+        player.Attributes.AddElement(new ConstantElement(1000), Stats.AttackSpeed);
+        Assert.That(player.Attributes[Stats.AttackSpeed], Is.EqualTo(510), "the maximum attack speed");
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(TwistingFix * 0.75).Within(1));
     }
 
     /// <summary>
@@ -190,13 +224,12 @@ public class SkillCastTimePlugInTest
         var speed = player.Attributes[Stats.AttackSpeed];
         Assert.That(speed, Is.LessThan(config.AttackSpeedAtFix));
 
-        // Twisting Slash: PLAYER_ATTACK_SKILL_WHEEL, 0.24 + 0.004 x attack speed
-        var expected = TwistingFix * (0.24 + (0.004 * config.AttackSpeedAtFix)) / (0.24 + (0.004 * speed)) * config.SpeedCheckShare;
+        // one curve for all: fix x (offset + fix speed) / (offset + speed)
+        var expected = TwistingFix * (config.AttackSpeedCurveOffset + config.AttackSpeedAtFix) / (config.AttackSpeedCurveOffset + speed) * config.SpeedCheckShare;
         Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(expected).Within(1));
-        Assert.That(expected, Is.GreaterThan(TwistingFix * 3), "a slow DK is much slower than the fix");
+        Assert.That(expected, Is.GreaterThan(TwistingFix * 2), "a slow DK is much slower than the fix");
 
-        // (the attack speed of the code definition stops at 200 - the live DB allows more, so move the fix speed instead)
-        config.AttackSpeedAtFix = (int)speed;
+        player.Attributes.AddElement(new ConstantElement(config.AttackSpeedAtFix), Stats.AttackSpeed);
         Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(TwistingFix), "at the fix speed");
     }
 
@@ -214,8 +247,7 @@ public class SkillCastTimePlugInTest
         player.Attributes.AddElement(new ConstantElement(50), Stats.MagicSpeed);
         var speed = player.Attributes[Stats.MagicSpeed];
 
-        // PLAYER_SKILL_HAND1: 0.29 + 0.002 x magic speed
-        var expected = 279 * (0.29 + (0.002 * config.MagicSpeedAtFix)) / (0.29 + (0.002 * speed)) * config.SpeedCheckShare;
+        var expected = 279 * (config.MagicSpeedCurveOffset + config.MagicSpeedAtFix) / (config.MagicSpeedCurveOffset + speed) * config.SpeedCheckShare;
         Assert.That(plugIn.GetCastTime(player, Skill(evilSpirit)).TotalMilliseconds, Is.EqualTo(expected).Within(1));
     }
 
