@@ -33,15 +33,17 @@ public class AreaSkillAttackAction
     /// <param name="targetAreaCenter">The coordinates of the center of the target area.</param>
     /// <param name="rotation">The rotation in which the player is looking. It's not really relevant for the hitted objects yet, but for some directed skills in the future it might be.</param>
     /// <param name="hitImplicitlyForExplicitSkill">If set to <c>true</c>, hit implicitly for <see cref="SkillType.AreaSkillExplicitHits"/>.</param>
-    public async ValueTask AttackAsync(Player player, ushort extraTargetId, ushort skillId, Point targetAreaCenter, byte rotation, bool hitImplicitlyForExplicitSkill = false)
+    /// <param name="isRepeatedByServer">If set to <c>true</c>, the server repeats the hits of a cast (e.g. the ticks of Pollution): no speed checks, the player didn't cast it again.</param>
+    /// <returns><c>true</c>, if the skill was performed; <c>false</c>, if it was refused.</returns>
+    public async ValueTask<bool> AttackAsync(Player player, ushort extraTargetId, ushort skillId, Point targetAreaCenter, byte rotation, bool hitImplicitlyForExplicitSkill = false, bool isRepeatedByServer = false)
     {
         var skillEntry = player.SkillList?.GetSkill(skillId);
         if (skillEntry?.Skill is not { } skill || skill.SkillType == SkillType.PassiveBoost)
         {
-            return;
+            return false;
         }
 
-        if (skill.SkillType != SkillType.Buff && skill.SkillType != SkillType.Regeneration)
+        if (skill.SkillType != SkillType.Buff && skill.SkillType != SkillType.Regeneration && !isRepeatedByServer)
         {
             if (player.GameContext.PlugInManager.GetPlugInPoint<ISpeedHackCheatCheckPlugIn>() is { } speedCheck)
             {
@@ -49,7 +51,7 @@ public class AreaSkillAttackAction
                 await speedCheck.AttackCheatCheckAsync(player, eventArgs).ConfigureAwait(false);
                 if (eventArgs.IsCheatDetected)
                 {
-                    return;
+                    return false;
                 }
             }
 
@@ -59,14 +61,14 @@ public class AreaSkillAttackAction
                 castTime.CheckCast(player, skill, castCheck);
                 if (castCheck.Cancel)
                 {
-                    return;
+                    return false;
                 }
             }
         }
 
         if (!await player.TryConsumeForSkillAsync(skillEntry).ConfigureAwait(false))
         {
-            return;
+            return false;
         }
 
         if (skill.SkillType is SkillType.AreaSkillAutomaticHits or SkillType.AreaSkillExplicitTarget or SkillType.Buff
@@ -77,6 +79,7 @@ public class AreaSkillAttackAction
         }
 
         await player.ForEachWorldObserverAsync<IShowAreaSkillAnimationPlugIn>(p => p.ShowAreaSkillAnimationAsync(player, skill, targetAreaCenter, rotation), true).ConfigureAwait(false);
+        return true;
     }
 
     private static bool AreaSkillSettingsAreDefault([NotNullWhen(true)] AreaSkillSettings? settings)

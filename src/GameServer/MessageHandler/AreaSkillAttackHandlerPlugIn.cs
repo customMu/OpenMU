@@ -49,9 +49,10 @@ internal class AreaSkillAttackHandlerPlugIn : IPacketHandlerPlugIn
             player.SkillHitValidator.TryRegisterAnimation(message.SkillId, message.AnimationCounter);
         }
 
-        await this._attackAction.AttackAsync(player, message.ExtraTargetId, message.SkillId, new Point(message.TargetX, message.TargetY), message.Rotation).ConfigureAwait(false);
+        var performed = await this._attackAction.AttackAsync(player, message.ExtraTargetId, message.SkillId, new Point(message.TargetX, message.TargetY), message.Rotation).ConfigureAwait(false);
 
-        if (message.SkillId == PollutionSkillId)
+        // the ticks of Pollution only follow a cast which was performed (not one refused as too early or without mana)
+        if (message.SkillId == PollutionSkillId && performed)
         {
             var point = new Point(message.TargetX, message.TargetY);
             var extraTargetId = message.ExtraTargetId;
@@ -64,7 +65,7 @@ internal class AreaSkillAttackHandlerPlugIn : IPacketHandlerPlugIn
                     for (int i = 1; i <= 5; i++)
                     {
                         await Task.Delay(1000).ConfigureAwait(false);
-                        await this._attackAction.AttackAsync(player, extraTargetId, PollutionSkillId, point, rotation).ConfigureAwait(false);
+                        await this._attackAction.AttackAsync(player, extraTargetId, PollutionSkillId, point, rotation, isRepeatedByServer: true).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)

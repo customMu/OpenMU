@@ -14,6 +14,7 @@ using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
 using MUnique.OpenMU.GameLogic;
+using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.PlugIns;
 
@@ -154,9 +155,112 @@ public class SkillCastTimePlugInTest
         Assert.That(plugIn.GetCastTime(player, Skill(235)).TotalMilliseconds, Is.EqualTo(multiShot * (1 - (0.25 * 0.6))).Within(0.5));
     }
 
-    private static SkillCastTimePlugIn CreatePlugIn()
+    /// <summary>
+    /// The speed curves of the default configuration fit the fix times: the client action of every skill comes out with
+    /// whole frames (25 frames per second) at the fix speed.
+    /// </summary>
+    [Test]
+    public void SpeedCurvesFitTheFixTimes()
     {
-        return new SkillCastTimePlugIn { Configuration = new SkillCastTimeConfiguration { ToleranceMilliseconds = 0 } };
+        var config = new SkillCastTimeConfiguration();
+        Assert.That(config.SpeedCurves, Is.Not.Empty);
+        foreach (var curve in config.SpeedCurves)
+        {
+            var fix = config.FixTimes.FirstOrDefault(f => f.SkillNumber == curve.SkillNumber);
+            Assert.That(fix, Is.Not.Null, $"fix time of skill {curve.SkillNumber}");
+            var fixSpeed = curve.Speed == SkillSpeedStat.MagicSpeed ? config.MagicSpeedAtFix : config.AttackSpeedAtFix;
+            var playSpeed = curve.PlaySpeedBase + (curve.SpeedFactor * fixSpeed);
+            var frames = fix!.Milliseconds / 1000.0 * 25 * playSpeed;
+            var roundingOfTheMilliseconds = 0.0005 * 25 * playSpeed;
+            Assert.That(frames, Is.EqualTo(Math.Round(frames)).Within(roundingOfTheMilliseconds + 0.002), $"frames of skill {curve.SkillNumber}");
+        }
+    }
+
+    /// <summary>
+    /// Below the fix speed a skill casts no faster than its animation at the speed of the player (times the share);
+    /// at the fix speed and above it's the fix time.
+    /// </summary>
+    [Test]
+    public async ValueTask SlowPlayerCastsAtTheAnimationTimeOfItsSpeedAsync()
+    {
+        var plugIn = CreatePlugIn(withSpeedCurves: true);
+        var config = plugIn.Configuration!;
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        player.Attributes!.AddElement(new ConstantElement(35), Stats.AttackSpeed);
+        var speed = player.Attributes[Stats.AttackSpeed];
+        Assert.That(speed, Is.LessThan(config.AttackSpeedAtFix));
+
+        // Twisting Slash: PLAYER_ATTACK_SKILL_WHEEL, 0.24 + 0.004 x attack speed
+        var expected = TwistingFix * (0.24 + (0.004 * config.AttackSpeedAtFix)) / (0.24 + (0.004 * speed)) * config.SpeedCheckShare;
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(expected).Within(1));
+        Assert.That(expected, Is.GreaterThan(TwistingFix * 3), "a slow DK is much slower than the fix");
+
+        // (the attack speed of the code definition stops at 200 - the live DB allows more, so move the fix speed instead)
+        config.AttackSpeedAtFix = (int)speed;
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(TwistingFix), "at the fix speed");
+    }
+
+    /// <summary>
+    /// The spells of the wizard follow the magic speed, not the attack speed.
+    /// </summary>
+    [Test]
+    public async ValueTask SpellsFollowTheMagicSpeedAsync()
+    {
+        const short evilSpirit = 9;
+        var plugIn = CreatePlugIn(withSpeedCurves: true);
+        var config = plugIn.Configuration!;
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        player.Attributes!.AddElement(new ConstantElement(1000), Stats.AttackSpeed);
+        player.Attributes.AddElement(new ConstantElement(50), Stats.MagicSpeed);
+        var speed = player.Attributes[Stats.MagicSpeed];
+
+        // PLAYER_SKILL_HAND1: 0.29 + 0.002 x magic speed
+        var expected = 279 * (0.29 + (0.002 * config.MagicSpeedAtFix)) / (0.29 + (0.002 * speed)) * config.SpeedCheckShare;
+        Assert.That(plugIn.GetCastTime(player, Skill(evilSpirit)).TotalMilliseconds, Is.EqualTo(expected).Within(1));
+    }
+
+    /// <summary>
+    /// The option lowers the fix time, but not the animation time of a slow player.
+    /// </summary>
+    [Test]
+    public async ValueTask OptionDoesNotHelpBelowTheFixSpeedAsync()
+    {
+        var plugIn = CreatePlugIn(withSpeedCurves: true);
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        await EquipAsync(player, Weapon(0, 17, optionNumber: 11, level: 13, value: 0.25f)).ConfigureAwait(false);
+        player.Attributes!.AddElement(new ConstantElement(35), Stats.AttackSpeed);
+        var animation = plugIn.GetAnimationMilliseconds(player, TwistingSlash, TwistingFix) * plugIn.Configuration!.SpeedCheckShare;
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(animation).Within(1));
+    }
+
+    /// <summary>
+    /// Normal attacks have a minimum time too, and share it with the skills (one action after the other).
+    /// </summary>
+    [Test]
+    public async ValueTask NormalAttacksAreCheckedAsync()
+    {
+        var plugIn = CreatePlugIn();
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        Assert.That(plugIn.TryNormalAttack(player), Is.True);
+        Assert.That(plugIn.TryNormalAttack(player), Is.False);
+        Assert.That(plugIn.TryCast(player, Skill(TwistingSlash)), Is.False, "the skill waits for the normal attack");
+
+        var notChecked = CreatePlugIn();
+        notChecked.Configuration!.NormalAttackMilliseconds = 0;
+        Assert.That(notChecked.TryNormalAttack(player), Is.True);
+        Assert.That(notChecked.TryNormalAttack(player), Is.True);
+    }
+
+    private static SkillCastTimePlugIn CreatePlugIn(bool withSpeedCurves = false)
+    {
+        var configuration = new SkillCastTimeConfiguration { ToleranceMilliseconds = 0 };
+        if (!withSpeedCurves)
+        {
+            // the player of the tests has no attack speed: only the fix times
+            configuration.SpeedCurves = new List<SkillSpeedCurve>();
+        }
+
+        return new SkillCastTimePlugIn { Configuration = configuration };
     }
 
     private static Skill Skill(short number)

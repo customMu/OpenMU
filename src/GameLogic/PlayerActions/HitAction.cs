@@ -55,6 +55,16 @@ public class HitAction
             }
         }
 
+        if (player.GameContext.PlugInManager.GetPlugInPoint<ISkillCastTimeCheckPlugIn>() is { } castTime)
+        {
+            var castCheck = new System.ComponentModel.CancelEventArgs();
+            castTime.CheckNormalAttack(player, castCheck);
+            if (castCheck.Cancel)
+            {
+                return;
+            }
+        }
+
         if (target.IsAtSafezone())
         {
             return;
