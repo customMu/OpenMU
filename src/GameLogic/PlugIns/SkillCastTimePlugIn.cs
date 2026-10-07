@@ -124,8 +124,8 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
     }
 
     /// <summary>
-    /// Gets the animation time of the skill at the attack / magic speed of the player (as the client plays it below the
-    /// fix speed): the fix time x (base + factor x fix speed) / (base + factor x speed).
+    /// Gets the animation time of the skill at the attack / magic speed of the player, as the client plays it: the fix
+    /// time x (offset + fix speed) / (offset + speed) - longer below the fix speed, shorter above it.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="skillNumber">The (base) skill number.</param>
@@ -139,21 +139,23 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
         }
 
         this._speedCurves ??= config.SpeedCurves.GroupBy(c => c.SkillNumber).ToDictionary(g => g.Key, g => g.First());
-        if (!this._speedCurves.TryGetValue(skillNumber, out var curve) || curve.PlaySpeedBase <= 0 || curve.SpeedFactor < 0)
+        if (!this._speedCurves.TryGetValue(skillNumber, out var curve))
         {
             return 0;
         }
 
-        var (speed, fixSpeed) = curve.Speed == SkillSpeedStat.MagicSpeed
-            ? (attributes[Stats.MagicSpeed], config.MagicSpeedAtFix)
-            : (attributes[Stats.AttackSpeed], config.AttackSpeedAtFix);
-        if (speed >= fixSpeed)
+        var (speed, fixSpeed, offset) = curve.Speed == SkillSpeedStat.MagicSpeed
+            ? (attributes[Stats.MagicSpeed], config.MagicSpeedAtFix, config.MagicSpeedCurveOffset)
+            : (attributes[Stats.AttackSpeed], config.AttackSpeedAtFix, config.AttackSpeedCurveOffset);
+        if (offset + fixSpeed <= 0)
         {
             return 0;
         }
 
-        // the fix time must be the animation time at the fix speed - not the floor of 0.15 s (no curve for such skills)
-        return fixTime * (curve.PlaySpeedBase + (curve.SpeedFactor * fixSpeed)) / (curve.PlaySpeedBase + (curve.SpeedFactor * Math.Max(0, speed)));
+        // the fix time must be the animation time at the fix speed - not the floor of 0.15 s (no curve for such skills).
+        // Above the fix speed the animation gets shorter than the fix time: the harmony options cut the fix time only
+        // as far as the speed of the player reaches (as in the client).
+        return fixTime * (offset + fixSpeed) / (offset + Math.Max(0, speed));
     }
 
     /// <summary>

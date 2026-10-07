@@ -5,7 +5,8 @@
 namespace MUnique.OpenMU.GameLogic.PlugIns;
 
 /// <summary>
-/// The animation speed curve of a skill: the client plays its action at base + factor x speed.
+/// The stat whose speed the client action of a skill follows (one curve for all, see
+/// <see cref="SkillCastTimeConfiguration.AttackSpeedCurveOffset"/>).
 /// </summary>
 public class SkillSpeedCurve
 {
@@ -19,16 +20,6 @@ public class SkillSpeedCurve
     /// </summary>
     public SkillSpeedStat Speed { get; set; }
 
-    /// <summary>
-    /// Gets or sets the play speed of the action at speed 0.
-    /// </summary>
-    public float PlaySpeedBase { get; set; }
-
-    /// <summary>
-    /// Gets or sets the play speed per point of speed.
-    /// </summary>
-    public float SpeedFactor { get; set; }
-
     /// <inheritdoc />
-    public override string ToString() => $"{this.SkillNumber}: {this.PlaySpeedBase} + {this.SpeedFactor} x {this.Speed}";
+    public override string ToString() => $"{this.SkillNumber}: {this.Speed}";
 }
