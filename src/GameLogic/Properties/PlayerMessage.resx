@@ -174,9 +174,6 @@
   <data name="MuHelperMaximumLevel" xml:space="preserve">
     <value>MU Helper cannot be used after level {0}.</value>
   </data>
-  <data name="MuHelperRequiresMoney" xml:space="preserve">
-    <value>MU Helper requires {0} zen.</value>
-  </data>
   <data name="AlreadyInDuel" xml:space="preserve">
     <value>You are already in a duel.</value>
   </data>

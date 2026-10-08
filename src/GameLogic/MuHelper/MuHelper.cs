@@ -1,4 +1,4 @@
-// <copyright file="MuHelper.cs" company="MUnique">
+﻿// <copyright file="MuHelper.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -34,7 +34,6 @@ public class MuHelper : AsyncDisposable
 
     private CancellationTokenSource? _stopCts;
     private Task? _runTask;
-    private DateTime _startTimestamp;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MuHelper"/> class.
@@ -69,17 +68,8 @@ public class MuHelper : AsyncDisposable
             return false;
         }
 
-        this._startTimestamp = DateTime.UtcNow;
-        var requiredMoney = this.CalculateRequiredMoney();
-
-        if (!this._player.TryRemoveMoney(requiredMoney))
-        {
-            await this._player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.MuHelperRequiresMoney), requiredMoney).ConfigureAwait(false);
-            return false;
-        }
-
+        // The helper has no fee by time: it keeps a share of the picked up zen (MuHelperZenFeePlugIn).
         await this._player.InvokeViewPlugInAsync<IMuHelperStatusUpdatePlugIn>(p => p.StartAsync()).ConfigureAwait(false);
-        await this._player.InvokeViewPlugInAsync<IMuHelperStatusUpdatePlugIn>(p => p.ConsumeMoneyAsync((uint)requiredMoney)).ConfigureAwait(false);
 
         this._player.Attributes?.AddElement(ActiveElement, Stats.IsMuHelperActive);
         this._stopCts?.Dispose();
@@ -136,57 +126,16 @@ public class MuHelper : AsyncDisposable
     /// </summary>
     public bool IsRunning => this._runTask is not null;
 
-    // No fee by time while the helper keeps a share of the picked up zen instead.
-    private int CalculateRequiredMoney() => MuHelperZenFeePlugIn.IsActive(this._player.GameContext)
-        ? 0
-        : MuHelperZenCostCalculator.Calculate(this._player, this._configuration, this._startTimestamp);
-
     private async Task RunLoopAsync(CancellationToken cancellationToken)
     {
         try
         {
-            if (this._configuration.PayInterval <= TimeSpan.Zero)
-            {
-                this._player.Logger.LogDebug("MU Helper PayInterval is {PayInterval}. Stopping for {CharacterName}.", this._configuration.PayInterval, this._player.Name);
-                return;
-            }
-
-            using var timer = new PeriodicTimer(this._configuration.PayInterval);
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
-                await this.CollectAsync().ConfigureAwait(false);
-            }
+            // runs until StopAsync cancels it
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
             // expected when StopAsync cancels the token.
-        }
-        catch (Exception ex)
-        {
-            Debug.Fail(ex.Message, ex.StackTrace);
-        }
-    }
-
-    /// <summary>
-    /// Performs the money collection.
-    /// </summary>
-    private async ValueTask CollectAsync()
-    {
-        var amount = this.CalculateRequiredMoney();
-        if (amount <= 0)
-        {
-            return;
-        }
-
-        if (this._player.TryRemoveMoney(amount))
-        {
-            await this._player.InvokeViewPlugInAsync<IMuHelperStatusUpdatePlugIn>(p => p.ConsumeMoneyAsync((uint)amount)).ConfigureAwait(false);
-        }
-        else
-        {
-            await this.StopAsync().ConfigureAwait(false);
         }
     }
 }

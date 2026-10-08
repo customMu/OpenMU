@@ -1,4 +1,4 @@
-// <copyright file="OfflinePlayerManagerTests.cs" company="MUnique">
+﻿// <copyright file="OfflinePlayerManagerTests.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -54,10 +54,11 @@ public class OfflinePlayerManagerTests
     }
 
     /// <summary>
-    /// Tests that <see cref="OfflinePlayerManager.StartAsync"/> fails if the player has insufficient Zen.
+    /// Tests that <see cref="OfflinePlayerManager.StartAsync"/> starts without Zen: the MU Helper has no fee by time,
+    /// only a share of the picked up zen.
     /// </summary>
     [Test]
-    public async ValueTask StartAsync_WithInsufficientZen_ReturnsFalseAsync()
+    public async ValueTask StartAsync_WithoutZen_StartsAsync()
     {
         // Arrange
         var manager = new OfflinePlayerManager();
@@ -69,8 +70,8 @@ public class OfflinePlayerManagerTests
         var result = await manager.StartAsync(realPlayer, TestUserLoginName).ConfigureAwait(false);
 
         // Assert
-        Assert.That(result, Is.False);
-        Assert.That(manager.IsActive(TestUserLoginName), Is.False);
+        Assert.That(result, Is.True);
+        Assert.That(manager.IsActive(TestUserLoginName), Is.True);
     }
 
     /// <summary>

@@ -10,12 +10,11 @@ using MUnique.OpenMU.GameLogic.Offline;
 using MUnique.OpenMU.PlugIns;
 
 /// <summary>
-/// The MU Helper keeps a share of the zen which is picked up while it runs (online or offline leveling), instead of
-/// the fee by time of the <see cref="MuHelperFeaturePlugIn"/>: the fee follows the income, so it never costs more
-/// than the helper brings. While this plugin is active, the fee by time isn't taken.
+/// The MU Helper keeps a share of the zen which is picked up while it runs (online or offline leveling) - its only
+/// fee (there is no fee by time): the fee follows the income, so it never costs more than the helper brings.
 /// </summary>
 [PlugIn]
-[Display(Name = "MU Helper zen fee", Description = "The MU Helper keeps a share of the picked up zen while it runs, instead of the fee every 5 minutes. The client shows the same share in the helper statistics (GameLogic/MuHelper/HelperZenFee.h) - keep them the same.")]
+[Display(Name = "MU Helper zen fee", Description = "The MU Helper keeps a share of the picked up zen while it runs (its only fee, there is no fee by time). The client shows the same share in the helper statistics (GameLogic/MuHelper/HelperZenFee.h) - keep them the same.")]
 [Guid("7C2E9B41-5A8D-4F36-B0E2-1D9A6C3F8E57")]
 public class MuHelperZenFeePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<MuHelperZenFeeConfiguration>, ISupportDefaultCustomConfiguration
 {
@@ -28,7 +27,7 @@ public class MuHelperZenFeePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<
     public object CreateDefaultConfig() => new MuHelperZenFeeConfiguration();
 
     /// <summary>
-    /// Determines whether the fee by picked up zen replaces the fee by time of the MU Helper.
+    /// Determines whether the MU Helper keeps a share of the picked up zen.
     /// </summary>
     /// <param name="gameContext">The game context.</param>
     /// <returns><c>true</c>, if the plugin is active.</returns>

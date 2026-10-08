@@ -1047,21 +1047,6 @@
   <data name="ShowNpcIdsChatCommand_ShowNpcIdsChatCommand_Description" xml:space="preserve">
     <value>Handles the chat command '/showids'.</value>
   </data>
-  <data name="MuHelperConfiguration_CostPerStage_Name" xml:space="preserve">
-    <value>Cost per stage</value>
-  </data>
-  <data name="MuHelperConfiguration_CostPerStage_Description" xml:space="preserve">
-    <value>This value is applied per pay interval and multiplied with the total character level.</value>
-  </data>
-  <data name="MuHelperConfiguration_PayInterval_Name" xml:space="preserve">
-    <value>Pay interval</value>
-  </data>
-  <data name="MuHelperConfiguration_StageInterval_Name" xml:space="preserve">
-    <value>Stage interval</value>
-  </data>
-  <data name="MuHelperConfiguration_StageInterval_Description" xml:space="preserve">
-    <value>After each interval, the stage gets increased to the next level with usually increasing costs.</value>
-  </data>
   <data name="MuHelperConfiguration_MinLevel_Name" xml:space="preserve">
     <value>Minimum character level</value>
   </data>

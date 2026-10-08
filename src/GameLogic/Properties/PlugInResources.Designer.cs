@@ -1410,23 +1410,7 @@ namespace MUnique.OpenMU.GameLogic.Properties {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to This value is applied per pay interval and multiplied with the total character level..
-        /// </summary>
-        public static string MuHelperConfiguration_CostPerStage_Description {
-            get {
-                return ResourceManager.GetString("MuHelperConfiguration_CostPerStage_Description", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Cost per stage.
-        /// </summary>
-        public static string MuHelperConfiguration_CostPerStage_Name {
-            get {
-                return ResourceManager.GetString("MuHelperConfiguration_CostPerStage_Name", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Looks up a localized string similar to Maximum character level.
@@ -1446,32 +1430,8 @@ namespace MUnique.OpenMU.GameLogic.Properties {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Pay interval.
-        /// </summary>
-        public static string MuHelperConfiguration_PayInterval_Name {
-            get {
-                return ResourceManager.GetString("MuHelperConfiguration_PayInterval_Name", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   Looks up a localized string similar to After each interval, the stage gets increased to the next level with usually increasing costs..
-        /// </summary>
-        public static string MuHelperConfiguration_StageInterval_Description {
-            get {
-                return ResourceManager.GetString("MuHelperConfiguration_StageInterval_Description", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Stage interval.
-        /// </summary>
-        public static string MuHelperConfiguration_StageInterval_Name {
-            get {
-                return ResourceManager.GetString("MuHelperConfiguration_StageInterval_Name", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Looks up a localized string similar to Provides configuration for the MU Helper feature..

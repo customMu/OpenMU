@@ -1,4 +1,4 @@
-// <copyright file="OfflinePlayerManager.cs" company="MUnique">
+﻿// <copyright file="OfflinePlayerManager.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -43,12 +43,6 @@ public sealed class OfflinePlayerManager
         if (!this._activePlayers.TryAdd(loginName, sentinel))
         {
             await sentinel.DisposeAsync().ConfigureAwait(false);
-            return false;
-        }
-
-        if (!this.TryChargeInitialZenCost(realPlayer))
-        {
-            await this.RemoveAndDisposeAsync(loginName, sentinel).ConfigureAwait(false);
             return false;
         }
 
@@ -123,41 +117,6 @@ public sealed class OfflinePlayerManager
         await realPlayer.InvokeViewPlugInAsync<ILogoutPlugIn>(p => p.LogoutAsync(LogoutType.CloseGame)).ConfigureAwait(false);
 
         await realPlayer.DisconnectAsync().ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Calculates and deducts the initial Zen cost for starting an offline player session.
-    /// The cost is based on the first MuHelper cost stage multiplied by the player's total level.
-    /// </summary>
-    /// <param name="player">The player to charge.</param>
-    /// <returns><c>true</c> if the cost was successfully charged or no cost applies; otherwise <c>false</c>.</returns>
-    private bool TryChargeInitialZenCost(Player player)
-    {
-        var initialCost = this.CalculateInitialZenCost(player);
-
-        return initialCost <= 0 || player.TryRemoveMoney(initialCost);
-    }
-
-    /// <summary>
-    /// Calculates the initial Zen cost for the given player based on the MuHelper configuration
-    /// and the player's combined normal and master level.
-    /// </summary>
-    /// <param name="player">The player for whom to calculate the cost.</param>
-    /// <returns>The Zen amount to charge; 0 if no cost applies.</returns>
-    private int CalculateInitialZenCost(Player player)
-    {
-        var config = player.GameContext.FeaturePlugIns.GetPlugIn<MuHelperFeaturePlugIn>()?.Configuration
-                     ?? new MuHelperConfiguration();
-
-        var costPerStage = config.CostPerStage.FirstOrDefault();
-        if (costPerStage <= 0)
-        {
-            return 0;
-        }
-
-        var totalLevel = player.Level + (int)(player.Attributes?[Stats.MasterLevel] ?? 0);
-
-        return costPerStage * totalLevel;
     }
 
     /// <summary>

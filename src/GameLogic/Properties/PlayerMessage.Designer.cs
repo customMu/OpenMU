@@ -1122,14 +1122,6 @@ namespace MUnique.OpenMU.GameLogic.Properties {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to MU Helper requires {0} zen..
-        /// </summary>
-        public static string MuHelperRequiresMoney {
-            get {
-                return ResourceManager.GetString("MuHelperRequiresMoney", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Looks up a localized string similar to Name is required..

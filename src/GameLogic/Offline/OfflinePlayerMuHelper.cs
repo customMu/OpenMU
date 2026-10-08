@@ -1,4 +1,4 @@
-// <copyright file="OfflinePlayerMuHelper.cs" company="MUnique">
+﻿// <copyright file="OfflinePlayerMuHelper.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -28,7 +28,6 @@ public sealed class OfflinePlayerMuHelper : AsyncDisposable
     private readonly ItemPickupHandler _itemPickupHandler;
     private readonly MovementHandler _movementHandler;
     private readonly RepairHandler _repairHandler;
-    private readonly ZenConsumptionHandler _zenHandler;
     private readonly HealingHandler _healingHandler;
     private readonly PetHandler _petHandler;
     private readonly CancellationTokenSource _cts = new();
@@ -54,7 +53,6 @@ public sealed class OfflinePlayerMuHelper : AsyncDisposable
         this._movementHandler = new MovementHandler(player, config);
         this._combatHandler = new CombatHandler(player, config, this._movementHandler);
         this._repairHandler = new RepairHandler(player, config);
-        this._zenHandler = new ZenConsumptionHandler(player);
         this._petHandler = new PetHandler(player, config);
 
         if (config is null)
@@ -177,16 +175,6 @@ public sealed class OfflinePlayerMuHelper : AsyncDisposable
 
         if (this._player.PlayerState.CurrentState != PlayerState.EnteredWorld)
         {
-            return;
-        }
-
-        if (!await this._zenHandler.DeductZenAsync().ConfigureAwait(false))
-        {
-            if (this._player.Account?.LoginName is { } loginName)
-            {
-                await this._player.GameContext.OfflinePlayerManager.StopAsync(loginName).ConfigureAwait(false);
-            }
-
             return;
         }
 
