@@ -131,7 +131,7 @@ public class SkillCastTimeConfiguration
         new() { SkillNumber = 56, Milliseconds = 176 }, // Power Slash
         new() { SkillNumber = 57, Milliseconds = 253 }, // Spiral Slash
         new() { SkillNumber = 61, Milliseconds = 176 }, // Fire Burst
-        new() { SkillNumber = 62, Milliseconds = 1467 }, // Earthshake
+        new() { SkillNumber = 62, Milliseconds = 268 }, // Earthshake
         new() { SkillNumber = 66, Milliseconds = 176 }, // Force Wave
         new() { SkillNumber = 73, Milliseconds = 182 }, // Mana Rays
         new() { SkillNumber = 74, Milliseconds = 176 }, // Fire Blast
@@ -186,8 +186,8 @@ public class SkillCastTimeConfiguration
 
     // The speed the client action of a skill follows (client SetAttackSpeed). The actions were matched to the fix times
     // above: their frames come out whole at the fix speed (e.g. 6 frames of the DW spells at 279 ms). Not listed (fix time
-    // only): Rageful Blow and Earthshake (their speed doesn't depend on the stats), Lance, Spiral Slash, Fire Slash, Mana
-    // Rays and Charge (the action can't be told from the fix time).
+    // only): Rageful Blow (its speed doesn't depend on the stats), Lance, Spiral Slash, Fire Slash, Mana Rays and Charge
+    // (the action can't be told from the fix time). Earthshake follows the attack speed since 08.10.2026 (DL command build).
     private static ICollection<SkillSpeedCurve> CreateSpeedCurves() => new List<SkillSpeedCurve>
     {
         new() { SkillNumber = 2, Speed = SkillSpeedStat.MagicSpeed }, // Meteorite
@@ -211,6 +211,7 @@ public class SkillCastTimeConfiguration
         new() { SkillNumber = 52, Speed = SkillSpeedStat.AttackSpeed }, // Penetration
         new() { SkillNumber = 56, Speed = SkillSpeedStat.AttackSpeed }, // Power Slash
         new() { SkillNumber = 61, Speed = SkillSpeedStat.AttackSpeed }, // Fire Burst
+        new() { SkillNumber = 62, Speed = SkillSpeedStat.AttackSpeed }, // Earthshake
         new() { SkillNumber = 66, Speed = SkillSpeedStat.AttackSpeed }, // Force Wave
         new() { SkillNumber = 74, Speed = SkillSpeedStat.AttackSpeed }, // Fire Blast
         new() { SkillNumber = 78, Speed = SkillSpeedStat.AttackSpeed }, // Fire Scream
