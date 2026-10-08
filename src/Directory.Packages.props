@@ -40,10 +40,10 @@
     <PackageVersion Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
     <PackageVersion Include="Nito.AsyncEx.Tasks" Version="5.1.2" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.10.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.Zipkin" Version="1.10.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.10.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Zipkin" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageVersion Include="QRCoder" Version="1.8.0" />
     <PackageVersion Include="Pipelines.Sockets.Unofficial" Version="2.2.8" />
     <PackageVersion Include="Serilog" Version="4.3.0" />
@@ -59,6 +59,8 @@
     <PackageVersion Include="System.Configuration.ConfigurationManager" Version="10.0.2" />
     <PackageVersion Include="System.IO.Pipelines" Version="10.0.1" />
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.1" />
+    <!-- pinned: the transitive 8.0.2 (Web.Shared) has GHSA-23rf-6693-g89p, GHSA-8q5v-6pqq-x66h, GHSA-37gx-xxp4-5rgx, GHSA-6588-8gv4-xfgh -->
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="8.0.4" />
     <PackageVersion Include="System.Memory" Version="4.6.3" />
     <PackageVersion Include="System.Net.Sockets" Version="4.3.0" />
     <PackageVersion Include="System.Text.Encoding" Version="4.3.0" />
@@ -69,7 +71,8 @@
     <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
     <!-- Do not update the following: License changed to non-OSS in newer versions! -->
     <PackageVersion Include="MathParser.org-mXparser" Version="4.4.2" />
-    <PackageVersion Include="SixLabors.ImageSharp" Version="2.1.11" />
+    <!-- 2.x: the advisories of 2026 are fixed only in 4.1.2 (new license, other API); the server only draws the map terrain into a PNG (no decoding of foreign images, no TIFF, no histogram) -->
+    <PackageVersion Include="SixLabors.ImageSharp" Version="2.1.13" />
     <PackageVersion Include="SixLabors.ImageSharp.Drawing" Version="1.0.0" />
   </ItemGroup>
 </Project>

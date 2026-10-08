@@ -60,6 +60,8 @@
     <PackageReference Include="Nito.AsyncEx" />
     <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" />
+    <!-- pins the transitive System.Security.Cryptography.Xml (8.0.2 is vulnerable) to the central version -->
+    <PackageReference Include="System.Security.Cryptography.Xml" />
   </ItemGroup>
 
   <ItemGroup>
