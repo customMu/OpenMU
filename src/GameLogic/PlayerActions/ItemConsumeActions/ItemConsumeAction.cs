@@ -31,7 +31,9 @@ public class ItemConsumeAction
             return;
         }
 
-        var consumeHandler = player.GameContext.PlugInManager.GetStrategy<ItemIdentifier, IItemConsumeHandlerPlugIn>(new ItemIdentifier(item.Definition.Number, item.Definition.Group))
+        // the Echoes of the Illusion of Noria: jewels which add the harmony option of one skill
+        var consumeHandler = (IItemConsumeHandlerPlugIn?)player.GameContext.FeaturePlugIns.GetPlugIn<PlugIns.IllusionOfNoria.IllusionOfNoriaPlugIn>()?.GetEchoHandler(player, item)
+                      ?? player.GameContext.PlugInManager.GetStrategy<ItemIdentifier, IItemConsumeHandlerPlugIn>(new ItemIdentifier(item.Definition.Number, item.Definition.Group))
                       ?? player.GameContext.PlugInManager.GetStrategy<ItemIdentifier, IItemConsumeHandlerPlugIn>(new ItemIdentifier(null, item.Definition.Group));
 
         if (consumeHandler is null && item.Definition.Skill is { } && !item.IsWearable())

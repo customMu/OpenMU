@@ -29,8 +29,9 @@ public class RandomRespawnPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<R
     /// </summary>
     /// <param name="gameContext">The game context, if known.</param>
     /// <param name="definedDelay">The respawn delay of the monster definition.</param>
+    /// <param name="mapNumber">The number of the map of the monster, if known.</param>
     /// <returns>The delay until the monster comes back.</returns>
-    public static TimeSpan GetRespawnDelay(IGameContext? gameContext, TimeSpan definedDelay)
+    public static TimeSpan GetRespawnDelay(IGameContext? gameContext, TimeSpan definedDelay, short? mapNumber = null)
     {
         if (gameContext?.FeaturePlugIns.GetPlugIn<RandomRespawnPlugIn>() is not { } plugIn)
         {
@@ -38,6 +39,11 @@ public class RandomRespawnPlugIn : IFeaturePlugIn, ISupportCustomConfiguration<R
         }
 
         var configuration = plugIn.Configuration ??= new RandomRespawnConfiguration();
+        if (mapNumber is { } map && configuration.IsExcluded(map))
+        {
+            return definedDelay;
+        }
+
         return GetDelay(configuration, definedDelay, Rand.NextDouble());
     }
 
@@ -83,4 +89,21 @@ public class RandomRespawnConfiguration
     /// </summary>
     [Display(Name = "Applies up to", Description = "Only monsters whose respawn delay is at most this long get the random time (bosses with minutes or hours keep theirs).")]
     public TimeSpan AppliesUpTo { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Gets or sets the maps whose monsters keep their own respawn delay.
+    /// </summary>
+    [Display(Name = "Excluded maps", Description = "The numbers of the maps (separated by commas) whose monsters keep their own respawn delay, e.g. 82 - the Illusion of Noria (5 seconds).")]
+    public string ExcludedMaps { get; set; } = "82";
+
+    /// <summary>
+    /// Gets a value indicating whether the map keeps the respawn delays of its monsters.
+    /// </summary>
+    /// <param name="mapNumber">The number of the map.</param>
+    /// <returns><c>true</c>, if the map is excluded.</returns>
+    public bool IsExcluded(short mapNumber)
+    {
+        return this.ExcludedMaps.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(n => short.TryParse(n, out var number) && number == mapNumber);
+    }
 }

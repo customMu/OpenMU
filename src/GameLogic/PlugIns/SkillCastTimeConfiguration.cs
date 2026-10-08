@@ -106,15 +106,25 @@ public class SkillCastTimeConfiguration
     // generated:start
     private static ICollection<SkillFixTime> CreateFixTimes() => new List<SkillFixTime>
     {
+        new() { SkillNumber = 1, Milliseconds = 279 }, // Poison
         new() { SkillNumber = 2, Milliseconds = 279 }, // Meteorite
+        new() { SkillNumber = 3, Milliseconds = 279 }, // Lightning
+        new() { SkillNumber = 4, Milliseconds = 279 }, // Fire Ball
         new() { SkillNumber = 5, Milliseconds = 279 }, // Flame
+        new() { SkillNumber = 7, Milliseconds = 279 }, // Ice
         new() { SkillNumber = 8, Milliseconds = 279 }, // Twister
         new() { SkillNumber = 9, Milliseconds = 279 }, // Evil Spirit
         new() { SkillNumber = 10, Milliseconds = 673 }, // Hellfire
+        new() { SkillNumber = 11, Milliseconds = 279 }, // Power Wave
         new() { SkillNumber = 12, Milliseconds = 536 }, // Aqua Beam
         new() { SkillNumber = 13, Milliseconds = 279 }, // Cometfall
         new() { SkillNumber = 14, Milliseconds = 444 }, // Inferno
+        new() { SkillNumber = 17, Milliseconds = 279 }, // Energy Ball
         new() { SkillNumber = 19, Milliseconds = 195 }, // Falling Slash
+        new() { SkillNumber = 20, Milliseconds = 171 }, // Lunge
+        new() { SkillNumber = 21, Milliseconds = 174 }, // Uppercut
+        new() { SkillNumber = 22, Milliseconds = 171 }, // Cyclone
+        new() { SkillNumber = 23, Milliseconds = 177 }, // Slash
         new() { SkillNumber = 24, Milliseconds = 171 }, // Triple Shot
         new() { SkillNumber = 38, Milliseconds = 279 }, // Decay
         new() { SkillNumber = 39, Milliseconds = 279 }, // Ice Storm
@@ -130,6 +140,7 @@ public class SkillCastTimeConfiguration
         new() { SkillNumber = 55, Milliseconds = 289 }, // Fire Slash
         new() { SkillNumber = 56, Milliseconds = 176 }, // Power Slash
         new() { SkillNumber = 57, Milliseconds = 253 }, // Spiral Slash
+        new() { SkillNumber = 60, Milliseconds = 176 }, // Force
         new() { SkillNumber = 61, Milliseconds = 176 }, // Fire Burst
         new() { SkillNumber = 62, Milliseconds = 268 }, // Earthshake
         new() { SkillNumber = 66, Milliseconds = 176 }, // Force Wave
@@ -185,20 +196,31 @@ public class SkillCastTimeConfiguration
     // generated:end
 
     // The speed the client action of a skill follows (client SetAttackSpeed). The actions were matched to the fix times
-    // above: their frames come out whole at the fix speed (e.g. 6 frames of the DW spells at 279 ms). Not listed (fix time
+    // above: their frames come out whole at the fix speed (e.g. 6 frames of the DW spells at 279 ms; the skills of the
+    // weapons and the first spells since 09.10.2026). Not listed (fix time
     // only): Rageful Blow (its speed doesn't depend on the stats), Lance, Spiral Slash, Fire Slash, Mana Rays and Charge
     // (the action can't be told from the fix time). Earthshake follows the attack speed since 08.10.2026 (DL command build).
     private static ICollection<SkillSpeedCurve> CreateSpeedCurves() => new List<SkillSpeedCurve>
     {
+        new() { SkillNumber = 1, Speed = SkillSpeedStat.MagicSpeed }, // Poison
         new() { SkillNumber = 2, Speed = SkillSpeedStat.MagicSpeed }, // Meteorite
+        new() { SkillNumber = 3, Speed = SkillSpeedStat.MagicSpeed }, // Lightning
+        new() { SkillNumber = 4, Speed = SkillSpeedStat.MagicSpeed }, // Fire Ball
         new() { SkillNumber = 5, Speed = SkillSpeedStat.MagicSpeed }, // Flame
+        new() { SkillNumber = 7, Speed = SkillSpeedStat.MagicSpeed }, // Ice
         new() { SkillNumber = 8, Speed = SkillSpeedStat.MagicSpeed }, // Twister
         new() { SkillNumber = 9, Speed = SkillSpeedStat.MagicSpeed }, // Evil Spirit
         new() { SkillNumber = 10, Speed = SkillSpeedStat.MagicSpeed }, // Hellfire
+        new() { SkillNumber = 11, Speed = SkillSpeedStat.MagicSpeed }, // Power Wave
         new() { SkillNumber = 12, Speed = SkillSpeedStat.MagicSpeed }, // Aqua Beam
         new() { SkillNumber = 13, Speed = SkillSpeedStat.MagicSpeed }, // Cometfall
         new() { SkillNumber = 14, Speed = SkillSpeedStat.MagicSpeed }, // Inferno
+        new() { SkillNumber = 17, Speed = SkillSpeedStat.MagicSpeed }, // Energy Ball
         new() { SkillNumber = 19, Speed = SkillSpeedStat.AttackSpeed }, // Falling Slash
+        new() { SkillNumber = 20, Speed = SkillSpeedStat.AttackSpeed }, // Lunge
+        new() { SkillNumber = 21, Speed = SkillSpeedStat.AttackSpeed }, // Uppercut
+        new() { SkillNumber = 22, Speed = SkillSpeedStat.AttackSpeed }, // Cyclone
+        new() { SkillNumber = 23, Speed = SkillSpeedStat.AttackSpeed }, // Slash
         new() { SkillNumber = 24, Speed = SkillSpeedStat.AttackSpeed }, // Triple Shot
         new() { SkillNumber = 38, Speed = SkillSpeedStat.MagicSpeed }, // Decay
         new() { SkillNumber = 39, Speed = SkillSpeedStat.MagicSpeed }, // Ice Storm
@@ -210,6 +232,7 @@ public class SkillCastTimeConfiguration
         new() { SkillNumber = 51, Speed = SkillSpeedStat.AttackSpeed }, // Ice Arrow
         new() { SkillNumber = 52, Speed = SkillSpeedStat.AttackSpeed }, // Penetration
         new() { SkillNumber = 56, Speed = SkillSpeedStat.AttackSpeed }, // Power Slash
+        new() { SkillNumber = 60, Speed = SkillSpeedStat.AttackSpeed }, // Force
         new() { SkillNumber = 61, Speed = SkillSpeedStat.AttackSpeed }, // Fire Burst
         new() { SkillNumber = 62, Speed = SkillSpeedStat.AttackSpeed }, // Earthshake
         new() { SkillNumber = 66, Speed = SkillSpeedStat.AttackSpeed }, // Force Wave

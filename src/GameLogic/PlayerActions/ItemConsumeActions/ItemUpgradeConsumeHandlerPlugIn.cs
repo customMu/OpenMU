@@ -96,7 +96,7 @@ public abstract class ItemUpgradeConsumeHandlerPlugIn : ItemModifyConsumeHandler
             return false;
         }
 
-        if (Rand.NextRandomBool(this.Configuration.SuccessChance))
+        if (Rand.NextRandomBool(this.GetUpgradeSuccessChance(itemOption.Level + 1)))
         {
             itemOption.Level++;
         }
@@ -107,6 +107,13 @@ public abstract class ItemUpgradeConsumeHandlerPlugIn : ItemModifyConsumeHandler
 
         return true;
     }
+
+    /// <summary>
+    /// Gets the chance to upgrade the option to the level.
+    /// </summary>
+    /// <param name="targetLevel">The level of the option after the upgrade.</param>
+    /// <returns>The success chance between 0 and 1.</returns>
+    protected virtual double GetUpgradeSuccessChance(int targetLevel) => this.Configuration.SuccessChance;
 
     private void HandleFailedUpgrade(Item item, ItemOptionLink itemOption)
     {
@@ -160,7 +167,7 @@ public abstract class ItemUpgradeConsumeHandlerPlugIn : ItemModifyConsumeHandler
                     possibleOptions.Remove(agiReductOpt);
                 }
 
-                optionLink.ItemOption = possibleOptions.SelectWeightedRandom(possibleOptions.Select(po => (int)po.Weight));
+                optionLink.ItemOption = this.SelectHarmonyOption(item, possibleOptions);
                 optionLink.Level = optionLink.ItemOption?.LevelDependentOptions.Select(ldo => ldo.Level).Min() ?? 0;
             }
             else
@@ -174,6 +181,17 @@ public abstract class ItemUpgradeConsumeHandlerPlugIn : ItemModifyConsumeHandler
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Selects the harmony option which is added to the item: a weighted random one of the possible options.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="possibleOptions">The possible options.</param>
+    /// <returns>The selected option.</returns>
+    protected virtual IncreasableItemOption? SelectHarmonyOption(Item item, IList<IncreasableItemOption> possibleOptions)
+    {
+        return possibleOptions.SelectWeightedRandom(possibleOptions.Select(po => (int)po.Weight));
     }
 
     private bool ItemHasOptionAlready(Item item)

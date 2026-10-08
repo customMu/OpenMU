@@ -357,7 +357,7 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
         if (this.ShouldRespawn)
         {
             // every monster gets its own random time (plugin "Random respawn"), so a spot doesn't respawn all at once
-            var respawnDelay = RandomRespawnPlugIn.GetRespawnDelay(this.GetHitNotificationTarget(attacker)?.GameContext, this.Definition.RespawnDelay);
+            var respawnDelay = RandomRespawnPlugIn.GetRespawnDelay(this.GetHitNotificationTarget(attacker)?.GameContext, this.Definition.RespawnDelay, this.CurrentMap?.Definition.Number);
             _ = Task.Run(async () =>
             {
                 try

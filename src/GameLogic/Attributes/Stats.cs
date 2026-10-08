@@ -194,6 +194,41 @@ public class Stats
     public static AttributeDefinition KundunChamberEntries { get; } = new(new Guid("5C27A9E3-8B41-4D6F-A3C8-0E9F2B7D4A16"), "Kundun chamber entries", "The number of entries into the chamber of Kundun in the week of the last entry.");
 
     /// <summary>
+    /// Gets the attribute definition: the state of the quest of the whistle of the Illusion of Noria: 0 not taken, 1 taken, 2 done (the character may enter the illusion).
+    /// </summary>
+    public static AttributeDefinition IllusionQuestState { get; } = new(new Guid("C2E91F47-3A6B-4D58-9E10-7B4F2C8A6D31"), "Illusion of Noria: quest", "The state of the quest of the whistle of the Illusion of Noria: 0 not taken, 1 taken, 2 done (the character may enter the illusion).");
+
+    /// <summary>
+    /// Gets the attribute definition: the number of the day on which the character took the daily quest of the Illusion of Noria.
+    /// </summary>
+    public static AttributeDefinition IllusionDailyDay { get; } = new(new Guid("8B3D6A21-5E7F-4C94-A0B2-1D9E6F3C8A47"), "Illusion of Noria: daily day", "The number of the day on which the character took the daily quest of the Illusion of Noria.");
+
+    /// <summary>
+    /// Gets the attribute definition: the monster kinds of the daily quest of the Illusion of Noria (indexes + 1, 4 bits each).
+    /// </summary>
+    public static AttributeDefinition IllusionDailyMonsters { get; } = new(new Guid("4F6A2E93-1C8D-4B75-9A3E-6D2B8F1C7E50"), "Illusion of Noria: daily monsters", "The monster kinds of the daily quest of the Illusion of Noria (indexes + 1, 4 bits each).");
+
+    /// <summary>
+    /// Gets the attribute definition: the kills of the 1st monster kind of the daily quest of the Illusion of Noria.
+    /// </summary>
+    public static AttributeDefinition IllusionDailyKills1 { get; } = new(new Guid("A7C14E3B-9D25-4F86-B1E0-3C7A5D9F2B68"), "Illusion of Noria: daily kills 1", "The kills of the 1st monster kind of the daily quest of the Illusion of Noria.");
+
+    /// <summary>
+    /// Gets the attribute definition: the kills of the 2nd monster kind of the daily quest of the Illusion of Noria.
+    /// </summary>
+    public static AttributeDefinition IllusionDailyKills2 { get; } = new(new Guid("5D8B2F16-7A3C-4E91-8D4F-B2E6C1A9F735"), "Illusion of Noria: daily kills 2", "The kills of the 2nd monster kind of the daily quest of the Illusion of Noria.");
+
+    /// <summary>
+    /// Gets the attribute definition: the kills of the 3rd monster kind of the daily quest of the Illusion of Noria.
+    /// </summary>
+    public static AttributeDefinition IllusionDailyKills3 { get; } = new(new Guid("E2A57C98-4B1D-4F3A-9C62-8F1D3B7E5A04"), "Illusion of Noria: daily kills 3", "The kills of the 3rd monster kind of the daily quest of the Illusion of Noria.");
+
+    /// <summary>
+    /// Gets the attribute definition: the number of the day on which the character claimed the reward of the daily quest of the Illusion of Noria.
+    /// </summary>
+    public static AttributeDefinition IllusionDailyClaimedDay { get; } = new(new Guid("1B9F4D72-6E3A-4C58-A7D1-5F2C9E8B3A16"), "Illusion of Noria: daily claimed day", "The number of the day on which the character claimed the reward of the daily quest of the Illusion of Noria.");
+
+    /// <summary>
     /// Gets the attribute definition of the current step (0-based) of the kill quests of a character.
     /// </summary>
     public static AttributeDefinition KillQuestStep { get; } = new(new Guid("B7E3A1C9-5D2F-4E86-9A40-1F8C6D3B2E57"), "Kill quest step", "The number of completed kill quests of the character, which is the index of its current quest.");

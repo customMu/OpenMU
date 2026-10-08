@@ -64,6 +64,18 @@ internal class PartyDropModeHandlerPlugIn : IPacketHandlerPlugIn
             return;
         }
 
+        if (packet.Length >= 5 && packet.Span[3] == IllusionOfNoriaViewPlugIn.WardenActionSubCode)
+        {
+            if (player.GameContext.FeaturePlugIns.GetPlugIn<GameLogic.PlugIns.IllusionOfNoria.IllusionOfNoriaPlugIn>() is { } illusion)
+            {
+                var group = packet.Length >= 8 ? packet.Span[5] : (byte)0;
+                var number = packet.Length >= 8 ? (short)(packet.Span[6] | (packet.Span[7] << 8)) : (short)0;
+                await illusion.HandleActionAsync(player, packet.Span[4], group, number).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
         if (packet.Length >= 4 && packet.Span[3] == KalimaInstanceViewPlugIn.ChamberEnterRequestSubCode)
         {
             if (player.GameContext.FeaturePlugIns.GetPlugIn<KundunChamberPlugIn>() is { } chamber)

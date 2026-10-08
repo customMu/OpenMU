@@ -23,6 +23,22 @@ public abstract class RefineStoneUpgradeConsumeHandlerPlugIn : ItemUpgradeConsum
     {
     }
 
+    /// <summary>
+    /// Gets the chance in percent to reach the harmony option level (index) with a refine stone (09.10.2026, the options
+    /// which lower the fix time of a skill, levels 1..10): 2-3 always, then 70 % down to 10 % for level 10. The same for the
+    /// Lower and the Higher Refine Stone: on a fail the Lower one sets the option back to level 1, the Higher one keeps it.
+    /// The client shows it in the tooltip (GameLogic/Combat/SkillCastTime.h RefineChance, tools/balance/skill_cast_time.py).
+    /// </summary>
+    internal static IReadOnlyList<int> RefineChancePercent { get; } = new[] { 0, 0, 100, 100, 70, 60, 50, 40, 30, 20, 10 };
+
+    /// <inheritdoc/>
+    protected override double GetUpgradeSuccessChance(int targetLevel)
+    {
+        return targetLevel >= 0 && targetLevel < RefineChancePercent.Count
+            ? RefineChancePercent[targetLevel] / 100.0
+            : base.GetUpgradeSuccessChance(targetLevel);
+    }
+
     /// <inheritdoc/>
     protected override bool TryUpgradeItemOption(Item item)
     {
