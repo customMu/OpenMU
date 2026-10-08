@@ -1340,6 +1340,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
 
         this._selectedCharacter.StateRemainingSeconds += (int)TimeSpan.FromHours(1).TotalSeconds;
         this._selectedCharacter.PlayerKillCount += 1;
+        PlugIns.RankingStatisticsPlugIn.OnPlayerMurdered(this, killedPlayer);
         await this.ForEachWorldObserverAsync<IUpdateCharacterHeroStatePlugIn>(o => o.UpdateCharacterHeroStateAsync(this), true).ConfigureAwait(false);
     }
 

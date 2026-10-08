@@ -604,4 +604,9 @@ public enum UpdateVersion
     /// The version of the <see cref="AddJewelryBoxUpdatePlugIn"/>.
     /// </summary>
     AddJewelryBox = 119,
+
+    /// <summary>
+    /// The version of the <see cref="AddRankingStatisticsUpdatePlugIn"/>.
+    /// </summary>
+    AddRankingStatistics = 120,
 }

@@ -209,6 +209,36 @@ public class Stats
     public static AttributeDefinition KillQuestPoints { get; } = new(new Guid("D2A8F5B3-1E7C-4936-8D04-C6B9E2A7F318"), "Kill quest points", "The stat points of the completed kill quests of the character; a reset keeps them.");
 
     /// <summary>
+    /// Gets the attribute definition of all player kills (murders with a PK penalty) of a character; unlike the PK count it is never reset.
+    /// </summary>
+    public static AttributeDefinition RankingPlayerKills { get; } = new(new Guid("5E1B7C93-2D84-4A6F-9B15-C8E3A0D7F241"), "Ranking: player kills", "All player kills (murders with a PK penalty) of the character, for the rankings of the site; unlike the PK count it is never reset.");
+
+    /// <summary>
+    /// Gets the attribute definition of the kills of player killers (outlaws) of a character.
+    /// </summary>
+    public static AttributeDefinition RankingPlayerKillerKills { get; } = new(new Guid("A3D96F28-7B41-4C5E-8E02-1F6B9C4D7A35"), "Ranking: PK hunting", "The player killers (outlaws) which the character killed, for the rankings of the site.");
+
+    /// <summary>
+    /// Gets the attribute definition of the guild war kills of a character.
+    /// </summary>
+    public static AttributeDefinition RankingGuildWarKills { get; } = new(new Guid("6C2F4A81-9E37-4B5D-A1C8-3D7E0B9F2C64"), "Ranking: guild war kills", "The players of the enemy guild which the character killed in guild wars, for the rankings of the site.");
+
+    /// <summary>
+    /// Gets the attribute definition of the Castle Siege kills of a character.
+    /// </summary>
+    public static AttributeDefinition RankingCastleSiegeKills { get; } = new(new Guid("D84E1B67-3A5C-4F92-B6E0-7C1A9D3F5E28"), "Ranking: Castle Siege kills", "The players which the character killed during the battle of the Castle Siege, for the rankings of the site.");
+
+    /// <summary>
+    /// Gets the attribute definition of the won duels of a character.
+    /// </summary>
+    public static AttributeDefinition RankingDuelWins { get; } = new(new Guid("2B7A5E94-C1D3-4E68-9F20-A6B8D4C1E573"), "Ranking: duel wins", "The duels which the character won, for the rankings of the site.");
+
+    /// <summary>
+    /// Gets the attribute definition of the lost duels of a character.
+    /// </summary>
+    public static AttributeDefinition RankingDuelLosses { get; } = new(new Guid("F1C63D85-4B92-4A7E-8D3F-5E0A2B7C9D16"), "Ranking: duel losses", "The duels which the character lost, for the rankings of the site.");
+
+    /// <summary>
     /// Gets the attribute definition of the flag that the current kill quest is completed, but its reward waits for space in the inventory.
     /// </summary>
     public static AttributeDefinition KillQuestRewardWaiting { get; } = new(new Guid("7E4B2C95-A8D1-4F36-9C07-E5A3B1D8F264"), "Kill quest reward waiting", "1 when the current kill quest is completed, but its reward waits for space in the inventory (quest window, key T).");

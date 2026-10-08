@@ -454,6 +454,7 @@ public sealed class DuelRoom : AsyncDisposable
     {
         var winner = this.ScoreRequester > this.ScoreOpponent ? this.Requester : this.Opponent;
         var loser = this.Requester == winner ? this.Opponent : this.Requester;
+        PlugIns.RankingStatisticsPlugIn.OnDuelFinished(winner, loser);
         await this.AllPlayers.ForEachAsync(player => player.InvokeViewPlugInAsync<IDuelFinishedPlugIn>(p => p.DuelFinishedAsync(winner, loser))).ConfigureAwait(false);
     }
 
