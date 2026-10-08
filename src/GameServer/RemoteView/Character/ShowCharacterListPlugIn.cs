@@ -41,7 +41,7 @@ public class ShowCharacterListPlugIn : IShowCharacterListPlugIn
             return;
         }
 
-        var unlockFlags = CreateUnlockFlags(account);
+        var unlockFlags = CreateUnlockFlags(account, this._player.GameContext.Configuration);
         await this.SendCharacterListAsync(connection, account, unlockFlags).ConfigureAwait(false);
         if (unlockFlags > CharacterCreationUnlockFlags.None)
         {
@@ -49,12 +49,16 @@ public class ShowCharacterListPlugIn : IShowCharacterListPlugIn
         }
     }
 
-    private static CharacterCreationUnlockFlags CreateUnlockFlags(Account account)
+    private static CharacterCreationUnlockFlags CreateUnlockFlags(Account account, DataModel.Configuration.GameConfiguration configuration)
     {
+        // Every class which can be created is open from the start (08.10.2026): the flags of all creatable classes,
+        // not only of the ones the account unlocked (the unlock plugins by level are off).
         byte aggregatedFlags = 0;
-        var result = account.UnlockedCharacterClasses?
+        var result = configuration.CharacterClasses
+            .Where(c => c.CanGetCreated)
+            .Concat(account.UnlockedCharacterClasses?.AsEnumerable() ?? [])
             .Select(c => c.CreationAllowedFlag)
-            .Aggregate(aggregatedFlags, (current, flag) => (byte)(current | flag)) ?? 0;
+            .Aggregate(aggregatedFlags, (current, flag) => (byte)(current | flag));
         return (CharacterCreationUnlockFlags)result;
     }
 
