@@ -1,0 +1,9 @@
+{
+  "_comment": "Monsters of every reset step for pack_kill_time.py: a list of monster names (Designation in the database) or {\"levels\": [min, max]}. EXAMPLE ONLY - the level ranges are guessed from MonsterLevels.h; take the spots of every step from mob_layout.py, copy to pack_kill_steps.json.",
+  "0": ["Yeti", "Elite Yeti", "Ghost", "Hell Spider"],
+  "5": {"levels": [117, 145]},
+  "10": ["Satyros", "Blade Hunter", "Kentauros", "Berserker"],
+  "20": {"levels": [290, 325]},
+  "30": ["Ice Walker", "Coolutin", "Iron Knight"],
+  "50": {"levels": [380, 400]}
+}
