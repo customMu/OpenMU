@@ -599,4 +599,9 @@ public enum UpdateVersion
     /// The version of the <see cref="QuestRewardBoxesUpdatePlugIn"/>.
     /// </summary>
     QuestRewardBoxes = 118,
+
+    /// <summary>
+    /// The version of the <see cref="AddJewelryBoxUpdatePlugIn"/>.
+    /// </summary>
+    AddJewelryBox = 119,
 }

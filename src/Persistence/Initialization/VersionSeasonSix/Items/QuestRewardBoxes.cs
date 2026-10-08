@@ -23,9 +23,15 @@ internal static class QuestRewardBoxes
     /// </summary>
     internal const byte BoxOfHeavenLevel = 7;
 
-    private static readonly short[] Rings = [8, 9, 21, 22, 23, 24]; // Ice, Poison, Fire, Earth, Wind, Magic
+    /// <summary>
+    /// The numbers (group 13) of the rings which can be excellent: Ice, Poison, Fire, Earth, Wind, Magic.
+    /// </summary>
+    internal static readonly short[] Rings = [8, 9, 21, 22, 23, 24];
 
-    private static readonly short[] Pendants = [12, 13, 25, 26, 27, 28]; // Lighting, Fire, Ice, Wind, Water, Ability
+    /// <summary>
+    /// The numbers (group 13) of the pendants which can be excellent: Lighting, Fire, Ice, Wind, Water, Ability.
+    /// </summary>
+    internal static readonly short[] Pendants = [12, 13, 25, 26, 27, 28];
 
     /// <summary>
     /// Replaces the drops of the Box of Luck and the Box of Heaven by the rings and the pendants.
@@ -48,7 +54,16 @@ internal static class QuestRewardBoxes
         AddGroup(context, gameConfiguration, box, BoxOfHeavenLevel, "Box of Heaven (excellent pendant)", Pendants);
     }
 
-    private static void AddGroup(IContext context, GameConfiguration gameConfiguration, ItemDefinition box, byte level, string description, short[] numbers)
+    /// <summary>
+    /// Adds a drop group of one excellent item out of the given jewelry (group 13) for one level of the box.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="gameConfiguration">The game configuration.</param>
+    /// <param name="box">The box.</param>
+    /// <param name="level">The item level of the box.</param>
+    /// <param name="description">The description of the drop group.</param>
+    /// <param name="numbers">The numbers of the jewelry in group 13.</param>
+    internal static void AddGroup(IContext context, GameConfiguration gameConfiguration, ItemDefinition box, byte level, string description, short[] numbers)
     {
         var group = context.CreateNew<ItemDropItemGroup>();
         group.SourceItemLevel = level;
