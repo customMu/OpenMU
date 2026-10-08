@@ -200,12 +200,12 @@ public class KillQuestsConfiguration
         LostMap(47, 7);
         Large(47, 255);
         Jewels(48, 80, 40, 40, 15, 8);
-        Add(48, "Box of Luck", 14, 11); // an excellent ring
+        Add(48, "Jewelry Box", 14, 170, level: 1); // an excellent ring
         Jewels(49, 100, 50, 50, 20, 10);
-        Add(49, "Box of Luck", 14, 11);
+        Add(49, "Jewelry Box", 14, 170, level: 1);
         Large(49, 255);
         Jewels(50, 120, 60, 60, 25, 12);
-        Add(50, "Box of Heaven", 14, 11, level: 7); // an excellent pendant
+        Add(50, "Jewelry Box", 14, 170, level: 2); // an excellent pendant
         return rewards;
     }
 
