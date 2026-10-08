@@ -59,6 +59,34 @@ public class RankingStatisticsPlugInTest
     }
 
     /// <summary>
+    /// Two players on the same computer (the same fingerprint, other IP addresses - e.g. a VPN) don't count.
+    /// </summary>
+    [Test]
+    public void SameComputerDoesNotCount()
+    {
+        var plugIn = new RankingStatisticsPlugIn();
+        var killer = this.CreatePlayer("a", "10.0.0.1");
+        var killed = this.CreatePlayer("b", "10.0.0.2");
+        killer.HardwareId = killed.HardwareId = "0123456789ABCDEF0123456789ABCDEF";
+        Assert.That(plugIn.Counts(killer, killed), Is.False);
+    }
+
+    /// <summary>
+    /// Other computers count, also when only one of them sent a fingerprint.
+    /// </summary>
+    [Test]
+    public void OtherComputersCount()
+    {
+        var plugIn = new RankingStatisticsPlugIn();
+        var killer = this.CreatePlayer("a", "10.0.0.1");
+        var killed = this.CreatePlayer("b", "10.0.0.2");
+        killer.HardwareId = "0123456789ABCDEF0123456789ABCDEF";
+        Assert.That(plugIn.Counts(killer, killed), Is.True);
+        killed.HardwareId = "FEDCBA9876543210FEDCBA9876543210";
+        Assert.That(plugIn.Counts(killer, killed), Is.True);
+    }
+
+    /// <summary>
     /// Two characters of the same account don't count.
     /// </summary>
     [Test]

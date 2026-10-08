@@ -15,11 +15,11 @@ using MUnique.OpenMU.PlugIns;
 /// <summary>
 /// Counts the player versus player statistics of the characters for the rankings of the site (stored stat attributes):
 /// all player kills (murders, never reset like the PK count), killed player killers, guild war kills, Castle Siege kills,
-/// won and lost duels. Kills between two characters of the same player don't count: the same account, the same IP address,
-/// bots and (configurable) offline leveling characters.
+/// won and lost duels. Kills between two characters of the same player don't count: the same account, the same computer
+/// (the fingerprint of the game client), the same IP address, bots and (configurable) offline leveling characters.
 /// </summary>
 [PlugIn]
-[Display(Name = "Ranking statistics", Description = "Counts player kills (never reset), PK hunting, guild war and Castle Siege kills and duels for the rankings of the site; kills between the same IP address or account don't count.")]
+[Display(Name = "Ranking statistics", Description = "Counts player kills (never reset), PK hunting, guild war and Castle Siege kills and duels for the rankings of the site; kills between the same computer, IP address or account don't count.")]
 [Guid("8E3B1D57-6A29-4C84-B0F5-2D7C9E4A1B63")]
 public class RankingStatisticsPlugIn : IFeaturePlugIn, IAttackableGotKilledPlugIn, ISupportCustomConfiguration<RankingStatisticsConfiguration>, ISupportDefaultCustomConfiguration
 {
@@ -117,6 +117,12 @@ public class RankingStatisticsPlugIn : IFeaturePlugIn, IAttackableGotKilledPlugI
             return false;
         }
 
+        if (configuration.IgnoreSameComputer && killer.HardwareId is { Length: > 0 } killerId && killerId == killed.HardwareId)
+        {
+            killer.Logger.LogInformation("Ranking statistics: the kill of {killed} by {killer} doesn't count, both play on the same computer.", killed.Name, killer.Name);
+            return false;
+        }
+
         if (configuration.IgnoreSameIpAddress
             && (killer as IHasIpAddress)?.IpAddress is { Length: > 0 } killerIp
             && killerIp == (killed as IHasIpAddress)?.IpAddress)
@@ -153,6 +159,12 @@ public class RankingStatisticsConfiguration
     /// </summary>
     [Display(Name = "Ignore the same IP address", Description = "Kills and duels between two players with the same IP address don't count (one person with two characters).")]
     public bool IgnoreSameIpAddress { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether kills between players on the same computer don't count.
+    /// </summary>
+    [Display(Name = "Ignore the same computer", Description = "Kills and duels between two players on the same computer (the fingerprint which the game client sends) don't count.")]
+    public bool IgnoreSameComputer { get; set; } = true;
 
     /// <summary>
     /// Gets or sets a value indicating whether kills of and by offline leveling characters count.

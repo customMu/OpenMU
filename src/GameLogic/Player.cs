@@ -267,6 +267,13 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
     }
 
     /// <summary>
+    /// Gets or sets the fingerprint of the computer of the player (hex), which the game client of this server sends
+    /// at the entry into the game (C1 14 FB 20); <c>null</c> for other clients. The rankings don't count kills between
+    /// players of the same computer (<see cref="PlugIns.RankingStatisticsPlugIn"/>).
+    /// </summary>
+    public string? HardwareId { get; set; }
+
+    /// <summary>
     /// Gets or sets the account.
     /// </summary>
     public Account? Account
