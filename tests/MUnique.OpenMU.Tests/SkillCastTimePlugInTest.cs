@@ -252,6 +252,31 @@ public class SkillCastTimePlugInTest
     }
 
     /// <summary>
+    /// Earthshake on the Dark Horse (the DL command build) follows the attack speed: a slow player casts it no faster
+    /// than its animation at its speed, at the fix speed it's the fix time (268 ms, before 08.10.2026 fixed 1 467 ms).
+    /// </summary>
+    [Test]
+    public async ValueTask EarthshakeFollowsTheAttackSpeedAsync()
+    {
+        const short earthshake = 62;
+        var plugIn = CreatePlugIn(withSpeedCurves: true);
+        var config = plugIn.Configuration!;
+        var fix = config.FixTimes.First(f => f.SkillNumber == earthshake).Milliseconds;
+        Assert.That(fix, Is.EqualTo(268));
+        Assert.That(config.SpeedCurves.First(c => c.SkillNumber == earthshake).Speed, Is.EqualTo(SkillSpeedStat.AttackSpeed));
+
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        player.Attributes!.AddElement(new ConstantElement(100), Stats.AttackSpeed);
+        player.Attributes.AddElement(new ConstantElement(1000), Stats.MagicSpeed);
+        var speed = player.Attributes[Stats.AttackSpeed];
+        var expected = fix * (config.AttackSpeedCurveOffset + config.AttackSpeedAtFix) / (config.AttackSpeedCurveOffset + speed) * config.SpeedCheckShare;
+        Assert.That(plugIn.GetCastTime(player, Skill(earthshake)).TotalMilliseconds, Is.EqualTo(expected).Within(1));
+
+        player.Attributes.AddElement(new ConstantElement(config.AttackSpeedAtFix), Stats.AttackSpeed);
+        Assert.That(plugIn.GetCastTime(player, Skill(earthshake)).TotalMilliseconds, Is.EqualTo(fix), "at the fix speed");
+    }
+
+    /// <summary>
     /// The option lowers the fix time, but not the animation time of a slow player.
     /// </summary>
     [Test]
