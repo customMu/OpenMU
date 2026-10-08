@@ -75,7 +75,7 @@ public class TargetedSkillDefaultPlugin : TargetedSkillPluginBase
         {
             if (player.GameContext.PlugInManager.GetPlugInPoint<ISpeedHackCheatCheckPlugIn>() is { } speedCheck)
             {
-                var eventArgs = new SpeedHackCheckEventArgs();
+                var eventArgs = new SpeedHackCheckEventArgs { Skill = skill };
                 await speedCheck.AttackCheatCheckAsync(player, eventArgs).ConfigureAwait(false);
                 if (eventArgs.IsCheatDetected)
                 {

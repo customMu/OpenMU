@@ -114,7 +114,7 @@ public class TestBuildChatCommandPlugIn : ChatCommandPlugInBase<TestBuildChatCom
 
         // The points a character really has with its reset count and level (not the points it has now, e.g. after /setresets),
         // so that a test character matches the balance model.
-        var freePoints = GetPointsOfResetsAndLevel(targetPlayer, attributes);
+        var freePoints = StatPointsCalculator.GetPointsOfResetsAndLevel(targetPlayer);
 
         var newValues = new long[BuildStats.Length];
         long distributed = 0;
@@ -148,37 +148,6 @@ public class TestBuildChatCommandPlugIn : ChatCommandPlugInBase<TestBuildChatCom
         await player.ShowBlueMessageAsync(
                 $"{character.Name} {testClass} {arguments.Build}: {freePoints} points -> STR {(int)attributes[Stats.BaseStrength]}, AGI {(int)attributes[Stats.BaseAgility]}, VIT {(int)attributes[Stats.BaseVitality]}, ENE {(int)attributes[Stats.BaseEnergy]}, CMD {(int)attributes[Stats.BaseLeadership]}. Relog if the client shows old values.")
             .ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Points of the resets (sum of the reset feature point tiers, as with "Replace points per reset")
-    /// plus the level-up points since the level after the last reset.
-    /// </summary>
-    private static long GetPointsOfResetsAndLevel(Player player, AttributeSystem attributes)
-    {
-        var resets = (int)attributes[Stats.Resets];
-        var level = (int)attributes[Stats.Level];
-        var configuration = player.GameContext.FeaturePlugIns.GetPlugIn<ResetFeaturePlugIn>()?.Configuration;
-
-        long resetPoints = 0;
-        for (var reset = 1; reset <= resets && configuration is not null; reset++)
-        {
-            ResetConfiguration.ResetPointTier? tier = null;
-            foreach (var candidate in configuration.PointsTiers)
-            {
-                if (candidate.MinimumResetCount <= reset && (tier is null || candidate.MinimumResetCount > tier.MinimumResetCount))
-                {
-                    tier = candidate;
-                }
-            }
-
-            resetPoints += tier?.PointsGranted ?? 0;
-        }
-
-        var startLevel = resets > 0 ? configuration?.LevelAfterReset ?? 10 : 1;
-        var levelPoints = Math.Max(0, level - startLevel) * (long)attributes[Stats.PointsPerLevelUp];
-        // plus the stat points of the kill quests, which a reset keeps
-        return resetPoints + levelPoints + KillQuests.KillQuestsPlugIn.GetQuestPoints(player);
     }
 
     /// <summary>

@@ -40,6 +40,7 @@ public class SpeedHackAntiCheatTests
     public async Task TestWalkSpeedHackDetectionBansAccountAsync()
     {
         var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        EnableBan(player); // the ban is off by default (08.10.2026): this test checks the ban path when it's enabled
         Assert.That(player.Account?.State, Is.EqualTo(AccountState.Normal));
 
         // Perform rapid walks to exceed the 3-warnings limit.
@@ -211,6 +212,7 @@ public class SpeedHackAntiCheatTests
     public async Task TestWalkSpeedHackDetectionWithCheatEngineAsync()
     {
         var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        EnableBan(player); // the ban is off by default (08.10.2026): this test checks the ban path when it's enabled
         player.Position = StartPoint;
         Assert.That(player.Account?.State, Is.EqualTo(AccountState.Normal));
 
@@ -260,6 +262,7 @@ public class SpeedHackAntiCheatTests
         };
         var inventoryItems = new List<Item> { mountItem };
         var player = await CreatePlayerWithSpeedAttributesAsync(inventoryItems).ConfigureAwait(false);
+        EnableBan(player); // the ban is off by default (08.10.2026): this test checks the ban path when it's enabled
         player.Attributes![Stats.MovementSpeed] = 17;
         Assert.That(player.StepDelay.TotalMilliseconds, Is.EqualTo(TimeSpan.FromMilliseconds(4000.0 / 17.0).TotalMilliseconds).Within(1.0));
         Assert.That(player.Account?.State, Is.EqualTo(AccountState.Normal));
@@ -574,5 +577,115 @@ public class SpeedHackAntiCheatTests
         {
             return new MockViewPlugInContainer();
         }
+    }
+
+
+    /// <summary>
+    /// With the plugin "Skill cast time" the attack check follows the character's own stats: a character with a low attack
+    /// speed attacking at the allowed normal attack pace (~120 ms) isn't flagged (the old formula wanted 426 ms).
+    /// </summary>
+    [Test]
+    public async Task NormalAttacksAtTheAllowedPaceAreNotFlaggedAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        AddSkillCastTime(player);
+        var speedCheck = player.GameContext.PlugInManager.GetPlugInPoint<ISpeedHackCheatCheckPlugIn>()!;
+        for (var i = 0; i < 12; i++)
+        {
+            var args = new SpeedHackCheckEventArgs();
+            await speedCheck.AttackCheatCheckAsync(player, args).ConfigureAwait(false);
+            Assert.That(args.IsCheatDetected, Is.False, $"attack {i}");
+            await Task.Delay(125).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// A character of 0 resets with 20 attack speed casting Twisting Slash every 150 ms (as fast as 500 attack speed would
+    /// allow) runs out of tokens: its own stats allow a cast only every ~0.6 s.
+    /// </summary>
+    [Test]
+    public async Task CastsFasterThanTheOwnStatsAllowAreFlaggedAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        AddSkillCastTime(player);
+        var skill = new Mock<Skill>();
+        skill.SetupAllProperties();
+        skill.Object.Number = 41; // Twisting Slash
+        var speedCheck = player.GameContext.PlugInManager.GetPlugInPoint<ISpeedHackCheatCheckPlugIn>()!;
+        var detected = false;
+        for (var i = 0; i < 12 && !detected; i++)
+        {
+            var args = new SpeedHackCheckEventArgs { Skill = skill.Object };
+            await speedCheck.AttackCheatCheckAsync(player, args).ConfigureAwait(false);
+            detected = args.IsCheatDetected;
+            await Task.Delay(150).ConfigureAwait(false);
+        }
+
+        Assert.That(detected, Is.True);
+    }
+
+    /// <summary>
+    /// The stat check: a character of 0 resets and level 1 with 30 000 invested agility gets a warning (no ban by default);
+    /// 500 points (within the margin) don't.
+    /// </summary>
+    [Test]
+    public async Task ImpossibleStatPointsAreFlaggedAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var plugIn = player.GameContext.FeaturePlugIns.GetPlugIn<SpeedHackDetectPlugIn>()!;
+        var speedCheck = player.GameContext.PlugInManager.GetPlugInPoint<ISpeedHackCheatCheckPlugIn>()!;
+        SetBaseAgility(player, 20 + 500);
+        await speedCheck.AttackCheatCheckAsync(player, new SpeedHackCheckEventArgs()).ConfigureAwait(false);
+        Assert.That(plugIn.GetWarningCount(player), Is.EqualTo(0), "500 points are within the margin");
+
+        var other = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var otherPlugIn = other.GameContext.FeaturePlugIns.GetPlugIn<SpeedHackDetectPlugIn>()!;
+        SetBaseAgility(other, 30_000);
+        await other.GameContext.PlugInManager.GetPlugInPoint<ISpeedHackCheatCheckPlugIn>()!.AttackCheatCheckAsync(other, new SpeedHackCheckEventArgs()).ConfigureAwait(false);
+        Assert.That(otherPlugIn.GetWarningCount(other), Is.EqualTo(1));
+        Assert.That(other.Account?.State, Is.EqualTo(AccountState.Normal), "no ban by default");
+    }
+
+    /// <summary>
+    /// A walk which starts far from the server position is a desync (the movement resynchronizes the client), not a
+    /// speedhack: many of them give no warning.
+    /// </summary>
+    [Test]
+    public async Task DesyncedWalksAreNotFlaggedAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var plugIn = player.GameContext.FeaturePlugIns.GetPlugIn<SpeedHackDetectPlugIn>()!;
+        var speedCheck = player.GameContext.PlugInManager.GetPlugInPoint<ISpeedHackCheatCheckPlugIn>()!;
+        player.Position = StartPoint;
+        for (var i = 0; i < 12; i++)
+        {
+            var from = new Point((byte)(StartPoint.X + 20 + (i * 3)), StartPoint.Y);
+            var to = new Point((byte)(from.X + 2), StartPoint.Y);
+            plugIn.SetLastAlertTime(player, DateTime.MinValue);
+            WalkingStep[] steps = [new() { From = from, To = to, Direction = Direction.East }];
+            var args = new SpeedHackCheckEventArgs();
+            await speedCheck.WalkCheatCheckAsync(player, steps, args).ConfigureAwait(false);
+            Assert.That(args.IsCheatDetected, Is.False, $"walk {i}");
+        }
+
+        Assert.That(plugIn.GetWarningCount(player), Is.EqualTo(0));
+    }
+
+    private static void AddSkillCastTime(Player player)
+    {
+        var castTime = new SkillCastTimePlugIn { Configuration = new SkillCastTimeConfiguration { ToleranceMilliseconds = 0 } };
+        player.GameContext.FeaturePlugIns.AddPlugIn(castTime, true);
+    }
+
+    private static void SetBaseAgility(Player player, float value)
+    {
+        player.SelectedCharacter!.Attributes.First(a => a.Definition == Stats.BaseAgility).Value = value;
+    }
+
+    private static void EnableBan(Player player)
+    {
+        var configuration = player.GameContext.FeaturePlugIns.GetPlugIn<SpeedHackDetectPlugIn>()!.Configuration!;
+        configuration.AutoBan = true;
+        configuration.MaxWarnings = 3;
     }
 }

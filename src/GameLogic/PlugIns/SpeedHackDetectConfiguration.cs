@@ -13,9 +13,10 @@ public class SpeedHackDetectConfiguration
 {
     /// <summary>
     /// Gets or sets a value indicating whether to auto-ban players that are cheating with speedhacks.
+    /// Off by default: the checks warn and at most disconnect, a ban is up to a game master who reads the log.
     /// </summary>
-    [DefaultValue(true)]
-    public bool AutoBan { get; set; } = true;
+    [DefaultValue(false)]
+    public bool AutoBan { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether to disconnect players that are cheating with speedhacks.
@@ -26,8 +27,8 @@ public class SpeedHackDetectConfiguration
     /// <summary>
     /// Gets or sets the threshold of warnings a player receives before being banned/disconnected.
     /// </summary>
-    [DefaultValue(3)]
-    public int MaxWarnings { get; set; } = 3;
+    [DefaultValue(5)]
+    public int MaxWarnings { get; set; } = 5;
 
     /// <summary>
     /// Gets or sets the warning alert debounce period in seconds.
@@ -80,4 +81,42 @@ public class SpeedHackDetectConfiguration
     /// </summary>
     [DefaultValue(60.0)]
     public double AttackSpeedMinIntervalMs { get; set; } = 60.0;
+
+    /// <summary>
+    /// Gets or sets the share of the time which the character's own stats allow between two actions (plugin "Skill cast
+    /// time": the fix time of the skill, its animation at the character's speed, the harmony option; 150 ms for a normal
+    /// attack) below which an action counts against the token bucket. 0.75 = a quarter of margin for the network; a
+    /// character of 0 resets who acts like one with 500 attack speed runs out of tokens, a 50 reset one at the fix doesn't.
+    /// Without the plugin "Skill cast time" the old formula (base delay - attack speed x factor) is used.
+    /// </summary>
+    [DefaultValue(0.75)]
+    public double ActionIntervalShare { get; set; } = 0.75;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the stat points of a character are checked: the points invested in the
+    /// stats plus the free points can't be more than the resets (Reset Feature tiers), the levels since the last reset and
+    /// the kill quests give. More points mean edited or duped stats (e.g. 500 attack speed at 0 resets).
+    /// Game masters aren't checked (they change their stats with commands).
+    /// </summary>
+    [DefaultValue(true)]
+    public bool CheckStatPoints { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the stat points a character may have above the computed maximum (stat fruits, quest rewards which the
+    /// check doesn't know). The allowed excess is this plus <see cref="StatPointsMarginShare"/> of the maximum.
+    /// </summary>
+    [DefaultValue(1000)]
+    public int StatPointsMargin { get; set; } = 1000;
+
+    /// <summary>
+    /// Gets or sets the share of the computed maximum of stat points a character may have above it.
+    /// </summary>
+    [DefaultValue(0.05)]
+    public double StatPointsMarginShare { get; set; } = 0.05;
+
+    /// <summary>
+    /// Gets or sets how often (seconds) the stat points of an attacking character are checked.
+    /// </summary>
+    [DefaultValue(60)]
+    public int StatCheckIntervalSeconds { get; set; } = 60;
 }

@@ -13,4 +13,10 @@ public class SpeedHackCheckEventArgs
     /// Gets or sets a value indicating whether a cheat was detected.
     /// </summary>
     public bool IsCheatDetected { get; set; }
+
+    /// <summary>
+    /// Gets the skill of an attack check, or <c>null</c> for a normal attack: the allowed time between two actions
+    /// depends on it (plugin "Skill cast time").
+    /// </summary>
+    public DataModel.Configuration.Skill? Skill { get; init; }
 }

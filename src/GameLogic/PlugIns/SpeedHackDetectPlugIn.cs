@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.GameLogic.Attributes;
+using MUnique.OpenMU.GameLogic.Resets;
 using MUnique.OpenMU.Pathfinding;
 using MUnique.OpenMU.PlugIns;
 
@@ -51,6 +52,19 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
         bool shouldRecordViolation = false;
         var startPoint = steps.Span[0].From;
         var state = this.GetState(player);
+
+        // A walk which starts far from the server position is a desync (e.g. MU Helper pulls the character back to its
+        // spot): PlayerMovement resynchronizes the client. Counting its tiles would flag a speedhack that isn't one.
+        if (startPoint.EuclideanDistanceTo(player.Position) > config.MaxAllowedWalkStartOffset)
+        {
+            lock (state.Lock)
+            {
+                state.RecentWalks.Clear();
+                state.LastWalkStartTime = DateTime.MinValue;
+            }
+
+            return;
+        }
 
         lock (state.Lock)
         {
@@ -150,12 +164,32 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
             return;
         }
 
-        var attackSpeed = attributes[Stats.AttackSpeed];
         var now = DateTime.UtcNow;
-
-        var minIntervalMs = Math.Max(config.AttackSpeedMinIntervalMs, config.AttackSpeedBaseDelayMs - (attackSpeed * config.AttackSpeedScalingFactor));
+        var minIntervalMs = GetMinimumIntervalMs(player, attributes, eventArgs.Skill, config);
         var state = this.GetState(player);
         bool shouldRecordViolation = false;
+
+        // game masters change their stats with commands: no stat check for them (the timing checks stay)
+        if (config.CheckStatPoints
+            && player.SelectedCharacter?.CharacterStatus != CharacterStatus.GameMaster
+            && now - state.LastStatCheckTime > TimeSpan.FromSeconds(config.StatCheckIntervalSeconds))
+        {
+            state.LastStatCheckTime = now;
+            var owned = StatPointsCalculator.GetOwnedPoints(player);
+            var allowed = StatPointsCalculator.GetPointsOfResetsAndLevel(player);
+            if (owned > (allowed * (1 + config.StatPointsMarginShare)) + config.StatPointsMargin)
+            {
+                player.Logger.LogError(
+                    "Stat check failed for player {0}: {1} stat points (invested + free), but resets {2}, level {3} and the kill quests give {4}. Attack speed {5}.",
+                    player.Name,
+                    owned,
+                    (int)attributes[Stats.Resets],
+                    (int)attributes[Stats.Level],
+                    allowed,
+                    attributes[Stats.AttackSpeed]);
+                await this.RecordViolationAsync(player, state, config, "stat check").ConfigureAwait(false);
+            }
+        }
 
         lock (state.Lock)
         {
@@ -183,6 +217,12 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
 
         if (shouldRecordViolation)
         {
+            player.Logger.LogWarning(
+                "Speedhack detected on attack for player {0}: {1} faster than {2:0} ms (attack speed {3}).",
+                player.Name,
+                eventArgs.Skill?.Name.ToString() ?? "normal attack",
+                minIntervalMs,
+                attributes[Stats.AttackSpeed]);
             eventArgs.IsCheatDetected = true;
             await this.RecordViolationAsync(player, state, config).ConfigureAwait(false);
         }
@@ -242,12 +282,31 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
     /// <returns><c>true</c> if the player is controlled by the server; otherwise, <c>false</c>.</returns>
     private static bool IsServerControlled(Player player) => player is Offline.OfflinePlayer;
 
+    /// <summary>
+    /// The time between two actions below which an action draws on the token bucket: the share of what the character's
+    /// own stats allow (plugin "Skill cast time": fix time, animation at its speed, harmony option; normal attacks), or
+    /// the old formula by the attack speed without that plugin.
+    /// </summary>
+    private static double GetMinimumIntervalMs(Player player, MUnique.OpenMU.AttributeSystem.IAttributeSystem attributes, Skill? skill, SpeedHackDetectConfiguration config)
+    {
+        if (player.GameContext.FeaturePlugIns.GetPlugIn<SkillCastTimePlugIn>() is { Configuration: { } castConfig } castTime)
+        {
+            var allowedMs = skill is not null ? castTime.GetCastTime(player, skill).TotalMilliseconds : castConfig.NormalAttackMilliseconds;
+            if (allowedMs > 0)
+            {
+                return allowedMs * config.ActionIntervalShare;
+            }
+        }
+
+        return Math.Max(config.AttackSpeedMinIntervalMs, config.AttackSpeedBaseDelayMs - (attributes[Stats.AttackSpeed] * config.AttackSpeedScalingFactor));
+    }
+
     private SpeedHackState GetState(Player player)
     {
         return this._playerStates.GetValue(player, p => new SpeedHackState(this.Configuration?.MaxAttackTokens ?? 5.0));
     }
 
-    private async ValueTask RecordViolationAsync(Player player, SpeedHackState state, SpeedHackDetectConfiguration config)
+    private async ValueTask RecordViolationAsync(Player player, SpeedHackState state, SpeedHackDetectConfiguration config, string check = "speed check")
     {
         var now = DateTime.UtcNow;
         bool shouldBan = false;
@@ -269,7 +328,7 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
                 state.AlertTimes.Dequeue();
             }
 
-            player.Logger.LogWarning("Speedhack warning issued for player {0}. Total warnings in last hour: {1}", player.Name, state.AlertTimes.Count);
+            player.Logger.LogWarning("Anti-cheat warning ({0}) issued for player {1}. Total warnings in last hour: {2}", check, player.Name, state.AlertTimes.Count);
 
             if (state.AlertTimes.Count > config.MaxWarnings)
             {
@@ -310,7 +369,7 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
         }
         else if (shouldWarn)
         {
-            await player.ShowBlueMessageAsync("Warning: Unusual activity detected (speed check). Repeated violations will result in account restriction.").ConfigureAwait(false);
+            await player.ShowBlueMessageAsync($"Warning: unusual activity detected ({check}).").ConfigureAwait(false);
         }
         else
         {
@@ -345,5 +404,7 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
         public Queue<WalkHistoryEntry> RecentWalks { get; } = new();
 
         public DateTime LastWalkStartTime { get; set; } = DateTime.MinValue;
+
+        public DateTime LastStatCheckTime { get; set; } = DateTime.MinValue;
     }
 }
