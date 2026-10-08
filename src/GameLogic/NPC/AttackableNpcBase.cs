@@ -595,15 +595,22 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
             return;
         }
 
-        // Zen auto loot: straight into the inventory of the owner of the drop (or its party, by the shares).
+        // Zen auto loot: straight into the inventory of the owner of the drop (or its party, by the shares). What doesn't
+        // fit (maximum money) goes to the other party members which have room; what nobody can take drops on the ground.
         if (killer.GameContext.FeaturePlugIns.GetPlugIn<ZenAutoLootPlugIn>() is { } autoLoot && autoLoot.IsActiveFor(killer))
         {
-            var received = killer.Party is { } ownerParty
-                ? MoneyDistribution.TryPayShares(shares, member => ownerParty.IsEligibleForMoney(member, killer))
-                : MoneyDistribution.TryPay(killer, amount);
-            if (received)
+            var rest = killer.Party is { } ownerParty
+                ? MoneyDistribution.PaySharesWithOverflow(shares, member => ownerParty.IsEligibleForMoney(member, killer))
+                : MoneyDistribution.PayAsMuchAsFits(killer, amount);
+            if (rest == 0)
             {
                 return;
+            }
+
+            if (rest < amount)
+            {
+                shares = MoneyDistribution.ScaleShares(shares, rest);
+                amount = rest;
             }
         }
 

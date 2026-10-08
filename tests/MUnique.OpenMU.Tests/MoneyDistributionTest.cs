@@ -237,6 +237,62 @@ public class MoneyDistributionTest
             "test setup: the money rate was not applied as expected");
     }
 
+
+    /// <summary>
+    /// Zen auto loot, solo: as much as fits into the inventory (maximum money) is paid, the rest is returned to be
+    /// dropped on the ground (it used to drop the whole pile, or with the clamp lose the rest).
+    /// </summary>
+    [Test]
+    public async Task AutoLootPaysWhatFitsAndReturnsTheRestAsync()
+    {
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        player.GameContext.Configuration.MaximumInventoryMoney = 1000;
+        player.Money = 700;
+
+        var rest = MoneyDistribution.PayAsMuchAsFits(player, 500);
+
+        Assert.That(player.Money, Is.EqualTo(1000));
+        Assert.That(rest, Is.EqualTo(200));
+        Assert.That(MoneyDistribution.PayAsMuchAsFits(player, 50), Is.EqualTo(50), "a full inventory takes nothing");
+    }
+
+    /// <summary>
+    /// Zen auto loot in a party: the share of a member with a full inventory goes to the other members which have room.
+    /// </summary>
+    [Test]
+    public async Task AutoLootGivesTheShareOfAFullMemberToThePartyAsync()
+    {
+        var (first, second) = await CreateTwoPlayersAsync().ConfigureAwait(false);
+        await CreatePartyAsync(first, second).ConfigureAwait(false);
+        first.GameContext.Configuration.MaximumInventoryMoney = 10_000;
+        first.Money = 10_000;
+
+        var rest = MoneyDistribution.PaySharesWithOverflow([new MoneyShare(first, 600), new MoneyShare(second, 400)], _ => true);
+
+        Assert.That(rest, Is.EqualTo(0));
+        Assert.That(first.Money, Is.EqualTo(10_000));
+        Assert.That(second.Money, Is.EqualTo(1000), "the 600 of the full member went to the other one");
+    }
+
+    /// <summary>
+    /// Zen auto loot in a party: what nobody has room for is returned to be dropped on the ground - nothing is lost.
+    /// </summary>
+    [Test]
+    public async Task AutoLootReturnsWhatNobodyCanTakeAsync()
+    {
+        var (first, second) = await CreateTwoPlayersAsync().ConfigureAwait(false);
+        await CreatePartyAsync(first, second).ConfigureAwait(false);
+        first.GameContext.Configuration.MaximumInventoryMoney = 1000;
+        first.Money = 900;
+        second.Money = 800;
+
+        var rest = MoneyDistribution.PaySharesWithOverflow([new MoneyShare(first, 500), new MoneyShare(second, 500)], _ => true);
+
+        Assert.That(first.Money, Is.EqualTo(1000));
+        Assert.That(second.Money, Is.EqualTo(1000));
+        Assert.That(rest, Is.EqualTo(1000 - 100 - 200), "what didn't fit is returned");
+    }
+
     private static async ValueTask<Party> CreatePartyAsync(params Player[] members)
     {
         var party = new Party(new PartyManager(5, new NullLogger<Party>()), 5, new NullLogger<Party>());

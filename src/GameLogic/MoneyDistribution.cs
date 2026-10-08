@@ -162,6 +162,119 @@ internal static class MoneyDistribution
     }
 
     /// <summary>
+    /// Pays as much of the amount as fits into the inventory of the player (maximum money) and returns the rest.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="amount">The amount, before the money rate of the player is applied.</param>
+    /// <returns>The part of the amount (before the money rate) which didn't fit.</returns>
+    public static uint PayAsMuchAsFits(Player player, uint amount)
+    {
+        var net = GetNetAmount(player, amount);
+        if (net <= 0)
+        {
+            return amount;
+        }
+
+        var free = (long)(player.GameContext?.Configuration?.MaximumInventoryMoney ?? int.MaxValue) - player.Money;
+        if (free <= 0)
+        {
+            return amount;
+        }
+
+        var part = net <= free ? amount : (uint)(amount * ((double)free / net));
+        while (part > 0 && GetNetAmount(player, part) > free)
+        {
+            part--;
+        }
+
+        return part > 0 && TryPay(player, part) ? amount - part : amount;
+    }
+
+    /// <summary>
+    /// Pays the shares like <see cref="TryPayShares"/>, but what doesn't fit into an inventory (maximum money) goes to the
+    /// other eligible players by their shares, as long as they have room.
+    /// </summary>
+    /// <param name="shares">The shares.</param>
+    /// <param name="isEligible">Determines whether a player may still receive money.</param>
+    /// <returns>The amount (before the money rates) which nobody could take - to be dropped on the ground.</returns>
+    public static uint PaySharesWithOverflow(IReadOnlyList<MoneyShare> shares, Func<Player, bool> isEligible)
+    {
+        var open = shares.Where(share => isEligible(share.Player)).ToList();
+        uint rest = 0;
+        foreach (var share in shares)
+        {
+            if (!isEligible(share.Player))
+            {
+                rest += share.Amount;
+            }
+        }
+
+        var due = open.Select(share => share.Amount).ToArray();
+        if (rest > 0 && open.Count > 0)
+        {
+            var extra = SplitByWeight(rest, due.Select(a => (long)a).ToArray());
+            for (var i = 0; i < due.Length; i++)
+            {
+                due[i] += extra[i];
+            }
+
+            rest = 0;
+        }
+
+        // pay; the part of a full inventory goes to the others which still have room, until nothing is left or nobody can take it
+        while (open.Count > 0)
+        {
+            uint overflow = 0;
+            var stillOpen = new List<MoneyShare>(open.Count);
+            for (var i = 0; i < open.Count; i++)
+            {
+                var notPaid = due[i] > 0 ? PayAsMuchAsFits(open[i].Player, due[i]) : 0;
+                overflow += notPaid;
+                if (notPaid == 0)
+                {
+                    stillOpen.Add(open[i]);
+                }
+            }
+
+            if (overflow == 0 || stillOpen.Count == 0)
+            {
+                return rest + overflow;
+            }
+
+            open = stillOpen;
+            due = SplitByWeight(overflow, open.Select(share => (long)share.Amount).ToArray());
+        }
+
+        return rest;
+    }
+
+    /// <summary>
+    /// Scales the shares to another amount (e.g. the rest of a money drop which is dropped on the ground).
+    /// </summary>
+    /// <param name="shares">The shares.</param>
+    /// <param name="amount">The new total amount.</param>
+    /// <returns>The scaled shares.</returns>
+    public static IReadOnlyList<MoneyShare> ScaleShares(IReadOnlyList<MoneyShare> shares, uint amount)
+    {
+        var parts = SplitByWeight(amount, shares.Select(share => (long)share.Amount).ToArray());
+        return shares.Select((share, i) => new MoneyShare(share.Player, parts[i])).ToList();
+    }
+
+    /// <summary>
+    /// The money the player gets for the amount: x money rate, minus the MU Helper fee (as <see cref="TryPay"/>).
+    /// </summary>
+    private static long GetNetAmount(Player player, uint amount)
+    {
+        if (amount == 0)
+        {
+            return 0;
+        }
+
+        var scaled = (long)(amount * (double)(player.Attributes?[Stats.MoneyAmountRate] ?? 1.0f));
+        return scaled - MuHelper.MuHelperZenFeePlugIn.GetFee(player, scaled);
+    }
+
+    /// <summary>
     /// Splits an amount proportionally to the given weights. When all weights are zero, it's split equally.
     /// </summary>
     private static uint[] SplitByWeight(uint amount, IReadOnlyList<long> weights)
