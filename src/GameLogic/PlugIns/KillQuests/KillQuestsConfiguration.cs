@@ -27,15 +27,15 @@ public class KillQuestsConfiguration
     public ICollection<KillQuestGearItem> Gear { get; set; } = CreateDefaultGear();
 
     /// <summary>
-    /// Gets or sets the share of the kills after which the progress is shown again (0.1 = every 10 %).
-    /// </summary>
-    /// <summary>
     /// Gets or sets the additional reward items of the quests (jewels, potions, tickets, pets, boxes, Kundun Essence).
     /// </summary>
     [MemberOfAggregate]
     [Display(Name = "Reward items", Description = "Additional rewards by quest number (1 = the first quest): an item with level and amount (pieces of a stack; more than a stack gives several stacks), or Kundun Essence; optionally only for some base classes.")]
     public ICollection<KillQuestRewardItem> RewardItems { get; set; } = CreateDefaultRewardItems();
 
+    /// <summary>
+    /// Gets or sets the share of the kills after which the progress is shown again (0.1 = every 10 %).
+    /// </summary>
     [Display(Name = "Progress message every", Description = "Share of the kills of a quest after which the progress is shown (0.1 = every 10 %); the last 5 kills are always shown.")]
     public float ProgressMessageShare { get; set; } = 0.1f;
 
