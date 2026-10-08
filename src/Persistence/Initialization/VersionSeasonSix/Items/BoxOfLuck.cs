@@ -41,6 +41,7 @@ internal class BoxOfLuck : InitializerBase
         this.CreateCherryBlossomBox();
         this.CreateGameMasterPresentBox();
         QuestRewardBoxes.Configure(this.Context, this.GameConfiguration);
+        JewelryBox.Configure(this.Context, this.GameConfiguration);
     }
 
     /// <summary>
