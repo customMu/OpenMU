@@ -1,4 +1,4 @@
-﻿@page "/plugins"
+@page "/plugins"
 @attribute [Authorize(Policy = AdminPolicies.Administrator)]
 @using MUnique.OpenMU.Web.AdminPanel.Properties
 @using MUnique.OpenMU.Web.Shared.Models
@@ -17,14 +17,40 @@
         </TableHeader>
         <FilterHeader>
             <th><PlugInExtensionPointSelection SelectedPointId="@this.PlugInController.PointFilter" ExtensionPoints="@this.PlugInController.ExtensionPoints" OnSelectionChanged="@this.OnPlugInPointSelected" /></th>
-            <th><div class="input-group"><span class="input-group-text"><span class="oi oi-magnifying-glass" aria-hidden="true"></span></span><input type="search" class="form-control" placeholder="Search" @bind="@this.PlugInController.NameFilter" @bind:event="oninput"/></div></th>
-            <th><div class="input-group"><span class="input-group-text"><span class="oi oi-magnifying-glass" aria-hidden="true"></span></span><input type="search" class="form-control" placeholder="Search" @bind="@this.PlugInController.TypeFilter" @bind:event="oninput"/></div></th>
-            <th></th>
+            <th><div class="input-group"><span class="input-group-text"><span class="oi oi-magnifying-glass" aria-hidden="true"></span></span><input type="search" class="form-control" placeholder="Search" @bind="@this.NameFilter" @bind:event="oninput"/></div></th>
+            <th><div class="input-group"><span class="input-group-text"><span class="oi oi-magnifying-glass" aria-hidden="true"></span></span><input type="search" class="form-control" placeholder="Search" @bind="@this.TypeFilter" @bind:event="oninput"/></div></th>
+            <th>
+                <select class="form-select" title="Status" @bind="@this.StatusFilter">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </th>
         </FilterHeader>
         <ItemTemplate Context="item">
             <td title=@item.PlugInPointDescription>@item.PlugInPointName</td>
-            <td title=@item.PlugInDescription>
-                <MarkedText Marked=@this.PlugInController.NameFilter Text=@item.PlugInName />
+            <td>
+                <div class="d-flex align-items-start gap-2">
+                    <button type="button" class="btn btn-sm @(this.IsExpanded(item) ? "btn-info" : "btn-outline-info")"
+                            title="What does it do?" aria-expanded="@this.IsExpanded(item)" @onclick="() => this.ToggleInfo(item)">
+                        <span class="oi oi-info" aria-hidden="true"></span>
+                    </button>
+                    <div>
+                        <MarkedText Marked=@this.PlugInController.NameFilter Text=@item.PlugInName />
+                        @if (this.IsExpanded(item))
+                        {
+                            <div class="small text-body-secondary mt-1">
+                                <div>@(string.IsNullOrWhiteSpace(item.PlugInDescription) ? "No description." : item.PlugInDescription)</div>
+                                @if (!string.IsNullOrWhiteSpace(item.PlugInPointName))
+                                {
+                                    <div class="mt-1"><b>Extension point:</b> @item.PlugInPointName@(string.IsNullOrWhiteSpace(item.PlugInPointDescription) ? string.Empty : " - " + item.PlugInPointDescription)</div>
+                                }
+                                <div class="mt-1"><b>Status:</b> @(item.IsActive ? "active" : "inactive")@(item.ConfigurationType is null ? string.Empty : ", has settings (gear button)")</div>
+                                <div class="mt-1 text-break"><b>Type:</b> @item.TypeName</div>
+                            </div>
+                        }
+                    </div>
+                </div>
             </td>
             <td title=@item.TypeId>
                 <MarkedText Marked=@this.PlugInController.TypeFilter Text=@item.TypeName />

@@ -102,7 +102,7 @@ public class AutoFields : ComponentBase
                 return properties
                     .Where(p => !this.HideCollections || !p.IsGenericType)
                     .Where(this.IsMatch)
-                    .OrderBy(p => p.DisplayAttribute?.GetOrder())
+                    .OrderBy(p => p.DisplayAttribute?.GetOrder() ?? 0) // no order = 0: a negative order puts a field on top (e.g. the characters of an account)
                     .ThenByDescending(p => p.IsString)
                     .ThenByDescending(p => p.IsValueType)
                     .ThenByDescending(p => !p.IsGenericType)

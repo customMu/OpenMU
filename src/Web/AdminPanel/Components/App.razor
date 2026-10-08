@@ -1,4 +1,4 @@
-@using MUnique.OpenMU.Web.AdminPanel.Components.Layout
+﻿@using MUnique.OpenMU.Web.AdminPanel.Components.Layout
 @using MUnique.OpenMU.Web.Shared.Services
 
 @code {
@@ -31,6 +31,7 @@
       <Routes @rendermode="InteractiveServer" />
       <ReconnectModal />
       <script src="@Assets["_framework/blazor.web.js"]"></script>
+      <script src="@Assets["_content/MUnique.OpenMU.Web.AdminPanel/js/scroll-restore.js"]"></script>
       @foreach (var scriptSrc in Web.AdminPanel.Exports.Scripts)
       {
         <script src="@Assets[scriptSrc]"></script>

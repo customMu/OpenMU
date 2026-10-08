@@ -189,6 +189,9 @@ public abstract class EditBase : ComponentBase, IAsyncDisposable
         builder.AddAttribute(1, nameof(Breadcrumb.Caption), this.Model.GetName());
         builder.CloseComponent();
 
+        // "Back" returns to the previous page, e.g. the list with its search and page (kept in the address)
+        builder.AddMarkupContent(9, "<button type=\"button\" class=\"btn btn-outline-secondary btn-sm mb-2\" onclick=\"history.back()\"><span class=\"oi oi-arrow-left\" aria-hidden=\"true\"></span> Back</button>");
+
         var downloadMarkup = this.GetDownloadMarkup();
         var editorsMarkup = this.GetEditorsMarkup();
 

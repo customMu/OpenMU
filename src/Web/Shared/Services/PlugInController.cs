@@ -24,6 +24,7 @@ public class PlugInController : IDataService<PlugInConfigurationViewItem>, ISupp
     private Guid _pointFilter;
     private string _nameFilter = string.Empty;
     private string _typeFilter = string.Empty;
+    private bool? _activeFilter;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PlugInController" /> class.
@@ -61,6 +62,19 @@ public class PlugInController : IDataService<PlugInConfigurationViewItem>, ISupp
         set
         {
             this._typeFilter = value;
+            this.DataChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the filter by status: <c>null</c> = all, <c>true</c> = only active, <c>false</c> = only inactive plugins.
+    /// </summary>
+    public bool? ActiveFilter
+    {
+        get => this._activeFilter;
+        set
+        {
+            this._activeFilter = value;
             this.DataChanged?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -321,7 +335,8 @@ public class PlugInController : IDataService<PlugInConfigurationViewItem>, ISupp
         return gameConfig.PlugInConfigurations.Where(c => allPlugIns.TryGetValue(c.TypeId, out var plugInType)
                                                           && this.FilterByPoint(plugInType)
                                                           && this.FilterByName(plugInType)
-                                                          && this.FilterByTypeName(plugInType))
+                                                          && this.FilterByTypeName(plugInType)
+                                                          && (this._activeFilter is null || c.IsActive == this._activeFilter))
             .OrderBy(p => p.CustomConfiguration is null); // First the ones which can be configured
     }
 

@@ -32,6 +32,10 @@ public partial class EditConfigGrid : ComponentBase, IAsyncDisposable
 
     private List<ViewModel>? _viewModels;
 
+    private string? _loadedTypeString;
+
+    private int _shownPageIndex = -1;
+
     /// <summary>
     /// Gets or sets the <see cref="Type.FullName"/> of the object which should be edited.
     /// </summary>
@@ -106,7 +110,34 @@ public partial class EditConfigGrid : ComponentBase, IAsyncDisposable
         }
     }
 
-    private string? NameFilter { get; set; }
+    /// <summary>
+    /// Gets or sets the search text, kept in the address (?q=), so that going back from an object restores the list.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? Query { get; set; }
+
+    /// <summary>
+    /// Gets or sets the shown page (1 = first), kept in the address (?page=).
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? Page { get; set; }
+
+    private string? NameFilter
+    {
+        get => this.Query;
+        set
+        {
+            if (string.Equals(this.Query ?? string.Empty, value ?? string.Empty, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            this.Query = value;
+            this.Page = null;
+            _ = this._pagination.SetCurrentPageIndexAsync(0);
+            this.UpdateAddress();
+        }
+    }
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
@@ -141,7 +172,14 @@ public partial class EditConfigGrid : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     protected override async Task OnParametersSetAsync()
     {
-        this.NameFilter = string.Empty;
+        if (string.Equals(this._loadedTypeString, this.TypeString, StringComparison.Ordinal))
+        {
+            // only the query (search / page) changed: no reload
+            await base.OnParametersSetAsync().ConfigureAwait(true);
+            return;
+        }
+
+        this._loadedTypeString = this.TypeString;
         this.Type = this.DetermineTypeByTypeString();
         var cts = new CancellationTokenSource();
         this._disposeCts = cts;
@@ -178,9 +216,37 @@ public partial class EditConfigGrid : ComponentBase, IAsyncDisposable
 
         await this.InvokeAsync(async () =>
         {
-            await this._pagination.SetCurrentPageIndexAsync(0).ConfigureAwait(true);
+            await this._pagination.SetCurrentPageIndexAsync(Math.Max(0, (this.Page ?? 1) - 1)).ConfigureAwait(true);
+            this._shownPageIndex = this._pagination.CurrentPageIndex;
             this.StateHasChanged();
         }).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        // the paginator changes the page without telling us: keep the address in sync
+        if (this._viewModels is not null && this._shownPageIndex >= 0 && this._pagination.CurrentPageIndex != this._shownPageIndex)
+        {
+            this._shownPageIndex = this._pagination.CurrentPageIndex;
+            this.Page = this._shownPageIndex + 1;
+            this.UpdateAddress();
+        }
+    }
+
+    /// <summary>
+    /// Writes the search and the page into the address without a new history entry.
+    /// </summary>
+    private void UpdateAddress()
+    {
+        var uri = this.NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["q"] = string.IsNullOrWhiteSpace(this.Query) ? null : this.Query,
+            ["page"] = this.Page is > 1 ? this.Page : null,
+        });
+        this.NavigationManager.NavigateTo(uri, replace: true);
     }
 
     private Type? DetermineTypeByTypeString()

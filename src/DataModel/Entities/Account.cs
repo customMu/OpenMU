@@ -1,4 +1,4 @@
-﻿// <copyright file="Account.cs" company="MUnique">
+// <copyright file="Account.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -54,6 +54,7 @@ public class Account
     /// Gets or sets the unique login name.
     /// </summary>
     [Required]
+    [Display(Order = -2)] // the admin panel shows the login and the characters first
     public string LoginName { get; set; } = string.Empty;
 
     /// <summary>
@@ -149,6 +150,7 @@ public class Account
     /// </summary>
     [MemberOfAggregate]
     [HiddenAtCreation]
+    [Display(Order = -1)]
     public virtual ICollection<Character> Characters { get; protected set; } = null!;
 
     /// <summary>
