@@ -315,9 +315,9 @@ public static class AttackableExtensions
                 attributes |= DamageAttributes.Combo;
             }
 
-            // + the Double damage option of the weapon in the left hand (Illusion of Noria)
+            // + the Fury option of the weapon in the left hand for this skill (Illusion of Noria)
             var doubleDamageChance = attacker.Attributes[Stats.DoubleDamageChance]
-                                     + (attacker is Player doubleDamagePlayer ? PlugIns.IllusionOfNoria.IllusionWeaponOptions.GetValue(doubleDamagePlayer, PlugIns.IllusionOfNoria.IllusionWeaponOptions.DoubleDamage) : 0);
+                                     + (attacker is Player doubleDamagePlayer ? PlugIns.IllusionOfNoria.IllusionWeaponOptions.GetValue(doubleDamagePlayer, PlugIns.IllusionOfNoria.IllusionWeaponOptions.Effect.Fury, skill?.Skill) : 0);
             bool isDoubleDamage = Rand.NextRandomBool(doubleDamageChance);
             if (isDoubleDamage)
             {

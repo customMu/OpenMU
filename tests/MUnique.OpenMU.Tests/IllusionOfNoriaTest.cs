@@ -33,8 +33,8 @@ public class IllusionOfNoriaTest
 
     /// <summary>
     /// The shop of the warden and the drops (09.10.2026): a Lesser Mirage Stone for 5 shards (2 per daily quest), the
-    /// Veil Ward and the Blessing of the Veil for 5 each; the monsters drop Lesser 1 %, Greater 0.01 %, a random Echo
-    /// 0.05 %, a Jewel of Illusion 0.01 %, a rank 7-8 weapon 0.001 %; the boss 1-3 Echoes, 0-2 Jewels of Illusion (70 %)
+    /// Veil Ward and the Blessing of the Veil for 5 each; the monsters drop Lesser 1 %, Greater 0.02 %, a random Echo
+    /// 0.08 %, a Jewel of Illusion 0.02 %, a rank 7-8 weapon 0.001 %; the boss 1-3 Echoes, 0-2 Jewels of Illusion (70 %)
     /// and a weapon (1 %); the mixes: 10 shards to add the option, an Echo from 1 Jewel of Illusion + 20 shards.
     /// </summary>
     [Test]
@@ -46,8 +46,8 @@ public class IllusionOfNoriaTest
         Assert.That((configuration.BlessingPrice, configuration.BlessingDuration, configuration.BlessingEffectNumber, configuration.BlessingDamagePercent), Is.EqualTo((5, TimeSpan.FromHours(1), (short)185, 50)));
         Assert.That(configuration.DailyShards / configuration.LesserStonePrice, Is.EqualTo(2));
         Assert.That(configuration.MonsterLesserStoneChancePercent, Is.EqualTo(1));
-        Assert.That(configuration.MonsterGreaterStoneChancePercent, Is.EqualTo(0.01));
-        Assert.That(configuration.MonsterEchoChancePercent, Is.EqualTo(0.05));
+        Assert.That(configuration.MonsterGreaterStoneChancePercent, Is.EqualTo(0.02));
+        Assert.That(configuration.MonsterEchoChancePercent, Is.EqualTo(0.08));
         Assert.That(configuration.MonsterWeaponChancePercent, Is.EqualTo(0.001));
         Assert.That(configuration.BossWeaponChancePercent, Is.EqualTo(1));
         Assert.That(configuration.BossDrops.Single(d => d.ItemNumber == -1).MaximumAmount, Is.EqualTo(3));
@@ -118,15 +118,15 @@ public class IllusionOfNoriaTest
     }
 
     /// <summary>
-    /// An Echo gives a random one of 4 options (09.10.2026): the fix time of its skill, HP steal, MP steal or Double
-    /// damage; their values count only from the weapon in the left hand.
+    /// An Echo gives a random one of the 4 illusion options of its skill (09.10.2026): Haste, Vampiric, Siphon or Fury;
+    /// their values count only from the weapon in the left hand and only for the hits of that skill.
     /// </summary>
     [Test]
     public async ValueTask EchoGivesOneOfFourOptionsAsync()
     {
         var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
         var definition = new MUnique.OpenMU.Persistence.BasicModel.ItemOptionDefinition();
-        foreach (var number in new[] { 11, 12, 13, 14, 15, 16 })
+        for (var number = 11; number <= 22; number++)
         {
             var option = new MUnique.OpenMU.Persistence.BasicModel.IncreasableItemOption { OptionType = ItemOptionTypes.SkillFixOption, Number = number };
             var value = new MUnique.OpenMU.Persistence.BasicModel.PowerUpDefinitionValue { ConstantValue = { Value = number / 100f } };
@@ -151,18 +151,23 @@ public class IllusionOfNoriaTest
             seen.Add(weapon.ItemOptions.Single().ItemOption!.Number);
         }
 
-        Assert.That(seen, Is.EquivalentTo(new[] { 12, 14, 15, 16 }), "Death Stab or one of the 3 extra options");
+        Assert.That(seen, Is.EquivalentTo(new[] { 12, 15, 18, 21 }), "Haste, Vampiric, Siphon, Fury of Death Stab");
 
-        var hpWeapon = new MUnique.OpenMU.Persistence.BasicModel.Item { Definition = darkBreaker, Level = 10, Durability = 60 };
-        hpWeapon.ItemOptions.Add(new MUnique.OpenMU.Persistence.BasicModel.ItemOptionLink { ItemOption = definition.PossibleOptions.Single(o => o.Number == 14), Level = 1 });
-        hpWeapon.ItemSlot = MUnique.OpenMU.DataModel.InventoryConstants.RightHandSlot;
-        await player.Inventory!.AddItemAsync(MUnique.OpenMU.DataModel.InventoryConstants.RightHandSlot, hpWeapon).ConfigureAwait(false);
-        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.HealthSteal), Is.Zero, "right hand");
-        await player.Inventory!.RemoveItemAsync(hpWeapon).ConfigureAwait(false);
-        hpWeapon.ItemSlot = MUnique.OpenMU.DataModel.InventoryConstants.LeftHandSlot;
-        await player.Inventory!.AddItemAsync(MUnique.OpenMU.DataModel.InventoryConstants.LeftHandSlot, hpWeapon).ConfigureAwait(false);
-        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.HealthSteal), Is.EqualTo(0.14).Within(0.0001), "left hand");
-        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.DoubleDamage), Is.Zero);
+        // Vampiric of Death Stab (15)
+        var vampiric = new MUnique.OpenMU.Persistence.BasicModel.Item { Definition = darkBreaker, Level = 10, Durability = 60 };
+        vampiric.ItemOptions.Add(new MUnique.OpenMU.Persistence.BasicModel.ItemOptionLink { ItemOption = definition.PossibleOptions.Single(o => o.Number == 15), Level = 1 });
+        var deathStabSkill = new MUnique.OpenMU.Persistence.BasicModel.Skill { Number = 43 };
+        var twistingSlash = new MUnique.OpenMU.Persistence.BasicModel.Skill { Number = 41 };
+        vampiric.ItemSlot = MUnique.OpenMU.DataModel.InventoryConstants.RightHandSlot;
+        await player.Inventory!.AddItemAsync(MUnique.OpenMU.DataModel.InventoryConstants.RightHandSlot, vampiric).ConfigureAwait(false);
+        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.Effect.Vampiric, deathStabSkill, weapons), Is.Zero, "right hand");
+        await player.Inventory!.RemoveItemAsync(vampiric).ConfigureAwait(false);
+        vampiric.ItemSlot = MUnique.OpenMU.DataModel.InventoryConstants.LeftHandSlot;
+        await player.Inventory!.AddItemAsync(MUnique.OpenMU.DataModel.InventoryConstants.LeftHandSlot, vampiric).ConfigureAwait(false);
+        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.Effect.Vampiric, deathStabSkill, weapons), Is.EqualTo(0.15).Within(0.0001), "left hand, its skill");
+        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.Effect.Vampiric, twistingSlash, weapons), Is.Zero, "another skill");
+        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.Effect.Fury, deathStabSkill, weapons), Is.Zero, "another effect");
+        Assert.That(IllusionWeaponOptions.GetValue(player, IllusionWeaponOptions.Effect.Vampiric, null, weapons), Is.Zero, "normal attack");
     }
 
     /// <summary>

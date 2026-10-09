@@ -194,13 +194,13 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
             case ActionClaimDaily when inIllusion:
                 await this.ClaimDailyAsync(player, configuration).ConfigureAwait(false);
                 break;
-            case ActionBuyLesserStone when questState == 2:
+            case ActionBuyLesserStone when questState == 2 && inIllusion:
                 await this.BuyLesserStoneAsync(player, configuration).ConfigureAwait(false);
                 break;
-            case ActionBuyWard when questState == 2:
+            case ActionBuyWard when questState == 2 && inIllusion:
                 await this.BuyWardAsync(player, configuration).ConfigureAwait(false);
                 break;
-            case ActionBuyBlessing when questState == 2:
+            case ActionBuyBlessing when questState == 2 && inIllusion:
                 await this.BuyBlessingAsync(player, configuration).ConfigureAwait(false);
                 break;
             default:
@@ -268,7 +268,8 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
             configuration.GetTimeUntilNextDay(now),
             [], // 09.10.2026: the option is removed in the Chaos Machine of the illusion (IllusionRemoveSkillFixCrafting)
             StacksOf(player, ShardPrice(configuration, 0)).Sum(i => Math.Max(1, (int)i.Durability)),
-            (int)player.GetStoredStatValue(Stats.IllusionQuestState) == 2
+            // the shop only in the town of the illusion; the warden in Noria only opens the Veil
+            (int)player.GetStoredStatValue(Stats.IllusionQuestState) == 2 && player.CurrentMap?.Definition.Number == configuration.MapNumber
                 ? [((byte)14, LesserStoneNumber, Math.Max(1, configuration.LesserStonePrice)), (WardExchangeGroup, configuration.WardEffectNumber, Math.Max(1, configuration.WardPrice)), (WardExchangeGroup, configuration.BlessingEffectNumber, Math.Max(1, configuration.BlessingPrice))]
                 : []);
     }

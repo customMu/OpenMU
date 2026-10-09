@@ -116,7 +116,7 @@ public class IllusionOfNoriaConfiguration
     /// Gets or sets the chance in percent that a killed monster of the illusion drops an Illusion Shard.
     /// </summary>
     [Display(Name = "Shard chance (%)", Description = "The chance in percent per killed monster of the illusion that it drops an Illusion Shard.")]
-    public double MonsterShardChancePercent { get; set; } = 0.01;
+    public double MonsterShardChancePercent { get; set; } = 0.1;
 
     /// <summary>
     /// Gets or sets the price of a Lesser Mirage Stone of the warden in Illusion Shards.
@@ -197,20 +197,20 @@ public class IllusionOfNoriaConfiguration
     /// Gets or sets the chance in percent that a killed monster of the illusion drops a Greater Mirage Stone.
     /// </summary>
     [Display(Name = "Drop: Greater Mirage Stone (%)", Description = "The chance in percent per killed monster of the illusion.")]
-    public double MonsterGreaterStoneChancePercent { get; set; } = 0.01;
+    public double MonsterGreaterStoneChancePercent { get; set; } = 0.02;
 
 
     /// <summary>
     /// Gets or sets the chance in percent that a killed monster of the illusion drops a random Echo.
     /// </summary>
     [Display(Name = "Drop: random Echo (%)", Description = "The chance in percent per killed monster of the illusion (one of all Echoes).")]
-    public double MonsterEchoChancePercent { get; set; } = 0.05;
+    public double MonsterEchoChancePercent { get; set; } = 0.08;
 
     /// <summary>
     /// Gets or sets the chance in percent that a killed monster of the illusion drops a Jewel of Illusion.
     /// </summary>
     [Display(Name = "Drop: Jewel of Illusion (%)", Description = "The chance in percent per killed monster of the illusion. The jewel removes the skill fix option and creates an Echo (Chaos Goblin of the illusion).")]
-    public double MonsterIllusionJewelChancePercent { get; set; } = 0.01;
+    public double MonsterIllusionJewelChancePercent { get; set; } = 0.02;
 
     /// <summary>
     /// Gets or sets the chance in percent that a killed monster of the illusion drops a rank 7-8 weapon.

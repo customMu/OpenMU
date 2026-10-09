@@ -144,7 +144,7 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
 
             if (attacker is Player player)
             {
-                await player.AfterHitTargetAsync(hitInfo).ConfigureAwait(false);
+                await player.AfterHitTargetAsync(hitInfo, skill?.Skill).ConfigureAwait(false);
 
                 if (this.IsAlive && Rand.NextRandomBool(player.Attributes![Stats.MaceMasteryStunChance]))
                 {

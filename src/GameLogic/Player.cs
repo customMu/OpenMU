@@ -785,7 +785,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
 
         if (attacker is Player attackerPlayer)
         {
-            await attackerPlayer.AfterHitTargetAsync(hitInfo).ConfigureAwait(false);
+            await attackerPlayer.AfterHitTargetAsync(hitInfo, skill?.Skill).ConfigureAwait(false);
 
             if (this.IsAlive && Rand.NextRandomBool(attackerPlayer.Attributes![Stats.MaceMasteryStunChance]))
             {
@@ -799,13 +799,14 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
     /// <summary>
     /// Is called after the player successfully hit a target.
     /// </summary>
-    /// <param name="hitInfo">The hit (for the HP and MP steal of the weapon), or <c>null</c>.</param>
-    public async ValueTask AfterHitTargetAsync(HitInfo? hitInfo = null)
+    /// <param name="hitInfo">The hit (for the Vampiric and Siphon options of the weapon), or <c>null</c>.</param>
+    /// <param name="skill">The skill of the hit, or <c>null</c>.</param>
+    public async ValueTask AfterHitTargetAsync(HitInfo? hitInfo = null, Skill? skill = null)
     {
         this.Attributes![Stats.CurrentHealth] = Math.Max(this.Attributes[Stats.CurrentHealth] - this.Attributes[Stats.HealthLossAfterHit], 1);
         if (hitInfo is { } hit)
         {
-            PlugIns.IllusionOfNoria.IllusionWeaponOptions.ApplySteal(this, hit);
+            PlugIns.IllusionOfNoria.IllusionWeaponOptions.ApplySteal(this, hit, skill);
         }
 
         await this.DecreaseWeaponDurabilityAfterHitAsync().ConfigureAwait(false);

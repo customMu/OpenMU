@@ -71,11 +71,17 @@ public class EchoOfIllusionConsumeHandler : ItemUpgradeConsumeHandlerPlugIn
     /// <inheritdoc />
     protected override IncreasableItemOption? SelectOption(Item item, IList<IncreasableItemOption> possibleOptions)
     {
-        // 09.10.2026: a random one of 4 - the fix time of the skill of the Echo, HP steal, MP steal or Double damage
-        var number = this.GetOptionNumber(item);
-        var candidates = possibleOptions
-            .Where(o => o.Number == number || PlugIns.IllusionOfNoria.IllusionWeaponOptions.ExtraOptions.Contains((short)o.Number))
-            .ToList();
+        // 09.10.2026: a random one of the 4 illusion options of the skill of the Echo - Haste, Vampiric, Siphon or Fury
+        if (this.GetOptionNumber(item) is not { } haste)
+        {
+            return null;
+        }
+
+        var skillIndex = haste - PlugIns.IllusionOfNoria.IllusionWeaponOptions.FirstOption;
+        var numbers = Enum.GetValues<PlugIns.IllusionOfNoria.IllusionWeaponOptions.Effect>()
+            .Select(effect => (int)PlugIns.IllusionOfNoria.IllusionWeaponOptions.GetOptionNumber(effect, skillIndex))
+            .ToHashSet();
+        var candidates = possibleOptions.Where(o => numbers.Contains(o.Number)).ToList();
         return candidates.Count == 0 ? null : candidates[Rand.NextInt(0, candidates.Count)];
     }
 }
