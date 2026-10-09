@@ -35,6 +35,12 @@ public static class ItemOptionTypes
     public static ItemOptionType HarmonyOption { get; } = new() { Name = "Jewel of Harmony Option", Id = new Guid("{0CA234F0-4A0F-4FA1-8E07-CFB89C1EC94F}") };
 
     /// <summary>
+    /// Gets the skill fix option type of this server (Illusion of Noria): rank 7-8 weapons, lowers the fix time of one skill;
+    /// separate from the harmony option (Jewel of Illusion, Mirage Stones, Echoes).
+    /// </summary>
+    public static ItemOptionType SkillFixOption { get; } = new() { Name = "Skill Fix Option", Id = new Guid("{7A3D5E91-2C4B-4F86-9D10-B5E8C2A6F347}"), IsVisible = true };
+
+    /// <summary>
     /// Gets the ancient option type.
     /// </summary>
     public static ItemOptionType AncientOption { get; } = new() { Name = "Ancient Option", Id = new Guid("{436D820F-6D50-429D-AF63-BB0F59567DD1}"), IsVisible = true };

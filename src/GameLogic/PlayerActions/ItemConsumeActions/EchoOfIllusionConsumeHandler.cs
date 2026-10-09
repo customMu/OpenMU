@@ -8,8 +8,8 @@ using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.PlugIns;
 
 /// <summary>
-/// An Echo of the Illusion of Noria (e.g. Echo of Twisting Slash): like the Jewel of Illusion (the Jewel of Harmony,
-/// 75 %), but it adds the harmony option of its skill, not a random one. Only a rank 7-8 weapon of +10 and more whose
+/// An Echo of the Illusion of Noria (e.g. Echo of Twisting Slash): like the Jewel of Illusion (14/195,
+/// 100 %), but it adds the skill fix option of its skill, not a random one. Only a rank 7-8 weapon of +10 and more whose
 /// options have the skill (for the class of the player, plugin "Skill cast time") takes it. Created per use by
 /// <see cref="PlugIns.IllusionOfNoria.IllusionOfNoriaPlugIn.GetEchoHandler"/>.
 /// </summary>
@@ -26,9 +26,9 @@ public class EchoOfIllusionConsumeHandler : ItemUpgradeConsumeHandlerPlugIn
     /// </summary>
     /// <param name="skill">The skill of the Echo.</param>
     /// <param name="family">The class family of the player (number of the 1st class).</param>
-    /// <param name="weapons">The rank 7-8 weapons and the skills of their harmony options.</param>
+    /// <param name="weapons">The rank 7-8 weapons and the skills of their skill fix options.</param>
     public EchoOfIllusionConsumeHandler(short skill, int family, ICollection<WeaponFixSkills> weapons)
-        : base(new ItemUpgradeConfiguration(ItemOptionTypes.HarmonyOption, true, false, 0.75, ItemFailResult.None))
+        : base(new ItemUpgradeConfiguration(ItemOptionTypes.SkillFixOption, true, false, 1.0, ItemFailResult.None))
     {
         this._skill = skill;
         this._family = family;
@@ -36,10 +36,10 @@ public class EchoOfIllusionConsumeHandler : ItemUpgradeConsumeHandlerPlugIn
     }
 
     /// <inheritdoc />
-    public override ItemIdentifier Key => ItemConstants.JewelOfHarmony;
+    public override ItemIdentifier Key => new(173, 14);
 
     /// <summary>
-    /// Gets the number of the harmony option of the skill on the weapon, or <c>null</c> if the weapon has no such option.
+    /// Gets the number of the skill fix option of the skill on the weapon, or <c>null</c> if the weapon has no such option.
     /// </summary>
     /// <param name="item">The weapon.</param>
     /// <returns>The option number.</returns>
@@ -69,9 +69,13 @@ public class EchoOfIllusionConsumeHandler : ItemUpgradeConsumeHandlerPlugIn
     }
 
     /// <inheritdoc />
-    protected override IncreasableItemOption? SelectHarmonyOption(Item item, IList<IncreasableItemOption> possibleOptions)
+    protected override IncreasableItemOption? SelectOption(Item item, IList<IncreasableItemOption> possibleOptions)
     {
+        // 09.10.2026: a random one of 4 - the fix time of the skill of the Echo, HP steal, MP steal or Double damage
         var number = this.GetOptionNumber(item);
-        return possibleOptions.FirstOrDefault(o => o.Number == number);
+        var candidates = possibleOptions
+            .Where(o => o.Number == number || PlugIns.IllusionOfNoria.IllusionWeaponOptions.ExtraOptions.Contains((short)o.Number))
+            .ToList();
+        return candidates.Count == 0 ? null : candidates[Rand.NextInt(0, candidates.Count)];
     }
 }

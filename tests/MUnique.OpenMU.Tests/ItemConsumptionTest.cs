@@ -51,7 +51,9 @@ public class ItemConsumptionTest
         var consumed = await consumeHandler.ConsumeItemAsync(player, bless, upgradeableItem, FruitUsage.Undefined).ConfigureAwait(false);
 
         Assert.That(consumed, Is.EqualTo(consumptionExpectation));
-        Assert.That(upgradeableItem.Level, consumed ? Is.EqualTo(itemLevel + 1) : Is.EqualTo(itemLevel));
+        // the price of enchanting by rank: a Bless gives +3 / +2 levels to items of rank 1 / 2 (not above +6)
+        var levels = MUnique.OpenMU.GameLogic.Items.EnchantPriceRanks.GetStep(upgradeableItem.Definition, false).Levels;
+        Assert.That(upgradeableItem.Level, consumed ? Is.EqualTo(Math.Min(itemLevel + levels, 6)) : Is.EqualTo(itemLevel));
     }
 
     /// <summary>

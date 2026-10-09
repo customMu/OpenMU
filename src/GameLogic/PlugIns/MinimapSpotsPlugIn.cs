@@ -32,6 +32,11 @@ public class MinimapSpotsPlugIn : IObjectAddedToMapPlugIn
     /// </summary>
     private static readonly HashSet<short> BossMonsters = [38, 49, 59, 63, 77, 161, 181, 189, 197, 267, 275, 295, 309, 338, 459];
 
+    /// <summary>
+    /// The maps without spots: the monsters of the Illusion of Noria (82) roam over the whole map.
+    /// </summary>
+    private static readonly HashSet<short> MapsWithoutSpots = [82];
+
     private readonly ConditionalWeakTable<GameMapDefinition, IReadOnlyList<MinimapSpot>> _spotsByMap = new();
 
     /// <summary>
@@ -41,6 +46,11 @@ public class MinimapSpotsPlugIn : IObjectAddedToMapPlugIn
     /// <returns>The spots.</returns>
     public static IReadOnlyList<MinimapSpot> CalculateSpots(GameMapDefinition map)
     {
+        if (MapsWithoutSpots.Contains(map.Number))
+        {
+            return []; // an empty list clears the spots of the previous map on the client
+        }
+
         var clusters = new List<(MonsterDefinition Monster, double SumX, double SumY, int Weight, int Count)>();
         foreach (var area in map.MonsterSpawns.Where(a => a is { SpawnTrigger: SpawnTrigger.Automatic, MonsterDefinition.ObjectKind: NpcObjectKind.Monster }))
         {

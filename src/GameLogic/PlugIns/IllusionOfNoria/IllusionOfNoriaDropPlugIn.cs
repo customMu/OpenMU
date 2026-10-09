@@ -44,14 +44,50 @@ public class IllusionOfNoriaDropPlugIn : IAdditionalItemDropPlugIn
 
         if (args.Monster.Number == configuration.BossNumber)
         {
-            args.Items.AddRange(IllusionOfNoriaPlugIn.CreateRewardItems(args.Killer.GameContext, configuration.BossDrops));
+            // every piece drops on its own (no stacks)
+            args.Items.AddRange(IllusionOfNoriaPlugIn.CreateRewardItems(args.Killer.GameContext, configuration.BossDrops, singlePieces: true));
+            foreach (var echoes in configuration.BossDrops.Where(d => d.ItemNumber < 0))
+            {
+                // always 1-3 random Echoes (a skill may repeat)
+                var count = Rand.NextInt(Math.Max(1, echoes.MinimumAmount), Math.Max(echoes.MinimumAmount, echoes.MaximumAmount) + 1);
+                args.Items.AddRange(illusion.CreateRandomEchoes(args.Killer.GameContext, count));
+            }
+
+            AddWeapon(args, illusion, configuration.BossWeaponChancePercent);
             return;
         }
 
         await illusion.CountKillAsync(args.Killer, args.Monster, args.Map, args.KilledObject.Position).ConfigureAwait(false);
+        var gameContext = args.Killer.GameContext;
         if (Rand.NextRandomBool(configuration.MonsterShardChancePercent / 100.0))
         {
-            args.Items.AddRange(illusion.CreateShards(args.Killer.GameContext, 1));
+            args.Items.AddRange(illusion.CreateShards(gameContext, 1));
+        }
+
+        AddStone(args, gameContext, IllusionOfNoriaPlugIn.LesserStoneNumber, configuration.MonsterLesserStoneChancePercent);
+        AddStone(args, gameContext, IllusionOfNoriaPlugIn.GreaterStoneNumber, configuration.MonsterGreaterStoneChancePercent);
+        AddStone(args, gameContext, IllusionOfNoriaPlugIn.IllusionJewelNumber, configuration.MonsterIllusionJewelChancePercent);
+        if (Rand.NextRandomBool(configuration.MonsterEchoChancePercent / 100.0))
+        {
+            args.Items.AddRange(illusion.CreateRandomEchoes(gameContext, 1));
+        }
+
+        AddWeapon(args, illusion, configuration.MonsterWeaponChancePercent);
+    }
+
+    private static void AddStone(AdditionalItemDropArgs args, IGameContext gameContext, short number, double chancePercent)
+    {
+        if (Rand.NextRandomBool(chancePercent / 100.0) && IllusionOfNoriaPlugIn.CreateStone(gameContext, number) is { } stone)
+        {
+            args.Items.Add(stone);
+        }
+    }
+
+    private static void AddWeapon(AdditionalItemDropArgs args, IllusionOfNoriaPlugIn illusion, double chancePercent)
+    {
+        if (Rand.NextRandomBool(chancePercent / 100.0) && illusion.CreateRandomWeapon(args.Killer.GameContext) is { } weapon)
+        {
+            args.Items.Add(weapon);
         }
     }
 }

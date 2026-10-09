@@ -60,6 +60,15 @@ public class DropItemAction
             }
         }
 
+        // a bound item (e.g. the Whistle of the Veil of the quest of the Illusion of Noria) stays in the inventory; the
+        // plugins above still handle the drops which use such an item (e.g. a bound Lost Map opens Kalima)
+        if (item.IsBoundToCharacter())
+        {
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ItemIsBoundToInventoryOfCharacter)).ConfigureAwait(false);
+            await player.InvokeViewPlugInAsync<IItemDropResultPlugIn>(p => p.ItemDropResultAsync(slot, false)).ConfigureAwait(false);
+            return;
+        }
+
         await this.DropItemAsync(player, item, target).ConfigureAwait(false);
     }
 

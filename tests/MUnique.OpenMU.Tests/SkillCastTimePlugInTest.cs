@@ -19,7 +19,7 @@ using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.PlugIns;
 
 /// <summary>
-/// Tests for the <see cref="SkillCastTimePlugIn"/>: the fix time of the skills and the harmony options which lower it.
+/// Tests for the <see cref="SkillCastTimePlugIn"/>: the fix time of the skills and the skill fix options which lower it.
 /// </summary>
 [TestFixture]
 public class SkillCastTimePlugInTest
@@ -93,10 +93,10 @@ public class SkillCastTimePlugInTest
     }
 
     /// <summary>
-    /// The harmony option 11 of a Dark Breaker at level 13 (-25 %) lowers the fix time of Twisting Slash, not of Death Stab.
+    /// The skill fix option 11 of a Dark Breaker at level 13 (-25 %) lowers the fix time of Twisting Slash, not of Death Stab.
     /// </summary>
     [Test]
-    public async ValueTask HarmonyOptionLowersTheFixTimeOfItsSkillAsync()
+    public async ValueTask SkillFixOptionLowersTheFixTimeOfItsSkillAsync()
     {
         var plugIn = CreatePlugIn();
         var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
@@ -173,7 +173,7 @@ public class SkillCastTimePlugInTest
 
     /// <summary>
     /// At the maximum attack speed (510) and magic speed (430) the animation is at least 25 % shorter than the fix time:
-    /// every class can use the full harmony option (-25 %).
+    /// every class can use the full skill fix option (-25 %).
     /// </summary>
     [Test]
     public void TheSpeedMaximumsAllowTheFullOption()
@@ -187,11 +187,11 @@ public class SkillCastTimePlugInTest
     }
 
     /// <summary>
-    /// The harmony option lowers the cast time only as far as the speed of the player reaches: at the fix speed the
-    /// animation is still the fix time, at the maximum speed the full option counts.
+    /// The skill fix option cuts the cast time directly (09.10.2026): already at the fix speed the full option counts,
+    /// more speed changes nothing.
     /// </summary>
     [Test]
-    public async ValueTask OptionNeedsSpeedAboveTheFixAsync()
+    public async ValueTask OptionWorksAtTheFixSpeedAsync()
     {
         var plugIn = CreatePlugIn(withSpeedCurves: true);
         var config = plugIn.Configuration!;
@@ -201,13 +201,29 @@ public class SkillCastTimePlugInTest
         var speed = player.Attributes[Stats.AttackSpeed];
         Assert.That(speed, Is.GreaterThanOrEqualTo(config.AttackSpeedAtFix));
 
-        var animation = TwistingFix * (config.AttackSpeedCurveOffset + config.AttackSpeedAtFix) / (config.AttackSpeedCurveOffset + speed);
-        var expected = Math.Max(TwistingFix * 0.75, animation * config.SpeedCheckShare);
-        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(expected).Within(1));
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(TwistingFix * 0.75).Within(1));
 
         player.Attributes.AddElement(new ConstantElement(1000), Stats.AttackSpeed);
         Assert.That(player.Attributes[Stats.AttackSpeed], Is.EqualTo(510), "the maximum attack speed");
         Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(TwistingFix * 0.75).Within(1));
+    }
+
+    /// <summary>
+    /// Only the weapon in the left hand (slot 0) counts (09.10.2026): the option of the right hand does nothing, two
+    /// weapons with the option of the same skill don't add up.
+    /// </summary>
+    [Test]
+    public async ValueTask OnlyTheLeftHandCountsAsync()
+    {
+        var plugIn = CreatePlugIn(withSpeedCurves: true);
+        var config = plugIn.Configuration!;
+        var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
+        player.Attributes!.AddElement(new ConstantElement(config.AttackSpeedAtFix), Stats.AttackSpeed);
+        await EquipAsync(player, Weapon(0, 17, optionNumber: 11, level: 13, value: 0.25f), InventoryConstants.RightHandSlot).ConfigureAwait(false);
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(TwistingFix).Within(1), "right hand");
+
+        await EquipAsync(player, Weapon(0, 17, optionNumber: 11, level: 13, value: 0.25f)).ConfigureAwait(false);
+        Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(TwistingFix * 0.75).Within(1), "left hand, no sum");
     }
 
     /// <summary>
@@ -277,16 +293,16 @@ public class SkillCastTimePlugInTest
     }
 
     /// <summary>
-    /// The option lowers the fix time, but not the animation time of a slow player.
+    /// Below the fix speed the option cuts the animation time of the slow player by the same share.
     /// </summary>
     [Test]
-    public async ValueTask OptionDoesNotHelpBelowTheFixSpeedAsync()
+    public async ValueTask OptionHelpsBelowTheFixSpeedAsync()
     {
         var plugIn = CreatePlugIn(withSpeedCurves: true);
         var player = await PlayerTestHelper.CreatePlayerAsync().ConfigureAwait(false);
         await EquipAsync(player, Weapon(0, 17, optionNumber: 11, level: 13, value: 0.25f)).ConfigureAwait(false);
         player.Attributes!.AddElement(new ConstantElement(35), Stats.AttackSpeed);
-        var animation = plugIn.GetAnimationMilliseconds(player, TwistingSlash, TwistingFix) * plugIn.Configuration!.SpeedCheckShare;
+        var animation = plugIn.GetAnimationMilliseconds(player, TwistingSlash, TwistingFix) * 0.75 * plugIn.Configuration!.SpeedCheckShare;
         Assert.That(plugIn.GetCastTime(player, Skill(TwistingSlash)).TotalMilliseconds, Is.EqualTo(animation).Within(1));
     }
 
@@ -328,10 +344,11 @@ public class SkillCastTimePlugInTest
         return skill.Object;
     }
 
-    private static async ValueTask EquipAsync(Player player, Item item)
+    private static async ValueTask EquipAsync(Player player, Item item, byte? slot = null)
     {
-        item.ItemSlot = InventoryConstants.RightHandSlot;
-        await player.Inventory!.AddItemAsync(InventoryConstants.RightHandSlot, item).ConfigureAwait(false);
+        var target = slot ?? InventoryConstants.LeftHandSlot;
+        item.ItemSlot = target;
+        await player.Inventory!.AddItemAsync(target, item).ConfigureAwait(false);
     }
 
     private static Item Weapon(byte group, short number, int optionNumber, int level, float value)
@@ -348,7 +365,7 @@ public class SkillCastTimePlugInTest
 
         var option = new Mock<IncreasableItemOption>();
         option.SetupAllProperties();
-        option.Object.OptionType = ItemOptionTypes.HarmonyOption;
+        option.Object.OptionType = ItemOptionTypes.SkillFixOption;
         option.Object.Number = optionNumber;
         var levelOption = new ItemOptionOfLevel
         {

@@ -17,7 +17,8 @@ using MUnique.OpenMU.PlugIns;
 /// [kills needed u16] [seconds until the next day u32], then count x ([monster number u16] [kills u16]), then [weapons],
 /// weapons x ([slot] [group] [number u16] [option] [option level] [rank] [jewels] [lesser stones] [greater stones] [can pay]),
 /// then [shards u32] [exchange count], exchange x ([group] [number u16] [price u16]); little endian.
-/// The client answers with C1 05 FB 13 [action] (see IllusionOfNoriaPlugIn.Action*); a purchase is C1 08 FB 13 20 [group] [number u16].
+/// The client answers with C1 05 FB 13 [action] (see IllusionOfNoriaPlugIn.Action*). FB 14 is the same state without
+/// the dialog (an answer to the action 0x30 and after a kill of the daily quest).
 /// </summary>
 [PlugIn]
 [Display(Name = "Illusion of Noria view", Description = "Shows the dialog of the warden of the Illusion of Noria on the custom client.")]
@@ -35,6 +36,26 @@ public class IllusionOfNoriaViewPlugIn : IIllusionOfNoriaViewPlugIn
     /// </summary>
     public const byte WardenActionSubCode = 0x13;
 
+    /// <summary>
+    /// The sub code of the state of the warden without the dialog (the same data as <see cref="WardenDialogSubCode"/>).
+    /// </summary>
+    public const byte WardenStateSubCode = 0x14;
+
+    /// <summary>
+    /// The sub code of the remaining seconds of the Golden Curse: C1 05 FB 15 [seconds].
+    /// </summary>
+    public const byte CurseTimeSubCode = 0x15;
+
+    /// <summary>
+    /// The sub code of the remaining seconds of the Veil Ward: C1 06 FB 16 [seconds, 2 bytes little endian].
+    /// </summary>
+    public const byte WardTimeSubCode = 0x16;
+
+    /// <summary>
+    /// The sub code of the remaining seconds of the Blessing of the Veil: C1 06 FB 17 [seconds, 2 bytes little endian].
+    /// </summary>
+    public const byte BlessingTimeSubCode = 0x17;
+
     private readonly RemotePlayer _player;
 
     /// <summary>
@@ -44,7 +65,86 @@ public class IllusionOfNoriaViewPlugIn : IIllusionOfNoriaViewPlugIn
     public IllusionOfNoriaViewPlugIn(RemotePlayer player) => this._player = player;
 
     /// <inheritdoc />
-    public async ValueTask ShowWardenDialogAsync(IllusionWardenInfo info)
+    public ValueTask ShowWardenDialogAsync(IllusionWardenInfo info) => this.SendAsync(info, WardenDialogSubCode);
+
+    /// <inheritdoc />
+    public ValueTask UpdateWardenStateAsync(IllusionWardenInfo info) => this.SendAsync(info, WardenStateSubCode);
+
+    /// <inheritdoc />
+    public async ValueTask ShowWardTimeAsync(TimeSpan remaining)
+    {
+        if (this._player.Connection is not { } connection)
+        {
+            return;
+        }
+
+        var seconds = (ushort)Math.Clamp((int)Math.Ceiling(remaining.TotalSeconds), 0, ushort.MaxValue);
+
+        int Write()
+        {
+            var span = connection.Output.GetSpan(6)[..6];
+            span[0] = 0xC1;
+            span[1] = 6;
+            span[2] = Inventory.KundunEssenceViewPlugIn.Code;
+            span[3] = WardTimeSubCode;
+            span[4] = (byte)seconds;
+            span[5] = (byte)(seconds >> 8);
+            return 6;
+        }
+
+        await connection.SendAsync(Write).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask ShowBlessingTimeAsync(TimeSpan remaining)
+    {
+        if (this._player.Connection is not { } connection)
+        {
+            return;
+        }
+
+        var seconds = (ushort)Math.Clamp((int)Math.Ceiling(remaining.TotalSeconds), 0, ushort.MaxValue);
+
+        int Write()
+        {
+            var span = connection.Output.GetSpan(6)[..6];
+            span[0] = 0xC1;
+            span[1] = 6;
+            span[2] = Inventory.KundunEssenceViewPlugIn.Code;
+            span[3] = BlessingTimeSubCode;
+            span[4] = (byte)seconds;
+            span[5] = (byte)(seconds >> 8);
+            return 6;
+        }
+
+        await connection.SendAsync(Write).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask ShowCurseTimeAsync(TimeSpan remaining)
+    {
+        if (this._player.Connection is not { } connection)
+        {
+            return;
+        }
+
+        var seconds = (byte)Math.Clamp((int)Math.Ceiling(remaining.TotalSeconds), 0, byte.MaxValue);
+
+        int Write()
+        {
+            var span = connection.Output.GetSpan(5)[..5];
+            span[0] = 0xC1;
+            span[1] = 5;
+            span[2] = Inventory.KundunEssenceViewPlugIn.Code;
+            span[3] = CurseTimeSubCode;
+            span[4] = seconds;
+            return 5;
+        }
+
+        await connection.SendAsync(Write).ConfigureAwait(false);
+    }
+
+    private async ValueTask SendAsync(IllusionWardenInfo info, byte subCode)
     {
         var connection = this._player.Connection;
         if (connection is null)
@@ -66,7 +166,7 @@ public class IllusionOfNoriaViewPlugIn : IIllusionOfNoriaViewPlugIn
             span[0] = 0xC2;
             BinaryPrimitives.WriteUInt16BigEndian(span[1..], (ushort)size);
             span[3] = Inventory.KundunEssenceViewPlugIn.Code;
-            span[4] = WardenDialogSubCode;
+            span[4] = subCode;
             span[5] = info.InIllusion ? (byte)1 : (byte)0;
             span[6] = info.QuestState;
             span[7] = info.HasWhistle ? (byte)1 : (byte)0;

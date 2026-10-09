@@ -14,6 +14,7 @@ public sealed class GoldenCurseMagicEffect : MagicEffect
 {
     private readonly Timer _damageTimer;
     private readonly uint _damage;
+    private readonly short _wardEffect;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GoldenCurseMagicEffect"/> class.
@@ -23,9 +24,11 @@ public sealed class GoldenCurseMagicEffect : MagicEffect
     /// <param name="attacker">The boss.</param>
     /// <param name="owner">The cursed player.</param>
     /// <param name="damagePerSecond">The damage per second.</param>
-    public GoldenCurseMagicEffect(MagicEffectDefinition definition, TimeSpan duration, IAttacker attacker, IAttackable owner, int damagePerSecond)
+    /// <param name="wardEffect">The magic effect of the Veil Ward: while the owner has it, the curse does no damage.</param>
+    public GoldenCurseMagicEffect(MagicEffectDefinition definition, TimeSpan duration, IAttacker attacker, IAttackable owner, int damagePerSecond, short wardEffect = -1)
         : base(duration, definition)
     {
+        this._wardEffect = wardEffect;
         this.Attacker = attacker;
         this.Owner = owner;
         this._damage = (uint)Math.Max(0, damagePerSecond);
@@ -60,6 +63,11 @@ public sealed class GoldenCurseMagicEffect : MagicEffect
             if (!this.Owner.IsAlive || this.IsDisposed || this.IsDisposing || this._damage == 0)
             {
                 return;
+            }
+
+            if (this._wardEffect >= 0 && this.Owner is Player player && player.MagicEffectList.ActiveEffects.ContainsKey(this._wardEffect))
+            {
+                return; // the Veil Ward of the warden: the curse stays (icon, timer), no damage
             }
 
             // like poison: the health directly, not the shield

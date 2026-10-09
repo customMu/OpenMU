@@ -124,6 +124,8 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
 
         (attacker as Player ?? (attacker as IPlayerSurrogate)?.Owner)?.RememberCombatTarget(this);
 
+        // the Blessing of the Veil: more damage to the monsters of the Illusion of Noria
+        damageFactor *= PlugIns.IllusionOfNoria.IllusionOfNoriaPlugIn.GetDamageFactor(attacker, this);
         var hitInfo = await attacker.CalculateDamageAsync(this, skill, isCombo, damageFactor).ConfigureAwait(false);
 
         if (skill?.Skill is not { } attackSkill || attackSkill.DamageType != DamageType.Fenrir)
@@ -142,7 +144,7 @@ public abstract class AttackableNpcBase : NonPlayerCharacter, IAttackable
 
             if (attacker is Player player)
             {
-                await player.AfterHitTargetAsync().ConfigureAwait(false);
+                await player.AfterHitTargetAsync(hitInfo).ConfigureAwait(false);
 
                 if (this.IsAlive && Rand.NextRandomBool(player.Attributes![Stats.MaceMasteryStunChance]))
                 {

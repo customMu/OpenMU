@@ -67,4 +67,12 @@ public class ItemChatCommandArgs : ArgumentsBase
     [Argument("ancBonuslvl", false)]
     [ValidValues("1", "2")]
     public byte AncientBonusLevel { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets the amount: the pieces of a stackable item (more than a stack makes several stacks), or the copies
+    /// of another item. For a stackable item the 4th number (<see cref="ExcellentNumber"/>) is the amount too:
+    /// <c>/item 14 14 0 255</c>.
+    /// </summary>
+    [Argument("amount", false)]
+    public int Amount { get; set; }
 }

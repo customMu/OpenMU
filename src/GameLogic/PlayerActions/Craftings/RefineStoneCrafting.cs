@@ -124,11 +124,6 @@ public class RefineStoneCrafting : SimpleItemCraftingHandler
     /// </summary>
     public static byte HigherRefineStoneReference { get; } = 0x22;
 
-    /// <summary>
-    /// Gets the chance in percent to get a Higher Refine Stone of an excellent item.
-    /// </summary>
-    public static int HigherRefineStoneChance { get; } = 10;
-
     /// <inheritdoc />
     protected override bool RequiredItemMatches(Item item, ItemCraftingRequiredItem requiredItem)
     {
@@ -151,8 +146,7 @@ public class RefineStoneCrafting : SimpleItemCraftingHandler
         var result = new List<Item>();
         if (higherRefineStoneItems > 0)
         {
-            // the Higher Refine Stone keeps the harmony option level on a fail - a rare stone (09.10.2026: 50 % -> 10 %)
-            result.AddRange(await this.CreateRefineStonesAsync(higherRefineStoneItems, HigherRefineStoneChance, 44, player).ConfigureAwait(false));
+            result.AddRange(await this.CreateRefineStonesAsync(higherRefineStoneItems, 50, 44, player).ConfigureAwait(false));
         }
 
         if (lowerRefineStoneItems > 0)

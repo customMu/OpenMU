@@ -20,7 +20,7 @@ using MUnique.OpenMU.PlugIns;
 /// (rank 7 weapons, 20 resets). Warden Eldrin (in Noria and in the town of the illusion) gives the quest of the
 /// Whistle of the Veil, which Condra, the outcast of Karutan, stole; with the whistle back the character may enter.
 /// In the illusion the warden gives a daily quest; every few thousand kills the Gilded Colossus awakens, its curse
-/// burns everybody near it. The jewels of the harmony options (Jewel of Illusion, Lesser / Greater Mirage Stone)
+/// burns everybody near it. The stones of the skill fix option (Jewel of Illusion, Echoes, Lesser / Greater Mirage Stone)
 /// come only from here.
 /// </summary>
 [PlugIn]
@@ -46,11 +46,34 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
     /// <summary>The action of the dialog: return to Noria.</summary>
     public const byte ActionReturn = 6;
 
-    /// <summary>The action of the dialog: reset the harmony option of the weapon in the slot (+ slot: 0 left, 1 right hand).</summary>
+    /// <summary>The action of the dialog: reset the skill fix option of the weapon in the slot (+ slot: 0 left, 1 right hand).</summary>
     public const byte ActionResetOption = 0x10;
 
-    /// <summary>The action of the dialog: buy an item of the shop (followed by the item group and number).</summary>
-    public const byte ActionBuy = 0x20;
+    /// <summary>The action of the dialog: a Lesser Mirage Stone for Illusion Shards (the shop of the warden).</summary>
+    public const byte ActionBuyLesserStone = 0x20;
+
+    /// <summary>The action of the dialog: the Veil Ward for Illusion Shards (no damage of the Golden Curse).</summary>
+    public const byte ActionBuyWard = 0x21;
+
+    /// <summary>The action of the dialog: the Blessing of the Veil for Illusion Shards (more damage in the illusion).</summary>
+    public const byte ActionBuyBlessing = 0x22;
+
+    /// <summary>The group of the entry of the price list which is the Veil Ward (its number is the magic effect).</summary>
+    public const byte WardExchangeGroup = 0xFF;
+
+    /// <summary>
+    /// The action which asks for the state (the client asks after entering a map; no need to stand near the warden).
+    /// </summary>
+    public const byte ActionState = 0x30;
+
+    /// <summary>The Jewel of Illusion (group 14): removes the skill fix option.</summary>
+    public const short IllusionJewelNumber = 195;
+
+    /// <summary>The Lesser Mirage Stone (group 14).</summary>
+    public const short LesserStoneNumber = 196;
+
+    /// <summary>The Greater Mirage Stone (group 14).</summary>
+    public const short GreaterStoneNumber = 197;
 
     private const int WardenRange = 10;
     private const int ProgressMessageStep = 25;
@@ -58,6 +81,8 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
     private readonly object _bossLock = new();
     private int _killsSinceBoss;
     private Monster? _boss;
+    private DateTime _countAgainAt = DateTime.MinValue;
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Player, System.Runtime.CompilerServices.StrongBox<DateTime>> _lastStateRequest = new();
 
     /// <summary>
     /// Gets or sets the configuration.
@@ -106,6 +131,20 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
     public async ValueTask HandleActionAsync(Player player, byte action, byte itemGroup = 0, short itemNumber = 0)
     {
         var configuration = this.GetConfiguration();
+        if (action == ActionState)
+        {
+            // at most once a second (the client asks after a map change)
+            var last = this._lastStateRequest.GetOrCreateValue(player);
+            var now = DateTime.UtcNow;
+            if (now - last.Value >= TimeSpan.FromSeconds(1))
+            {
+                last.Value = now;
+                await this.UpdateStateAsync(player).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
         if (player.CurrentMap is not { } map
             || !map.GetNpcsInRange(player.Position, WardenRange).Any(npc => npc.Definition.Number == configuration.WardenNpcNumber))
         {
@@ -155,11 +194,14 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
             case ActionClaimDaily when inIllusion:
                 await this.ClaimDailyAsync(player, configuration).ConfigureAwait(false);
                 break;
-            case ActionBuy when questState == 2:
-                await this.BuyAsync(player, itemGroup, itemNumber, configuration).ConfigureAwait(false);
+            case ActionBuyLesserStone when questState == 2:
+                await this.BuyLesserStoneAsync(player, configuration).ConfigureAwait(false);
                 break;
-            case ActionResetOption or ActionResetOption + 1:
-                await this.ResetOptionAsync(player, (byte)(action - ActionResetOption), configuration).ConfigureAwait(false);
+            case ActionBuyWard when questState == 2:
+                await this.BuyWardAsync(player, configuration).ConfigureAwait(false);
+                break;
+            case ActionBuyBlessing when questState == 2:
+                await this.BuyBlessingAsync(player, configuration).ConfigureAwait(false);
                 break;
             default:
                 return;
@@ -191,6 +233,19 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
     }
 
     /// <summary>
+    /// Sends the state of the player without the dialog (the mark over the warden, the daily quest in the quest window).
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The task.</returns>
+    public async ValueTask UpdateStateAsync(Player player)
+    {
+        if (player.ViewPlugIns.GetPlugIn<IIllusionOfNoriaViewPlugIn>() is { } view)
+        {
+            await view.UpdateWardenStateAsync(this.GetInfo(player)).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
     /// Gets the state of the player for the dialog of the warden.
     /// </summary>
     /// <param name="player">The player.</param>
@@ -211,10 +266,10 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
             kills,
             configuration.DailyKills,
             configuration.GetTimeUntilNextDay(now),
-            this.GetResetWeapons(player, configuration),
+            [], // 09.10.2026: the option is removed in the Chaos Machine of the illusion (IllusionRemoveSkillFixCrafting)
             StacksOf(player, ShardPrice(configuration, 0)).Sum(i => Math.Max(1, (int)i.Durability)),
             (int)player.GetStoredStatValue(Stats.IllusionQuestState) == 2
-                ? this.GetShop(player, configuration).Take(32).Select(e => (e.ItemGroup, e.ItemNumber, Math.Max(1, e.MinimumAmount))).ToList()
+                ? [((byte)14, LesserStoneNumber, Math.Max(1, configuration.LesserStonePrice)), (WardExchangeGroup, configuration.WardEffectNumber, Math.Max(1, configuration.WardPrice)), (WardExchangeGroup, configuration.BlessingEffectNumber, Math.Max(1, configuration.BlessingPrice))]
                 : []);
     }
 
@@ -254,7 +309,8 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
         var spawnBoss = false;
         lock (this._bossLock)
         {
-            if (this._boss is null && ++this._killsSinceBoss >= Math.Max(1, configuration.BossKills))
+            // the count stops while the boss lives and during the cooldown after its death
+            if (this._boss is null && DateTime.UtcNow >= this._countAgainAt && ++this._killsSinceBoss >= Math.Max(1, configuration.BossKills))
             {
                 this._killsSinceBoss = 0;
                 spawnBoss = true;
@@ -263,7 +319,7 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
 
         if (spawnBoss)
         {
-            await this.SpawnBossAsync(killer.GameContext, map, configuration).ConfigureAwait(false);
+            await this.SpawnBossAsync(killer.GameContext, map, configuration, configuration.BossAtLastKill ? position : null).ConfigureAwait(false);
         }
 
         var players = killer.Party?.PartyList.OfType<Player>()
@@ -282,11 +338,12 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
     /// <param name="gameContext">The game context.</param>
     /// <param name="map">The map of the illusion.</param>
     /// <param name="configuration">The configuration.</param>
+    /// <param name="at">The place (the last kill, for tests); <c>null</c> for a random place.</param>
     /// <returns>The task.</returns>
-    public async ValueTask SpawnBossAsync(IGameContext gameContext, GameMap map, IllusionOfNoriaConfiguration configuration)
+    public async ValueTask SpawnBossAsync(IGameContext gameContext, GameMap map, IllusionOfNoriaConfiguration configuration, Point? at = null)
     {
         if (gameContext.Configuration.Monsters.FirstOrDefault(m => m.Number == configuration.BossNumber) is not { } definition
-            || map.Terrain.RandomWalkableCoordinate is not { } point)
+            || (at ?? map.Terrain.RandomWalkableCoordinate) is not { } point)
         {
             return;
         }
@@ -320,16 +377,20 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
                 if (this._boss == boss)
                 {
                     this._boss = null;
+                    this._killsSinceBoss = 0;
+                    this._countAgainAt = DateTime.UtcNow + configuration.BossCooldown;
                 }
             }
 
-            _ = Task.Run(() => this.ShowMapMessageAsync(gameContext, map, string.Format(configuration.BossDefeatedMessage, definition.Designation, death.KillerName)).AsTask());
+            var minutes = (int)Math.Ceiling(configuration.BossCooldown.TotalMinutes);
+            _ = Task.Run(() => this.ShowMapMessageAsync(gameContext, map, string.Format(configuration.BossDefeatedMessage, definition.Designation, death.KillerName, minutes)).AsTask());
         };
 
         boss.Initialize();
         await map.AddAsync(boss).ConfigureAwait(false);
         boss.OnSpawn();
         await this.ShowMapMessageAsync(gameContext, map, string.Format(configuration.BossAwakenedMessage, definition.Designation)).ConfigureAwait(false);
+        gameContext.LoggerFactory.CreateLogger<IllusionOfNoriaPlugIn>().LogInformation("Illusion of Noria: {boss} awakened at {point}.", definition.Designation, boss.Position);
         _ = Task.Run(() => this.CurseLoopAsync(gameContext, boss, map, configuration));
     }
 
@@ -353,18 +414,19 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
     /// <param name="gameContext">The game context.</param>
     /// <param name="rewards">The reward items.</param>
     /// <returns>The items.</returns>
-    internal static List<Item> CreateRewardItems(IGameContext gameContext, IEnumerable<IllusionRewardItem> rewards)
+    internal static List<Item> CreateRewardItems(IGameContext gameContext, IEnumerable<IllusionRewardItem> rewards, bool singlePieces = false)
     {
         var items = new List<Item>();
         foreach (var reward in rewards)
         {
-            if (gameContext.Configuration.Items.FirstOrDefault(d => d.Group == reward.ItemGroup && d.Number == reward.ItemNumber) is not { } definition)
+            if (gameContext.Configuration.Items.FirstOrDefault(d => d.Group == reward.ItemGroup && d.Number == reward.ItemNumber) is not { } definition
+                || (reward.ChancePercent < 100 && !Rand.NextRandomBool(reward.ChancePercent / 100.0)))
             {
                 continue;
             }
 
             var amount = Rand.NextInt(Math.Max(0, reward.MinimumAmount), Math.Max(reward.MinimumAmount, reward.MaximumAmount) + 1);
-            var stack = Math.Max(1, (int)definition.Durability);
+            var stack = singlePieces ? 1 : Math.Max(1, (int)definition.Durability);
             while (amount > 0)
             {
                 var pieces = Math.Min(amount, stack);
@@ -415,62 +477,8 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
 
             stack.Durability = pieces - remaining;
             remaining = 0;
-            await player.InvokeViewPlugInAsync<IItemDurabilityChangedPlugIn>(p => p.ItemDurabilityChangedAsync(stack, true)).ConfigureAwait(false);
+            await player.InvokeViewPlugInAsync<IItemDurabilityChangedPlugIn>(p => p.ItemDurabilityChangedAsync(stack, false)).ConfigureAwait(false);
         }
-    }
-
-    private List<IllusionResetWeapon> GetResetWeapons(Player player, IllusionOfNoriaConfiguration configuration)
-    {
-        var result = new List<IllusionResetWeapon>();
-        foreach (var slot in new[] { InventoryConstants.LeftHandSlot, InventoryConstants.RightHandSlot })
-        {
-            if (player.Inventory?.GetItem(slot) is not { Definition: { } definition } item
-                || item.ItemOptions.FirstOrDefault(o => o.ItemOption?.OptionType == ItemOptionTypes.HarmonyOption) is not { ItemOption: { } option } link)
-            {
-                continue;
-            }
-
-            var (rank, price) = configuration.GetResetPrice(definition.Group, definition.Number);
-            result.Add(new IllusionResetWeapon(
-                slot,
-                definition.Group,
-                definition.Number,
-                (byte)option.Number,
-                (byte)link.Level,
-                (byte)rank,
-                AmountOf(price, 42),
-                AmountOf(price, 43),
-                AmountOf(price, 44),
-                CanPay(player, price)));
-        }
-
-        return result;
-    }
-
-    private async ValueTask ResetOptionAsync(Player player, byte slot, IllusionOfNoriaConfiguration configuration)
-    {
-        if (player.Inventory?.GetItem(slot) is not { Definition: { } definition } item
-            || item.ItemOptions.FirstOrDefault(o => o.ItemOption?.OptionType == ItemOptionTypes.HarmonyOption) is not { } link)
-        {
-            return;
-        }
-
-        var (_, price) = configuration.GetResetPrice(definition.Group, definition.Number);
-        if (!CanPay(player, price))
-        {
-            await player.ShowBlueMessageAsync("Warden Eldrin: you don't carry the price of the reset.").ConfigureAwait(false);
-            return;
-        }
-
-        foreach (var part in price.Where(p => p.MinimumAmount > 0))
-        {
-            await TakeItemsAsync(player, part).ConfigureAwait(false);
-        }
-
-        item.ItemOptions.Remove(link);
-        await player.PersistenceContext.DeleteAsync(link).ConfigureAwait(false);
-        await player.InvokeViewPlugInAsync<IItemUpgradedPlugIn>(p => p.ItemUpgradedAsync(item)).ConfigureAwait(false);
-        await player.ShowBlueMessageAsync($"Warden Eldrin: the harmony option of {definition.Name} is gone - a new Jewel of Illusion can be set.").ConfigureAwait(false);
     }
 
     private static async ValueTask RemoveItemAsync(Player player, Item item)
@@ -592,39 +600,197 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
             return;
         }
 
-        player.TrySetStoredStatValue(Stats.IllusionDailyClaimedDay, configuration.GetDayNumber(now));
+        if (configuration.DailyRepeatable)
+        {
+            player.TrySetStoredStatValue(Stats.IllusionDailyDay, 0); // the quest can be taken again at once (tests)
+        }
+        else
+        {
+            player.TrySetStoredStatValue(Stats.IllusionDailyClaimedDay, configuration.GetDayNumber(now));
+        }
         foreach (var item in items)
         {
             await GiveItemAsync(player, item).ConfigureAwait(false);
         }
 
-        await player.ShowBlueMessageAsync($"Daily quest done: +{configuration.DailyShards} Illusion Shards. Come back tomorrow.").ConfigureAwait(false);
+        await player.ShowBlueMessageAsync($"Daily quest done: +{configuration.DailyShards} Illusion Shards. " + (configuration.DailyRepeatable ? "You can take it again." : "Come back tomorrow.")).ConfigureAwait(false);
     }
 
-    private IEnumerable<IllusionRewardItem> GetShop(Player player, IllusionOfNoriaConfiguration configuration)
+    /// <summary>
+    /// Creates random Echoes (one of all Echoes each, a skill may repeat).
+    /// </summary>
+    /// <param name="gameContext">The game context.</param>
+    /// <param name="count">The number of Echoes.</param>
+    /// <returns>The Echoes, one piece each.</returns>
+    public List<Item> CreateRandomEchoes(IGameContext gameContext, int count)
     {
-        // an Echo only for the characters who know its skill
-        return configuration.Shop.Where(e => configuration.GetEchoSkill(e.ItemGroup, e.ItemNumber) is not { } skill
-                                             || player.SkillList?.ContainsSkill((ushort)skill) == true);
-    }
-
-    private async ValueTask BuyAsync(Player player, byte group, short number, IllusionOfNoriaConfiguration configuration)
-    {
-        if (this.GetShop(player, configuration).FirstOrDefault(e => e.ItemGroup == group && e.ItemNumber == number) is not { } entry
-            || player.GameContext.Configuration.Items.FirstOrDefault(d => d.Group == entry.ItemGroup && d.Number == entry.ItemNumber) is not { } definition)
+        var echoes = this.GetConfiguration().GetEchoItemNumbers();
+        if (echoes.Count == 0)
         {
+            return [];
+        }
+
+        return Enumerable.Range(0, Math.Max(0, count))
+            .Select(_ => echoes[Rand.NextInt(0, echoes.Count)])
+            .Select(number => gameContext.Configuration.Items.FirstOrDefault(d => d.Group == 14 && d.Number == number))
+            .OfType<ItemDefinition>()
+            .Select(definition => (Item)new TemporaryItem { Definition = definition, Durability = 1 })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Creates a stone of the illusion (group 14), one piece.
+    /// </summary>
+    /// <param name="gameContext">The game context.</param>
+    /// <param name="number">The item number.</param>
+    /// <returns>The stone, or <c>null</c> if the item is missing.</returns>
+    public static Item? CreateStone(IGameContext gameContext, short number)
+    {
+        return gameContext.Configuration.Items.FirstOrDefault(d => d.Group == 14 && d.Number == number) is { } definition
+            ? new TemporaryItem { Definition = definition, Durability = 1 }
+            : null;
+    }
+
+    /// <summary>
+    /// Creates a random rank 7-8 weapon with the skill fix options (plugin "Skill cast time"): +10 (configurable), a random
+    /// skill fix option of a random level, luck and skill by chance, no excellent options.
+    /// </summary>
+    /// <param name="gameContext">The game context.</param>
+    /// <returns>The weapon, or <c>null</c> if no weapon is configured.</returns>
+    public Item? CreateRandomWeapon(IGameContext gameContext)
+    {
+        return gameContext.FeaturePlugIns.GetPlugIn<SkillCastTimePlugIn>()?.Configuration is { } castTime
+            ? this.CreateRandomWeapon(gameContext, castTime.Weapons)
+            : null;
+    }
+
+    /// <summary>
+    /// Creates a random weapon of the list, see <see cref="CreateRandomWeapon(IGameContext)"/>.
+    /// </summary>
+    /// <param name="gameContext">The game context.</param>
+    /// <param name="weapons">The rank 7-8 weapons with the skill fix options.</param>
+    /// <returns>The weapon, or <c>null</c> if no weapon of the list has the skill fix options.</returns>
+    internal Item? CreateRandomWeapon(IGameContext gameContext, IEnumerable<WeaponFixSkills> weapons)
+    {
+        var configuration = this.GetConfiguration();
+        var definitions = weapons
+            .Select(w => (w.Group, w.Number))
+            .Distinct()
+            .Select(w => gameContext.Configuration.Items.FirstOrDefault(d => d.Group == w.Group && d.Number == w.Number))
+            .OfType<ItemDefinition>()
+            .Where(d => d.PossibleItemOptions.SelectMany(o => o.PossibleOptions).Any(o => o.OptionType == ItemOptionTypes.SkillFixOption))
+            .ToList();
+        if (definitions.Count == 0)
+        {
+            return null;
+        }
+
+        var definition = definitions[Rand.NextInt(0, definitions.Count)];
+        var weapon = new TemporaryItem { Definition = definition, Level = configuration.WeaponLevel };
+        weapon.Durability = weapon.GetMaximumDurabilityOfOnePiece();
+        if (weapon.CanHaveSkill())
+        {
+            weapon.HasSkill = Rand.NextRandomBool(configuration.WeaponSkillChancePercent / 100.0);
+        }
+
+        var options = definition.PossibleItemOptions.SelectMany(o => o.PossibleOptions).ToList();
+        if (options.FirstOrDefault(o => o.OptionType == ItemOptionTypes.Luck) is { } luck
+            && Rand.NextRandomBool(configuration.WeaponLuckChancePercent / 100.0))
+        {
+            weapon.ItemOptions.Add(new ItemOptionLink { ItemOption = luck });
+        }
+
+        var fixOptions = options.Where(o => o.OptionType == ItemOptionTypes.SkillFixOption).ToList();
+        var fixOption = fixOptions[Rand.NextInt(0, fixOptions.Count)];
+        var levels = fixOption.LevelDependentOptions.Select(o => o.Level).DefaultIfEmpty(1).ToList();
+        var maximum = Math.Clamp(configuration.WeaponMaximumOptionLevel, levels.Min(), levels.Max());
+        weapon.ItemOptions.Add(new ItemOptionLink { ItemOption = fixOption, Level = Rand.NextInt(Math.Max(1, levels.Min()), maximum + 1) });
+        return weapon;
+    }
+
+    /// <summary>
+    /// Gets the damage factor of an attack of the player on a monster: the Blessing of the Veil gives more damage to the
+    /// monsters of the illusion and its boss.
+    /// </summary>
+    /// <param name="attacker">The attacker.</param>
+    /// <param name="defender">The attacked monster.</param>
+    /// <returns>The factor, 1 without the blessing.</returns>
+    public static double GetDamageFactor(IAttacker attacker, IAttackable defender)
+    {
+        if ((attacker as Player ?? (attacker as IPlayerSurrogate)?.Owner) is not { } player
+            || player.GameContext.FeaturePlugIns.GetPlugIn<IllusionOfNoriaPlugIn>()?.Configuration is not { } configuration
+            || defender.CurrentMap?.Definition.Number != configuration.MapNumber
+            || !player.MagicEffectList.ActiveEffects.ContainsKey(configuration.BlessingEffectNumber))
+        {
+            return 1;
+        }
+
+        return 1 + (Math.Max(0, configuration.BlessingDamagePercent) / 100.0);
+    }
+
+    private async ValueTask BuyBlessingAsync(Player player, IllusionOfNoriaConfiguration configuration)
+    {
+        if (player.GameContext.Configuration.MagicEffects.FirstOrDefault(m => m.Number == configuration.BlessingEffectNumber) is not { } definition)
+        {
+            player.Logger.LogWarning("Illusion of Noria: the magic effect {effect} of the Blessing of the Veil is missing.", configuration.BlessingEffectNumber);
             return;
         }
 
-        var price = ShardPrice(configuration, Math.Max(1, entry.MinimumAmount));
+        var price = ShardPrice(configuration, Math.Max(1, configuration.BlessingPrice));
         var shards = StacksOf(player, price).Sum(i => Math.Max(1, (int)i.Durability));
         if (shards < price.MinimumAmount)
         {
-            await player.ShowBlueMessageAsync($"Warden Eldrin: {definition.Name} costs {price.MinimumAmount} Illusion Shards, you have {shards}.").ConfigureAwait(false);
+            await player.ShowBlueMessageAsync($"Warden Eldrin: the Blessing of the Veil costs {price.MinimumAmount} Illusion Shards, you have {shards}.").ConfigureAwait(false);
             return;
         }
 
-        var item = new TemporaryItem { Definition = definition, Durability = 1 };
+        await TakeItemsAsync(player, price).ConfigureAwait(false);
+
+        // a second blessing renews the time; it works together with the Veil Ward
+        await player.MagicEffectList.AddEffectAsync(new MagicEffect(configuration.BlessingDuration, definition)).ConfigureAwait(false);
+        await player.InvokeViewPlugInAsync<IIllusionOfNoriaViewPlugIn>(v => v.ShowBlessingTimeAsync(configuration.BlessingDuration)).ConfigureAwait(false);
+        await player.ShowBlueMessageAsync($"Warden Eldrin: the Veil blesses your weapon - +{configuration.BlessingDamagePercent}% damage to the illusions for {(int)configuration.BlessingDuration.TotalMinutes} minutes.").ConfigureAwait(false);
+    }
+
+    private async ValueTask BuyWardAsync(Player player, IllusionOfNoriaConfiguration configuration)
+    {
+        if (player.GameContext.Configuration.MagicEffects.FirstOrDefault(m => m.Number == configuration.WardEffectNumber) is not { } definition)
+        {
+            player.Logger.LogWarning("Illusion of Noria: the magic effect {effect} of the Veil Ward is missing.", configuration.WardEffectNumber);
+            return;
+        }
+
+        var price = ShardPrice(configuration, Math.Max(1, configuration.WardPrice));
+        var shards = StacksOf(player, price).Sum(i => Math.Max(1, (int)i.Durability));
+        if (shards < price.MinimumAmount)
+        {
+            await player.ShowBlueMessageAsync($"Warden Eldrin: the Veil Ward costs {price.MinimumAmount} Illusion Shards, you have {shards}.").ConfigureAwait(false);
+            return;
+        }
+
+        await TakeItemsAsync(player, price).ConfigureAwait(false);
+
+        // a second ward renews the time
+        await player.MagicEffectList.AddEffectAsync(new MagicEffect(configuration.WardDuration, definition)).ConfigureAwait(false);
+        await player.InvokeViewPlugInAsync<IIllusionOfNoriaViewPlugIn>(v => v.ShowWardTimeAsync(configuration.WardDuration)).ConfigureAwait(false);
+        await player.ShowBlueMessageAsync($"Warden Eldrin: the Veil guards you from the Golden Curse for {(int)configuration.WardDuration.TotalMinutes} minutes.").ConfigureAwait(false);
+    }
+
+    private async ValueTask BuyLesserStoneAsync(Player player, IllusionOfNoriaConfiguration configuration)
+    {
+        var price = ShardPrice(configuration, Math.Max(1, configuration.LesserStonePrice));
+        var shards = StacksOf(player, price).Sum(i => Math.Max(1, (int)i.Durability));
+        if (shards < price.MinimumAmount)
+        {
+            await player.ShowBlueMessageAsync($"Warden Eldrin: a Lesser Mirage Stone costs {price.MinimumAmount} Illusion Shards, you have {shards}.").ConfigureAwait(false);
+            return;
+        }
+
+        if (CreateStone(player.GameContext, LesserStoneNumber) is not { } item)
+        {
+            return;
+        }
+
         if (player.Inventory is not { } inventory || inventory.CheckInvSpace(item) is null)
         {
             await player.ShowBlueMessageAsync("Warden Eldrin: make room in your inventory first.").ConfigureAwait(false);
@@ -633,7 +799,6 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
 
         await TakeItemsAsync(player, price).ConfigureAwait(false);
         await GiveItemAsync(player, item).ConfigureAwait(false);
-        await player.ShowBlueMessageAsync($"Warden Eldrin: {definition.Name} for {price.MinimumAmount} Illusion Shards.").ConfigureAwait(false);
     }
 
     /// <summary>
@@ -673,6 +838,7 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
 
             var count = kills[i] + 1;
             player.TrySetStoredStatValue(killStats[i], count);
+            await this.UpdateStateAsync(player).ConfigureAwait(false);
             if (count == configuration.DailyKills)
             {
                 var allDone = kills.Where((_, k) => k != i).All(k => k >= configuration.DailyKills);
@@ -709,19 +875,29 @@ public class IllusionOfNoriaPlugIn : IFeaturePlugIn, IPlayerTalkToNpcPlugIn, ISu
             return;
         }
 
+        var logger = gameContext.LoggerFactory.CreateLogger<IllusionOfNoriaPlugIn>();
+        var cursed = new HashSet<Player>();
         try
         {
             while (boss.IsAlive && boss.CurrentMap == map)
             {
                 foreach (var player in map.GetAttackablesInRange(boss.Position, configuration.CurseRange).OfType<Player>().Where(p => p.IsAlive).ToList())
                 {
+                    if (cursed.Add(player))
+                    {
+                        logger.LogInformation("Illusion of Noria: the golden curse on {player} ({damage} per second).", player.Name, configuration.CurseDamagePerSecond);
+                    }
+
                     // the same effect renews its time while the player stays near; the first one keeps burning
-                    var curse = new GoldenCurseMagicEffect(definition, configuration.CurseDuration, boss, player, configuration.CurseDamagePerSecond);
+                    var curse = new GoldenCurseMagicEffect(definition, configuration.CurseDuration, boss, player, configuration.CurseDamagePerSecond, configuration.WardEffectNumber);
                     await player.MagicEffectList.AddEffectAsync(curse).ConfigureAwait(false);
+                    await player.InvokeViewPlugInAsync<IIllusionOfNoriaViewPlugIn>(v => v.ShowCurseTimeAsync(configuration.CurseDuration)).ConfigureAwait(false);
                 }
 
                 await Task.Delay(1000).ConfigureAwait(false);
             }
+
+            logger.LogInformation("Illusion of Noria: the curse of the boss ended (alive: {alive}).", boss.IsAlive);
         }
         catch (Exception ex)
         {

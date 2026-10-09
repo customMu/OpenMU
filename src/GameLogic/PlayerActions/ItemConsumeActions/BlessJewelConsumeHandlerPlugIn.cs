@@ -34,16 +34,33 @@ public class BlessJewelConsumeHandlerPlugIn : UpgradeItemLevelJewelConsumeHandle
         };
     }
 
+    /// <inheritdoc />
+    protected override int GetConsumedAmount(Item targetItem)
+    {
+        return this.IsRepair(targetItem) ? 1 : GameLogic.Items.EnchantPriceRanks.GetStep(targetItem.Definition, false).Jewels;
+    }
+
+    /// <inheritdoc />
+    protected override int GetLevelAmount(Item item)
+    {
+        return GameLogic.Items.EnchantPriceRanks.GetStep(item.Definition, false).Levels;
+    }
+
     /// <inheritdoc/>
     protected override bool ModifyItem(Item item, IContext persistenceContext)
     {
-        if (this.Configuration?.RepairTargetItems.Contains(item.Definition!) is true
-            && item.Durability < item.GetMaximumDurabilityOfOnePiece())
+        if (this.IsRepair(item))
         {
             item.Durability = item.GetMaximumDurabilityOfOnePiece();
             return true;
         }
 
         return base.ModifyItem(item, persistenceContext);
+    }
+
+    private bool IsRepair(Item item)
+    {
+        return this.Configuration?.RepairTargetItems.Contains(item.Definition!) is true
+               && item.Durability < item.GetMaximumDurabilityOfOnePiece();
     }
 }

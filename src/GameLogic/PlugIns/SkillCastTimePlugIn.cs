@@ -16,16 +16,16 @@ using MUnique.OpenMU.PlugIns;
 
 /// <summary>
 /// Every attack skill has a fix time: the client can't cast it faster, whatever the attack speed
-/// (reached with 10 000 agility). Harmony options 11, 12, 13 of the rank 7-8 weapons lower the fix time of 3 skills
+/// (reached with 10 000 agility). Skill fix options 11, 12, 13 of the rank 7-8 weapons lower the fix time of 3 skills
 /// of the class (the option value is the share, e.g. 0.25 = -25 %). The server refuses casts which come earlier.
 /// </summary>
 [PlugIn]
-[Display(Name = "Skill cast time", Description = "Refuses skill casts faster than the fix time of the skill; harmony options of rank 7-8 weapons lower it.")]
+[Display(Name = "Skill cast time", Description = "Refuses skill casts faster than the fix time of the skill; skill fix options of rank 7-8 weapons lower it.")]
 [Guid("8D2B6E14-7A39-4F05-B1C8-3E9D5A7F2C61")]
 public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<SkillCastTimeConfiguration>, ISupportDefaultCustomConfiguration, ISkillCastTimeCheckPlugIn
 {
     /// <summary>
-    /// The harmony option numbers of the fix time options (skill 1, 2, 3).
+    /// The skill fix option numbers of the fix time options (skill 1, 2, 3).
     /// </summary>
     public static readonly int[] OptionNumbers = [11, 12, 13];
 
@@ -113,9 +113,11 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
         {
             if (this._fixTimes.TryGetValue(candidate.Number, out var fixTime) && fixTime > 0)
             {
+                // the skill fix option cuts the cast time of its skill directly (09.10.2026): the fix time and, below the
+                // fix speed, the animation - no speed above the fix is needed for it
                 var cut = Math.Clamp(this.GetOptionCut(player, candidate.Number), 0, 0.9);
                 var milliseconds = Math.Max(config.MinimumCastMilliseconds, fixTime * (1 - cut));
-                milliseconds = Math.Max(milliseconds, this.GetAnimationMilliseconds(player, candidate.Number, fixTime) * config.SpeedCheckShare);
+                milliseconds = Math.Max(milliseconds, this.GetAnimationMilliseconds(player, candidate.Number, fixTime) * (1 - cut) * config.SpeedCheckShare);
                 return TimeSpan.FromMilliseconds(milliseconds);
             }
         }
@@ -153,13 +155,13 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
         }
 
         // the fix time must be the animation time at the fix speed - not the floor of 0.15 s (no curve for such skills).
-        // Above the fix speed the animation gets shorter than the fix time: the harmony options cut the fix time only
-        // as far as the speed of the player reaches (as in the client).
+        // Above the fix speed the animation gets shorter than the fix time, but the cast never (the fix time is the
+        // minimum); the skill fix options cut both (as in the client).
         return fixTime * (offset + fixSpeed) / (offset + Math.Max(0, speed));
     }
 
     /// <summary>
-    /// Gets the share by which the harmony options of the equipped weapons lower the fix time of the skill.
+    /// Gets the share by which the skill fix options of the equipped weapons lower the fix time of the skill.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="skillNumber">The skill number.</param>
@@ -173,7 +175,8 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
 
         var family = (player.SelectedCharacter?.CharacterClass?.Number ?? 0) / 4 * 4;
         double cut = 0;
-        foreach (var slot in new[] { InventoryConstants.LeftHandSlot, InventoryConstants.RightHandSlot })
+        // only the weapon in the left hand (slot 0, the left weapon slot of the inventory window) counts
+        foreach (var slot in new[] { InventoryConstants.LeftHandSlot })
         {
             if (inventory.GetItem(slot) is not { Durability: > 0.0, Definition: { } definition } item)
             {
@@ -187,7 +190,7 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
                 continue;
             }
 
-            foreach (var link in item.ItemOptions.Where(o => o.ItemOption?.OptionType == ItemOptionTypes.HarmonyOption))
+            foreach (var link in item.ItemOptions.Where(o => o.ItemOption?.OptionType == ItemOptionTypes.SkillFixOption))
             {
                 var index = Array.IndexOf(OptionNumbers, link.ItemOption!.Number);
                 var optionSkill = index switch { 0 => weapon.Skill1, 1 => weapon.Skill2, 2 => weapon.Skill3, _ => (short)-1 };
@@ -199,7 +202,8 @@ public class SkillCastTimePlugIn : IFeaturePlugIn, ISupportCustomConfiguration<S
                 var value = link.ItemOption.LevelDependentOptions.FirstOrDefault(l => l.Level == link.Level)?.PowerUpDefinition?.Boost?.ConstantValue?.Value
                             ?? link.ItemOption.PowerUpDefinition?.Boost?.ConstantValue?.Value
                             ?? 0;
-                cut += value * (family == 8 ? config.ElfOptionFactor : 1);
+                // two weapons with the option of the same skill (e.g. a DK with two swords): the better one counts, they don't add up
+                cut = Math.Max(cut, value * (family == 8 ? config.ElfOptionFactor : 1));
             }
         }
 

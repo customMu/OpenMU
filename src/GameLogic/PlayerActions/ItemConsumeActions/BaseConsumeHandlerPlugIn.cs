@@ -34,10 +34,19 @@ public abstract class BaseConsumeHandlerPlugIn : IItemConsumeHandlerPlugIn
     /// <param name="item">The item.</param>
     protected async ValueTask ConsumeSourceItemAsync(Player player, Item item)
     {
-        if (item.Durability > 0)
-        {
-            item.Durability -= 1;
-        }
+        await this.ConsumeSourceItemAsync(player, item, 1).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Consumes pieces of the source item (a stack of jewels).
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="item">The item.</param>
+    /// <param name="amount">The pieces.</param>
+    protected ValueTask ConsumeSourceItemAsync(Player player, Item item, int amount)
+    {
+        item.Durability = Math.Max(0, item.Durability - Math.Max(1, amount));
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>

@@ -41,12 +41,20 @@ public abstract class ItemModifyConsumeHandlerPlugIn : BaseConsumeHandlerPlugIn
             return false;
         }
 
+        // the price of enchanting by rank: several pieces of the stack (EnchantPriceRanks)
+        var amount = this.GetConsumedAmount(targetItem);
+        if (item.Durability < amount)
+        {
+            await player.ShowBlueMessageAsync($"This item needs {amount} {item.Definition?.Name} per use.").ConfigureAwait(false);
+            return false;
+        }
+
         if (!this.ModifyItem(targetItem, player.PersistenceContext))
         {
             return false;
         }
 
-        await this.ConsumeSourceItemAsync(player, item).ConfigureAwait(false);
+        await this.ConsumeSourceItemAsync(player, item, amount).ConfigureAwait(false);
 
         await player.InvokeViewPlugInAsync<IItemUpgradedPlugIn>(p => p.ItemUpgradedAsync(targetItem)).ConfigureAwait(false);
         return true;
@@ -59,4 +67,11 @@ public abstract class ItemModifyConsumeHandlerPlugIn : BaseConsumeHandlerPlugIn
     /// <param name="persistenceContext">The persistence context.</param>
     /// <returns>Flag indicating whether the modification of the item occured.</returns>
     protected abstract bool ModifyItem(Item item, IContext persistenceContext);
+
+    /// <summary>
+    /// Gets the pieces of the source item (a stack) which one use takes for the target item.
+    /// </summary>
+    /// <param name="targetItem">The target item.</param>
+    /// <returns>The pieces; 1 by default.</returns>
+    protected virtual int GetConsumedAmount(Item targetItem) => 1;
 }

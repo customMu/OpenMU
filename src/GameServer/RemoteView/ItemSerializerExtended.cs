@@ -27,6 +27,16 @@ using static ItemSerializerHelper;
 [MinimumClient(106, 3, ClientLanguage.Invariant)]
 public class ItemSerializerExtended : IItemSerializer
 {
+    /// <summary>
+    /// The socket count which marks the skill fix option of this server (one byte instead of the sockets).
+    /// </summary>
+    private const byte SkillFixMarker = 0xF;
+
+    /// <summary>
+    /// The skill fix options are 11, 12, 13; the byte holds 1, 2, 3.
+    /// </summary>
+    private const int SkillFixOptionOffset = 10;
+
     [Flags]
     private enum OptionFlags : byte
     {
@@ -88,9 +98,18 @@ public class ItemSerializerExtended : IItemSerializer
 
         if (targetStruct.Options.HasFlag(OptionFlags.HasSockets))
         {
-            targetStruct.SocketCount = (byte)item.SocketCount;
-            targetStruct.SocketBonus = GetSocketBonusByte(item);
-            SetSocketBytes(targetStruct.Sockets, item);
+            if (item.SocketCount == 0 && GetSkillFixByte(item) is { } skillFix)
+            {
+                // the skill fix option of this server (rank 7-8 weapons have no sockets): the socket count 15 marks it
+                targetStruct.SocketCount = SkillFixMarker;
+                targetStruct.SkillFix = skillFix;
+            }
+            else
+            {
+                targetStruct.SocketCount = (byte)item.SocketCount;
+                targetStruct.SocketBonus = GetSocketBonusByte(item);
+                SetSocketBytes(targetStruct.Sockets, item);
+            }
         }
 
         return targetStruct.Length;
@@ -150,11 +169,48 @@ public class ItemSerializerExtended : IItemSerializer
 
         if (itemStruct.Options.HasFlag(OptionFlags.HasSockets))
         {
-            ReadSocketBonus(itemStruct.SocketBonus, persistenceContext, item);
-            ReadSockets(itemStruct.Sockets, persistenceContext, item);
+            if (itemStruct.SocketCount == SkillFixMarker)
+            {
+                ReadSkillFix(itemStruct.SkillFix, persistenceContext, item);
+            }
+            else
+            {
+                ReadSocketBonus(itemStruct.SocketBonus, persistenceContext, item);
+                ReadSockets(itemStruct.Sockets, persistenceContext, item);
+            }
         }
 
         return item;
+    }
+
+    /// <summary>
+    /// Gets the byte of the skill fix option: (option number - 10) &lt;&lt; 4 | level, or <c>null</c> without the option.
+    /// </summary>
+    private static byte? GetSkillFixByte(Item item)
+    {
+        if (item.ItemOptions.FirstOrDefault(o => o.ItemOption?.OptionType == ItemOptionTypes.SkillFixOption) is not { ItemOption: { } option } link)
+        {
+            return null;
+        }
+
+        return (byte)((((option.Number - SkillFixOptionOffset) & 0xF) << 4) | (link.Level & 0xF));
+    }
+
+    private static void ReadSkillFix(byte skillFixByte, IContext persistenceContext, Item item)
+    {
+        var number = SkillFixOptionOffset + (skillFixByte >> 4);
+        var option = item.Definition!.PossibleItemOptions
+            .SelectMany(o => o.PossibleOptions)
+            .FirstOrDefault(o => o.OptionType == ItemOptionTypes.SkillFixOption && o.Number == number);
+        if (option is null)
+        {
+            return;
+        }
+
+        var link = persistenceContext.CreateNew<ItemOptionLink>();
+        link.ItemOption = option;
+        link.Level = skillFixByte & 0xF;
+        item.ItemOptions.Add(link);
     }
 
     private OptionFlags GetOptionFlags(Item item)
@@ -199,7 +255,7 @@ public class ItemSerializerExtended : IItemSerializer
             result |= OptionFlags.HasGuardian;
         }
 
-        if (item.SocketCount > 0)
+        if (item.SocketCount > 0 || item.ItemOptions.Any(o => o.ItemOption?.OptionType == ItemOptionTypes.SkillFixOption))
         {
             result |= OptionFlags.HasSockets;
         }
@@ -232,6 +288,7 @@ public class ItemSerializerExtended : IItemSerializer
     ///     Soc_Bon 4 bit
     ///     Soc_Cnt 4 bit
     ///     Sockets n * 8 bit
+    ///       (Soc_Cnt 15 = the skill fix option of this server instead of sockets: one byte (option - 10) &lt;&lt; 4 | level)
     ///
     ///  Total: 5 ~ 15 bytes.
     /// </summary>
@@ -356,9 +413,15 @@ public class ItemSerializerExtended : IItemSerializer
             set => this._data[this.SocketStartIndex] = (byte)((this._data[this.SocketStartIndex] & 0xF0) | (value & 0xF));
         }
 
-        public Span<byte> Sockets => this.Options.HasFlag(OptionFlags.HasSockets)
+        public Span<byte> Sockets => this.Options.HasFlag(OptionFlags.HasSockets) && this.SocketCount != SkillFixMarker
             ? this._data.Slice(this.SocketStartIndex + 1, this.SocketCount)
             : [];
+
+        public byte SkillFix
+        {
+            get => this.Options.HasFlag(OptionFlags.HasSockets) && this.SocketCount == SkillFixMarker ? this._data[this.SocketStartIndex + 1] : default;
+            set => this._data[this.SocketStartIndex + 1] = value;
+        }
 
         public int Length
         {
@@ -388,7 +451,7 @@ public class ItemSerializerExtended : IItemSerializer
                 if (this.Options.HasFlag(OptionFlags.HasSockets))
                 {
                     size++;
-                    size += this.SocketCount;
+                    size += this.SocketCount == SkillFixMarker ? 1 : this.SocketCount;
                 }
 
                 return size;

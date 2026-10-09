@@ -68,7 +68,7 @@ public abstract class UpgradeItemLevelJewelConsumeHandlerPlugIn<TConfig>
         }
 
         var maximumAllowedLevel = Math.Min(this.Configuration.MaximumLevel + 1, item.Definition!.MaximumItemLevel);
-        var levelAmount = Math.Min(this.Configuration.LevelAmount, maximumAllowedLevel - item.Level);
+        var levelAmount = Math.Min(this.GetLevelAmount(item), maximumAllowedLevel - item.Level);
         if (levelAmount <= 0)
         {
             return false;
@@ -98,6 +98,13 @@ public abstract class UpgradeItemLevelJewelConsumeHandlerPlugIn<TConfig>
 
         return true;
     }
+
+    /// <summary>
+    /// Gets the levels one use gives to the item; <see cref="UpgradeItemLevelConfiguration.LevelAmount"/> by default.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The levels.</returns>
+    protected virtual int GetLevelAmount(Item item) => this.Configuration?.LevelAmount ?? 1;
 
     private static bool ItemHasLuck(Item item)
     {

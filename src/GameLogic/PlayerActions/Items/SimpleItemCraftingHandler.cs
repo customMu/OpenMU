@@ -34,17 +34,23 @@ public class SimpleItemCraftingHandler : BaseItemCraftingHandler
         long totalCraftingPrice = 0;
         items = new List<CraftingRequiredItemLink>(this._settings.RequiredItems.Count);
         var storage = player.TemporaryStorage?.Items.ToList() ?? new List<Item>();
+
+        // all items of the mix: the found items are removed from the storage below
+        var mixItems = storage.ToList();
         foreach (var requiredItem in this._settings.RequiredItems.OrderByDescending(i => i.MinimumAmount))
         {
             var foundItems = storage.Where(item => this.RequiredItemMatches(item, requiredItem)).ToList();
             var itemCount = foundItems.Sum(i => i.IsStackable() ? i.Durability : 1);
-            if (itemCount < requiredItem.MinimumAmount)
+            var multiplier = Math.Max(1, this.GetAmountMultiplier(requiredItem, foundItems, mixItems));
+            var minimumAmount = requiredItem.MinimumAmount * multiplier;
+            var maximumAmount = requiredItem.MaximumAmount * multiplier;
+            if (itemCount < minimumAmount)
             {
                 player.Logger.LogWarning("LackingMixItems: Suspicious action for player with name: {0}, could be hack attempt. Missing item(s): {1}", player.Name, requiredItem);
                 return CraftingResult.LackingMixItems;
             }
 
-            if (itemCount > requiredItem.MaximumAmount && requiredItem.MaximumAmount > 0)
+            if (itemCount > maximumAmount && maximumAmount > 0)
             {
                 player.Logger.LogWarning("TooManyItems: Suspicious action for player with name: {0}, could be hack attempt. ItemCount: {1}, Required: {2}", player.Name, itemCount, requiredItem);
                 return CraftingResult.TooManyItems;
@@ -56,7 +62,7 @@ public class SimpleItemCraftingHandler : BaseItemCraftingHandler
             }
             else
             {
-                rate += (byte)(requiredItem.AddPercentage * (itemCount - requiredItem.MinimumAmount));
+                rate += (byte)(requiredItem.AddPercentage * (itemCount - minimumAmount));
                 if (requiredItem.NpcPriceDivisor > 0)
                 {
                     rate += (byte)(foundItems.Sum(this._priceCalculator.CalculateFinalBuyingPrice)
@@ -126,6 +132,16 @@ public class SimpleItemCraftingHandler : BaseItemCraftingHandler
     {
         return this._settings.Money + (this._settings.MoneyPerFinalSuccessPercentage * successRate);
     }
+
+    /// <summary>
+    /// Gets the multiplier of the amount of a required item (1 by default), e.g. the jewels of the Chaos Machine
+    /// mixes +10..+15 by the rank of the item (ItemLevelUpgradeCrafting).
+    /// </summary>
+    /// <param name="requiredItem">The required item.</param>
+    /// <param name="foundItems">The items of the mix which match the required item.</param>
+    /// <param name="storage">All items of the mix (including the ones of the already checked requirements).</param>
+    /// <returns>The multiplier of the minimum and maximum amount.</returns>
+    protected virtual int GetAmountMultiplier(ItemCraftingRequiredItem requiredItem, IList<Item> foundItems, IList<Item> storage) => 1;
 
     /// <summary>
     /// Determines whether the actual item matches with the required item definition.

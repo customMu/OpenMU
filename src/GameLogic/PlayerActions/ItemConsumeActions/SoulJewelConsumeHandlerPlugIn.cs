@@ -37,6 +37,12 @@ public class SoulJewelConsumeHandlerPlugIn : UpgradeItemLevelJewelConsumeHandler
     public override ItemIdentifier Key => ItemConstants.JewelOfSoul;
 
     /// <inheritdoc />
+    protected override int GetConsumedAmount(Item targetItem) => GameLogic.Items.EnchantPriceRanks.GetStep(targetItem.Definition, true).Jewels;
+
+    /// <inheritdoc />
+    protected override int GetLevelAmount(Item item) => GameLogic.Items.EnchantPriceRanks.GetStep(item.Definition, true).Levels;
+
+    /// <inheritdoc />
     public override object CreateDefaultConfig() => new UpgradeItemLevelConfiguration
     {
         MaximumLevel = 8,

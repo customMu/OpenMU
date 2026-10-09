@@ -315,7 +315,10 @@ public static class AttackableExtensions
                 attributes |= DamageAttributes.Combo;
             }
 
-            bool isDoubleDamage = Rand.NextRandomBool(attacker.Attributes[Stats.DoubleDamageChance]);
+            // + the Double damage option of the weapon in the left hand (Illusion of Noria)
+            var doubleDamageChance = attacker.Attributes[Stats.DoubleDamageChance]
+                                     + (attacker is Player doubleDamagePlayer ? PlugIns.IllusionOfNoria.IllusionWeaponOptions.GetValue(doubleDamagePlayer, PlugIns.IllusionOfNoria.IllusionWeaponOptions.DoubleDamage) : 0);
+            bool isDoubleDamage = Rand.NextRandomBool(doubleDamageChance);
             if (isDoubleDamage)
             {
                 dmg *= 2;

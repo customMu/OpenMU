@@ -22,6 +22,11 @@ public class ItemChatCommandPlugIn : ChatCommandPlugInBase<ItemChatCommandArgs>
 {
     private const string Command = "/item";
 
+    /// <summary>
+    /// The most copies of a not stackable item for one command.
+    /// </summary>
+    private const int MaximumCopies = 50;
+
     /// <inheritdoc />
     public override string Key => Command;
 
@@ -39,11 +44,13 @@ public class ItemChatCommandPlugIn : ChatCommandPlugInBase<ItemChatCommandArgs>
                 return;
             }
 
-            var item = CreateItem(itemDefinition!, arguments);
-            var dropCoordinates = gameMaster.CurrentMap.Terrain.GetRandomCoordinate(gameMaster.Position, 1);
-            var droppedItem = new DroppedItem(item, dropCoordinates, gameMaster.CurrentMap, gameMaster);
-            await gameMaster.CurrentMap.AddAsync(droppedItem).ConfigureAwait(false);
-            await gameMaster.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ItemCreatedResult), this.Key, item).ConfigureAwait(false);
+            foreach (var item in CreateItems(itemDefinition!, arguments))
+            {
+                var dropCoordinates = gameMaster.CurrentMap.Terrain.GetRandomCoordinate(gameMaster.Position, 1);
+                var droppedItem = new DroppedItem(item, dropCoordinates, gameMaster.CurrentMap, gameMaster);
+                await gameMaster.CurrentMap.AddAsync(droppedItem).ConfigureAwait(false);
+                await gameMaster.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.ItemCreatedResult), this.Key, item).ConfigureAwait(false);
+            }
         }
     }
 
@@ -64,6 +71,37 @@ public class ItemChatCommandPlugIn : ChatCommandPlugInBase<ItemChatCommandArgs>
         }
 
         return (true, itemDefinition);
+    }
+
+    /// <summary>
+    /// Creates the items of the command: one item, the stacks of the amount (a stackable item) or the copies.
+    /// </summary>
+    /// <param name="itemDefinition">The item definition.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <returns>The items.</returns>
+    internal static List<Item> CreateItems(DataModel.Configuration.Items.ItemDefinition itemDefinition, ItemChatCommandArgs arguments)
+    {
+        var first = CreateItem(itemDefinition, arguments);
+        if (first.IsStackable())
+        {
+            // a stackable item has no excellent options: the 4th number is the amount (/item 14 14 0 255)
+            var amount = Math.Max(1, arguments.Amount > 0 ? arguments.Amount : arguments.ExcellentNumber);
+            var stack = Math.Max(1, (int)itemDefinition.Durability);
+            var items = new List<Item>();
+            while (amount > 0 && items.Count < MaximumCopies)
+            {
+                var pieces = Math.Min(amount, stack);
+                var item = items.Count == 0 ? first : CreateItem(itemDefinition, arguments);
+                item.Durability = pieces;
+                items.Add(item);
+                amount -= pieces;
+            }
+
+            return items;
+        }
+
+        var copies = Math.Clamp(arguments.Amount, 1, MaximumCopies);
+        return [first, .. Enumerable.Range(1, copies - 1).Select(_ => CreateItem(itemDefinition, arguments))];
     }
 
     private static Item CreateItem(DataModel.Configuration.Items.ItemDefinition itemDefinition, ItemChatCommandArgs arguments)
@@ -143,7 +181,7 @@ public class ItemChatCommandPlugIn : ChatCommandPlugInBase<ItemChatCommandArgs>
 
     private static void AddExcellentOptions(TemporaryItem item, ItemChatCommandArgs arguments)
     {
-        if (item.Definition != null && arguments.ExcellentNumber > 0)
+        if (item.Definition != null && arguments.ExcellentNumber > 0 && !item.IsStackable())
         {
             var excellentOptions = item.Definition.PossibleItemOptions
                 .SelectMany(o => o.PossibleOptions)

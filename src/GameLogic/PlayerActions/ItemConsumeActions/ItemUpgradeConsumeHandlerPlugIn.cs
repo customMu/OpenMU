@@ -50,6 +50,15 @@ public abstract class ItemUpgradeConsumeHandlerPlugIn : ItemModifyConsumeHandler
     /// </summary>
     internal ItemUpgradeConfiguration Configuration { get; }
 
+    /// <summary>
+    /// Applies the jewel to the item without a source item (the Chaos Machine of the Illusion of Noria adds the skill
+    /// fix option with the Jewel of Illusion or an Echo).
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="persistenceContext">The persistence context.</param>
+    /// <returns><c>true</c>, if the item was changed.</returns>
+    internal bool ApplyTo(Item item, IContext persistenceContext) => this.ModifyItem(item, persistenceContext);
+
     /// <inheritdoc/>
     protected override bool ModifyItem(Item item, IContext persistenceContext)
     {
@@ -167,13 +176,13 @@ public abstract class ItemUpgradeConsumeHandlerPlugIn : ItemModifyConsumeHandler
                     possibleOptions.Remove(agiReductOpt);
                 }
 
-                optionLink.ItemOption = this.SelectHarmonyOption(item, possibleOptions);
+                optionLink.ItemOption = this.SelectOption(item, possibleOptions);
                 optionLink.Level = optionLink.ItemOption?.LevelDependentOptions.Select(ldo => ldo.Level).Min() ?? 0;
             }
             else
             {
-                // ItemOptionTypes.Option
-                optionLink.ItemOption = possibleOptions.SelectRandom();
+                // ItemOptionTypes.Option, ItemOptionTypes.SkillFixOption
+                optionLink.ItemOption = this.SelectOption(item, possibleOptions);
                 optionLink.Level = 1;
             }
 
@@ -184,14 +193,16 @@ public abstract class ItemUpgradeConsumeHandlerPlugIn : ItemModifyConsumeHandler
     }
 
     /// <summary>
-    /// Selects the harmony option which is added to the item: a weighted random one of the possible options.
+    /// Selects the option which is added to the item: a harmony option by weight, other options at random.
     /// </summary>
     /// <param name="item">The item.</param>
     /// <param name="possibleOptions">The possible options.</param>
     /// <returns>The selected option.</returns>
-    protected virtual IncreasableItemOption? SelectHarmonyOption(Item item, IList<IncreasableItemOption> possibleOptions)
+    protected virtual IncreasableItemOption? SelectOption(Item item, IList<IncreasableItemOption> possibleOptions)
     {
-        return possibleOptions.SelectWeightedRandom(possibleOptions.Select(po => (int)po.Weight));
+        return this.Configuration.OptionType == ItemOptionTypes.HarmonyOption
+            ? possibleOptions.SelectWeightedRandom(possibleOptions.Select(po => (int)po.Weight))
+            : possibleOptions.SelectRandom();
     }
 
     private bool ItemHasOptionAlready(Item item)

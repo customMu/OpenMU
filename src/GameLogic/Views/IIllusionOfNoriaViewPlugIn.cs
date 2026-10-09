@@ -16,6 +16,36 @@ public interface IIllusionOfNoriaViewPlugIn : IViewPlugIn
     /// <param name="info">The state of the player for the dialog.</param>
     /// <returns>The task.</returns>
     ValueTask ShowWardenDialogAsync(IllusionWardenInfo info);
+
+    /// <summary>
+    /// Sends the same state without opening the dialog: the client shows the mark over the warden (a quest or a daily
+    /// quest waits) and the daily quest in the quest window.
+    /// </summary>
+    /// <param name="info">The state of the player.</param>
+    /// <returns>The task.</returns>
+    ValueTask UpdateWardenStateAsync(IllusionWardenInfo info);
+
+    /// <summary>
+    /// Tells the client how long the Golden Curse of the boss still burns (the effect itself has no duration on the client,
+    /// and its renewal is not sent): the timer of the debuff icon.
+    /// </summary>
+    /// <param name="remaining">The remaining time; zero when it ended.</param>
+    /// <returns>The task.</returns>
+    ValueTask ShowCurseTimeAsync(TimeSpan remaining);
+
+    /// <summary>
+    /// Tells the client how long the Veil Ward still lasts: the timer of its buff icon.
+    /// </summary>
+    /// <param name="remaining">The remaining time.</param>
+    /// <returns>The task.</returns>
+    ValueTask ShowWardTimeAsync(TimeSpan remaining);
+
+    /// <summary>
+    /// Tells the client how long the Blessing of the Veil still lasts: the timer of its buff icon.
+    /// </summary>
+    /// <param name="remaining">The remaining time.</param>
+    /// <returns>The task.</returns>
+    ValueTask ShowBlessingTimeAsync(TimeSpan remaining);
 }
 
 /// <summary>
@@ -31,7 +61,7 @@ public interface IIllusionOfNoriaViewPlugIn : IViewPlugIn
 /// <param name="DailyKills">The kills of each monster of the daily quest.</param>
 /// <param name="DailyKillsNeeded">The kills which are needed for each monster.</param>
 /// <param name="TimeUntilNextDay">The time until the next day of the daily quest.</param>
-/// <param name="Weapons">The equipped weapons with a harmony option which the warden can reset.</param>
+/// <param name="Weapons">The equipped weapons with a skill fix option which the warden can reset.</param>
 /// <param name="Shards">The Illusion Shards of the character.</param>
 /// <param name="Exchange">The shop of the warden (empty before the quest is done): item group, number and price in shards.</param>
 public sealed record IllusionWardenInfo(
@@ -50,13 +80,13 @@ public sealed record IllusionWardenInfo(
     IReadOnlyList<(byte Group, short Number, int Price)> Exchange);
 
 /// <summary>
-/// An equipped weapon with a harmony option, which the warden can reset for a price.
+/// An equipped weapon with a skill fix option, which the warden can reset for a price.
 /// </summary>
 /// <param name="Slot">The inventory slot (0 left hand, 1 right hand).</param>
 /// <param name="Group">The item group.</param>
 /// <param name="Number">The item number.</param>
-/// <param name="OptionNumber">The number of the harmony option.</param>
-/// <param name="OptionLevel">The level of the harmony option.</param>
+/// <param name="OptionNumber">The number of the skill fix option.</param>
+/// <param name="OptionLevel">The level of the skill fix option.</param>
 /// <param name="Rank">The rank of the weapon (7, 8).</param>
 /// <param name="JewelsOfIllusion">The Jewels of Illusion of the price.</param>
 /// <param name="LesserStones">The Lesser Mirage Stones of the price.</param>
